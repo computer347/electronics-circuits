@@ -7,7 +7,7 @@
 
 import { DIODE_KEY } from '../sim';
 import { HOLES, hole, type HoleId } from './layout';
-import { SUPPLY_ID, type BoardAnalysis, type BoardState } from './model';
+import { SUPPLY_ID, type BoardAnalysis, type BoardPartKind, type BoardState } from './model';
 import { partPoints, polylineLength, SUPPLY_HOLES, supplyPoints, type V3 } from './paths';
 
 export interface FlowEdge {
@@ -15,6 +15,8 @@ export interface FlowEdge {
   kind: 'part' | 'strip' | 'supply';
   label: string;
   partId?: string;
+  /** For part edges: what kind of part (the ride stops at components, not wires). */
+  partKind?: BoardPartKind;
   from: HoleId;
   to: HoleId;
   points: V3[];
@@ -79,7 +81,7 @@ export function buildFlow(board: BoardState, analysis: BoardAnalysis): FlowEdge[
     const amps = r.currents[p.id];
     if (amps === undefined) continue; // burnt LED: open circuit
     pushEdge({
-      id: p.id, kind: 'part', partId: p.id, label: `${p.id} · ${PART_LABEL[p.kind]}`,
+      id: p.id, kind: 'part', partId: p.id, partKind: p.kind, label: `${p.id} · ${PART_LABEL[p.kind]}`,
       from: p.h1, to: p.h2, points: partPoints(p), amps, shares: sharesOf(p.id),
     });
   }

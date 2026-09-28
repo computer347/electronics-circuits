@@ -558,7 +558,7 @@ export function BreadboardScene({ analysis, dynamic }: { analysis: BoardAnalysis
       {view === 'ride' && (
         <>
           <FlowParticles edges={edges} colors={colors} size={0.045} />
-          <RideElectron edges={edges} analysis={analysis} colors={colors} />
+          <RideElectron edges={edges} analysis={analysis} colors={colors} parts={parts} />
         </>
       )}
       {probes.red && <Probe h={probes.red} color="#e8413c" />}

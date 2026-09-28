@@ -7,6 +7,7 @@ import { colorBands } from './colorCode';
 import { hole } from './layout';
 import { sourceColors } from './flow';
 import { startLiveBench, useLive } from './live';
+import { lapText } from './rideStops';
 import { analyzeBoard, DEFAULT_WAVE, isDynamicBoard, isElectrolytic, LED_MAX_AMPS, reversedElectrolytics, SUPPLY_ID, type BoardAnalysis } from './model';
 import { connectedGroup } from './move';
 import { BreadboardScene } from './Scene';
@@ -169,6 +170,8 @@ export function BenchView({ mode }: { mode?: BenchMode } = {}) {
       if (e.key === 'r' || e.key === 'R') return s.setView(s.view === 'ride' ? 'build' : 'ride');
       if ((e.key === 'o' || e.key === 'O') && scopeAllowed) return s.setScopeOpen(!s.scopeOpen);
       if (e.key === 'Escape' && s.view === 'ride') return s.setView('flow');
+      if (s.view === 'ride' && (e.key === ' ' || e.key === 'Enter')) { e.preventDefault(); return s.rideContinue(); }
+      if (s.view === 'ride' && (e.key === 'a' || e.key === 'A')) return s.setRideStep(!s.rideStep);
       if (s.view === 'ride') return;
       const t = tools.find((x) => x.key === e.key);
       if (t) s.setTool(t.id);
@@ -271,6 +274,9 @@ export function BenchView({ mode }: { mode?: BenchMode } = {}) {
         {s.view !== 'build' && (
           <label className="check"><input type="checkbox" checked={s.conventional} onChange={s.toggleConventional} /> Conventional current (+ → −)</label>
         )}
+        {s.view === 'ride' && (
+          <label className="check"><input type="checkbox" checked={s.rideStep} onChange={(e) => s.setRideStep(e.target.checked)} /> Stop at each part <kbd>A</kbd></label>
+        )}
         {s.view !== 'build' && dynamic && <p className="hint">Flow shows the steady DC picture: capacitors count as open, generators sit at their t = 0 value.</p>}
         {scopeAllowed && (
           <div className="presets">
@@ -313,7 +319,27 @@ export function BenchView({ mode }: { mode?: BenchMode } = {}) {
             {sourceKeys.map((k) => <span key={k}><i style={{ background: colors[k] }} />{keyLabel(k)}</span>)}
           </div>
         )}
-        {s.view === 'ride' && s.rideInfo && (
+        {s.view === 'ride' && s.rideStop && (
+          <div className="ride-stop" role="dialog" aria-label="Ride stop">
+            <div className="ride-stop-kicker">{s.rideStop.kicker}</div>
+            <div className="ride-title">{s.rideStop.title}</div>
+            <p className="ride-stop-body">{s.rideStop.body}</p>
+            <table className="ride-stop-figures"><tbody>
+              {s.rideStop.figures.map(([k, v]) => <tr key={k}><th>{k}</th><td className="num">{v}</td></tr>)}
+            </tbody></table>
+            {s.rideStop.lap && (
+              <div className="ride-lap">
+                <div className="ride-stop-kicker">Lap complete</div>
+                {lapText(s.rideStop.lap)}
+              </div>
+            )}
+            <div className="ride-stop-actions">
+              <button className="primary" onClick={s.rideContinue} autoFocus>Go ▶ <kbd>Space</kbd></button>
+              <button onClick={() => s.setRideStep(false)}>Ride without stops <kbd>A</kbd></button>
+            </div>
+          </div>
+        )}
+        {s.view === 'ride' && !s.rideStop && s.rideInfo && (
           <div className="ride-hud">
             <div className="ride-title">{s.rideInfo.title}</div>
             <div className="ride-detail">{s.rideInfo.detail}</div>
@@ -321,7 +347,7 @@ export function BenchView({ mode }: { mode?: BenchMode } = {}) {
         )}
         <div className="stage-hud">
           <span className={s.notice ? 'notice' : ''}>
-            {s.view === 'ride' ? 'You are the electron. Esc or R to stop riding.' : s.view === 'flow' ? 'Each dot is charge moving, coloured by the source pushing it. Speed follows the current.' : s.notice ?? instruction(s.tool, !!s.pending)}
+            {s.view === 'ride' ? (s.rideStep ? 'You are the electron. Space: go on to the next part · A: ride without stops · Esc: stop riding.' : 'You are the electron. A: stop at each part again · Esc or R: stop riding.') : s.view === 'flow' ? 'Each dot is charge moving, coloured by the source pushing it. Speed follows the current.' : s.notice ?? instruction(s.tool, !!s.pending)}
           </span>
           {s.hover && (
             <span className="hover-info">

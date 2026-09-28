@@ -7,7 +7,8 @@ import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { formatSI } from '../lib/units';
 import { electronDir, MIN_AMPS, type FlowEdge } from './flow';
-import type { BoardAnalysis } from './model';
+import type { BoardAnalysis, BoardPart } from './model';
+import { describeStop, isStopEdge, summarizeLap, type LapEntry } from './rideStops';
 import { pointAt } from './paths';
 import { useBench } from './store';
 
@@ -111,7 +112,24 @@ function describe(e: FlowEdge, analysis: BoardAnalysis): { title: string; detail
   return { title: `Along jumper wire ${id}`, detail: `${amps} · practically no voltage drop` };
 }
 
-export function RideElectron({ edges, analysis, colors }: { edges: FlowEdge[]; analysis: BoardAnalysis; colors: Record<string, string> }) {
+interface RideState {
+  edge: number;
+  s: number;
+  dir: number;
+  lastInfo: number;
+  color: string;
+  /** moving along wires, waiting at a component for Go, or crossing the component. */
+  phase: 'moving' | 'waiting' | 'crossing';
+  stops: number;
+  lap: LapEntry[];
+  /** The Go counter when we stopped: a change means the player pressed Go. */
+  seenGo: number;
+}
+
+/** Travel speeds in step mode (board units per second): calm along wires, slow through parts. */
+const STEP_SPEED = { wire: 3.2, part: 1.1 } as const;
+
+export function RideElectron({ edges, analysis, colors, parts }: { edges: FlowEdge[]; analysis: BoardAnalysis; colors: Record<string, string>; parts: BoardPart[] }) {
   const { camera } = useThree();
   const conventional = useBench((s) => s.conventional);
   const setRideInfo = useBench((s) => s.setRideInfo);
@@ -122,7 +140,28 @@ export function RideElectron({ edges, analysis, colors }: { edges: FlowEdge[]; a
     g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(TRAIL * 3), 3));
     return g;
   }, []);
-  const state = useRef<{ edge: number; s: number; dir: number; lastInfo: number; color: string } | null>(null);
+  const state = useRef<RideState | null>(null);
+  const stepMode = useBench((s) => s.rideStep);
+  const setRideStop = useBench((s) => s.setRideStop);
+  const mid = useMemo(() => new THREE.Vector3(), []);
+
+  /** Arrive at the start of an edge: in step mode, components are stops. */
+  const arrive = (st: RideState) => {
+    const e = edges[st.edge]!;
+    if (!useBench.getState().rideStep || !isStopEdge(e)) { st.phase = 'moving'; return; }
+    st.stops += 1;
+    const part = parts.find((p) => p.id === e.partId);
+    const { stop, entry } = describeStop(e, part, analysis, st.stops, useBench.getState().conventional);
+    if (entry.kind === 'gain' && st.lap.some((x) => x.kind === 'loss')) {
+      stop.lap = summarizeLap(st.lap);
+      st.lap = [entry];
+    } else {
+      st.lap.push(entry);
+    }
+    st.phase = 'waiting';
+    st.seenGo = useBench.getState().rideGo;
+    setRideStop(stop);
+  };
   const pos = useMemo(() => new THREE.Vector3(), []);
   const prevPos = useMemo(() => new THREE.Vector3(), []);
   const camTarget = useMemo(() => new THREE.Vector3(), []);
@@ -135,7 +174,11 @@ export function RideElectron({ edges, analysis, colors }: { edges: FlowEdge[]; a
     const src = flowing.filter(({ e }) => e.kind === 'supply' || e.label.includes('battery') || e.label.includes('generator'));
     const pick = (src.length ? src : flowing).reduce((a, b) => (Math.abs(b.e.amps) > Math.abs(a.e.amps) ? b : a));
     const dir = electronDir(pick.e, conventional);
-    state.current = { edge: pick.i, s: dir > 0 ? 0 : pick.e.length, dir, lastInfo: 0, color: particleColor(pick.e, 0, colors) };
+    state.current = {
+      edge: pick.i, s: dir > 0 ? 0 : pick.e.length, dir, lastInfo: 0, color: particleColor(pick.e, 0, colors),
+      phase: 'moving', stops: 0, lap: [], seenGo: 0,
+    };
+    arrive(state.current);
   };
   useEffect(() => {
     start();
@@ -143,13 +186,14 @@ export function RideElectron({ edges, analysis, colors }: { edges: FlowEdge[]; a
     const first = flowing[0]?.e.points[0];
     if (first) for (let i = 0; i < TRAIL; i++) pts.setXYZ(i, first[0], first[1], first[2]);
     if (!flowing.length) setRideInfo({ title: 'Nothing is flowing', detail: 'The circuit is open or blocked somewhere. Switch to Build and find out why.' });
-  }, [flowing, conventional]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [flowing, conventional, stepMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => () => {
     camera.position.set(0, 27, 21);
     camera.lookAt(0, 0, 0);
     setRideInfo(null);
-  }, [camera, setRideInfo]);
+    setRideStop(null);
+  }, [camera, setRideInfo, setRideStop]);
 
   useFrame((_, rawDt) => {
     const st = state.current;
@@ -157,7 +201,23 @@ export function RideElectron({ edges, analysis, colors }: { edges: FlowEdge[]; a
     const dt = Math.min(rawDt, 0.05);
     const e = edges[st.edge]!;
     const slow = e.label.includes('resistor') ? 0.35 : e.label.includes('LED') ? 0.5 : 1;
-    st.s += st.dir * (3 + flowSpeed(e.amps)) * slow * dt;
+    if (st.phase === 'waiting' && useBench.getState().rideGo !== st.seenGo) st.phase = 'crossing';
+    if (st.phase === 'waiting') {
+      // parked at the component's entrance: frame the whole part and wait for Go
+      pointAt(e.points, e.length / 2, mid);
+      // back off far enough to see the whole part and what it connects to (the supply's leads are long)
+      const d = Math.min(22, 9 + e.length * 0.45);
+      camTarget.set(mid.x, mid.y + d * 0.62, mid.z + d * 0.78);
+      camera.position.lerp(camTarget, 1 - Math.pow(0.005, dt));
+      look.lerp(mid, 1 - Math.pow(0.001, dt));
+      camera.lookAt(look);
+      return;
+    }
+    // Step mode keeps a calm pace, but never lingers: any part takes at most ~1.6 s to cross and
+    // any wire or strip ~1.2 s, however long its path (the supply's leads are long).
+    const speed = !stepMode ? (3 + flowSpeed(e.amps)) * slow
+      : st.phase === 'crossing' ? Math.max(STEP_SPEED.part, e.length / 1.6) : Math.max(STEP_SPEED.wire, e.length / 1.2);
+    st.s += st.dir * speed * dt;
 
     // reached the end of this edge: pick the next one, weighted by how much current goes each way
     if (st.s < 0 || st.s > e.length) {
@@ -176,6 +236,7 @@ export function RideElectron({ edges, analysis, colors }: { edges: FlowEdge[]; a
       st.edge = next.i; st.dir = d; st.s = d > 0 ? 0 : next.e.length;
       st.color = particleColor(next.e, Math.floor(Math.random() * 1000), colors);
       st.lastInfo = 0;
+      arrive(st);
     }
 
     const cur = edges[st.edge]!;

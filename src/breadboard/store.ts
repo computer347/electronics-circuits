@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { LedColor, Waveform } from '../sim';
 import type { HoleId } from './layout';
 import type { ScopeSetup } from '../instruments/scopeStore';
+import type { RideStop } from './rideStops';
 import { DEFAULT_WAVE, type BoardPart, type BoardPartKind, type BoardState } from './model';
 import { connectedGroup, occupiedHoles, translateParts, type MoveMode } from './move';
 
@@ -29,6 +30,12 @@ interface BenchStore extends BoardState {
   conventional: boolean;
   /** Live caption while riding. */
   rideInfo: { title: string; detail: string } | null;
+  /** Ride stops at each component and waits for Go (true), or flows continuously (false). */
+  rideStep: boolean;
+  /** The component the electron is waiting at, in step mode. */
+  rideStop: RideStop | null;
+  /** Bumped by Go: the ride watches it to continue. */
+  rideGo: number;
   /** First hole clicked while placing a two-legged part. */
   pending: HoleId | null;
   hover: HoleId | null;
@@ -53,6 +60,9 @@ interface BenchStore extends BoardState {
   setView: (v: View) => void;
   toggleConventional: () => void;
   setRideInfo: (i: { title: string; detail: string } | null) => void;
+  setRideStep: (on: boolean) => void;
+  setRideStop: (s: RideStop | null) => void;
+  rideContinue: () => void;
   setVolts: (v: number) => void;
   toggleSupply: () => void;
   setHover: (h: HoleId | null) => void;
@@ -113,6 +123,9 @@ export const useBench = create<BenchStore>((set, get) => ({
   view: 'build',
   conventional: false,
   rideInfo: null,
+  rideStep: true,
+  rideStop: null,
+  rideGo: 0,
   pending: null,
   hover: null,
   selected: null,
@@ -133,9 +146,12 @@ export const useBench = create<BenchStore>((set, get) => ({
   setWave: (wave) => set({ wave }),
   setScopeProbe: (ch, h) => set((s) => ({ scopeProbes: { ...s.scopeProbes, [ch]: h } })),
   setScopeOpen: (scopeOpen) => set({ scopeOpen }),
-  setView: (view) => set({ view, rideInfo: null, pending: null, moving: null, menu: null, tool: 'select' }),
+  setView: (view) => set({ view, rideInfo: null, rideStop: null, pending: null, moving: null, menu: null, tool: 'select' }),
   toggleConventional: () => set((s) => ({ conventional: !s.conventional })),
   setRideInfo: (rideInfo) => set({ rideInfo }),
+  setRideStep: (rideStep) => set((s) => ({ rideStep, rideStop: null, rideGo: s.rideGo + 1 })),
+  setRideStop: (rideStop) => set({ rideStop }),
+  rideContinue: () => set((s) => ({ rideStop: null, rideGo: s.rideGo + 1 })),
   setVolts: (volts) => set((s) => ({ supply: { ...s.supply, volts } })),
   toggleSupply: () => set((s) => ({ supply: { ...s.supply, on: !s.supply.on } })),
   setHover: (hover) => set({ hover }),
