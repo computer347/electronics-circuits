@@ -9,6 +9,7 @@ import * as THREE from 'three';
 import { colorBands } from './colorCode';
 import { BOARD, HOLES, hole, type HoleId } from './layout';
 import { LED_MAX_AMPS, type BoardAnalysis, type BoardPart } from './model';
+import { translateParts } from './move';
 import { useBench } from './store';
 
 const LED_HEX = { red: '#ff3b30', yellow: '#ffd60a', green: '#39ff88', blue: '#3a8bff', white: '#f5f5ff' } as const;
@@ -67,7 +68,7 @@ function Board({ analysis }: { analysis: BoardAnalysis }) {
 
   const pick = (e: ThreeEvent<PointerEvent | MouseEvent>) => {
     let best: HoleId | null = null;
-    let bestD = 0.55;
+    let bestD = 0.75;
     for (const h of HOLES) {
       const d = Math.hypot(h.x - e.point.x, h.z - e.point.z);
       if (d < bestD) { bestD = d; best = h.id; }
@@ -79,10 +80,10 @@ function Board({ analysis }: { analysis: BoardAnalysis }) {
     <group>
       <mesh position={[0, -BOARD.thickness / 2, 0]} receiveShadow>
         <boxGeometry args={[BOARD.width, BOARD.thickness, BOARD.depth]} />
-        <meshStandardMaterial color="#0b1510" roughness={0.9} />
+        <meshStandardMaterial color="#1b2d23" roughness={0.75} />
       </mesh>
       {/* centre channel and rail stripes */}
-      <mesh position={[0, 0.004, 0]}><boxGeometry args={[BOARD.width - 1, 0.01, 0.6]} /><meshBasicMaterial color="#050a07" /></mesh>
+      <mesh position={[0, 0.004, 0]}><boxGeometry args={[BOARD.width - 1, 0.01, 0.6]} /><meshBasicMaterial color="#0b140f" /></mesh>
       {/* rail markings: red beside the + rails, blue beside the - rails */}
       {[[-6.45, '#c0392b'], [-8.55, '#2f6fe0'], [6.45, '#c0392b'], [8.55, '#2f6fe0']].map(([z, c]) => (
         <mesh key={z as number} position={[0, 0.006, z as number]}>
@@ -94,11 +95,11 @@ function Board({ analysis }: { analysis: BoardAnalysis }) {
         const v = analysis.voltageAt(s.sample);
         const level = v === undefined || !supply.on ? 0 : Math.min(1, Math.abs(v) / Math.max(supply.volts, 0.1));
         const hot = s.strip === hoverStrip;
-        const color = hot ? SIGNAL : new THREE.Color('#0e3b26').lerp(SIGNAL, showStrips ? level * 0.85 : 0);
+        const color = hot ? SIGNAL : new THREE.Color('#2a6b4a').lerp(SIGNAL, showStrips ? level * 0.85 : 0);
         return (
           <mesh key={s.strip} position={[s.cx, 0.006, s.cz]}>
             <boxGeometry args={[s.w, 0.006, s.d]} />
-            <meshBasicMaterial color={color} transparent opacity={hot ? 0.55 : showStrips ? 0.18 + level * 0.5 : 0.15} toneMapped={false} />
+            <meshBasicMaterial color={color} transparent opacity={hot ? 0.6 : showStrips ? 0.3 + level * 0.5 : 0.28} toneMapped={false} />
           </mesh>
         );
       })}
@@ -112,6 +113,7 @@ function Board({ analysis }: { analysis: BoardAnalysis }) {
         rotation={[-Math.PI / 2, 0, 0]}
         onPointerMove={(e) => { e.stopPropagation(); const h = pick(e); if (h !== hover) setHover(h); }}
         onPointerLeave={() => setHover(null)}
+        onContextMenu={(e) => { e.nativeEvent.preventDefault(); const st = useBench.getState(); if (st.moving) st.cancelMove(); st.closeMenu(); }}
         onClick={(e) => { e.stopPropagation(); const h = pick(e); if (h) clickHole(h); else if (tool === 'select') useBench.getState().select(null); }}
       >
         <planeGeometry args={[BOARD.width, BOARD.depth]} />
@@ -138,18 +140,29 @@ function Board({ analysis }: { analysis: BoardAnalysis }) {
 
 // ---------------------------------------------------------------- parts
 
-function useSelect(id: string) {
-  const tool = useBench((s) => s.tool);
-  const select = useBench((s) => s.select);
-  return (e: ThreeEvent<MouseEvent>) => {
-    if (tool !== 'select') return;
-    e.stopPropagation();
-    select(id);
+/** Left click selects, right click opens the part menu (anchored at the nearest leg). */
+function usePartHandlers(part: BoardPart) {
+  return {
+    onClick: (e: ThreeEvent<MouseEvent>) => {
+      const st = useBench.getState();
+      if (st.tool !== 'select' || st.moving) return;
+      e.stopPropagation();
+      st.select(part.id);
+    },
+    onContextMenu: (e: ThreeEvent<MouseEvent>) => {
+      const st = useBench.getState();
+      if (st.moving) return;
+      e.stopPropagation();
+      e.nativeEvent.preventDefault();
+      const d = (h: HoleId) => { const i = hole(h); return Math.hypot(i.x - e.point.x, i.z - e.point.z); };
+      const anchor = d(part.h1) <= d(part.h2) ? part.h1 : part.h2;
+      st.openMenu(part.id, e.nativeEvent.clientX, e.nativeEvent.clientY, anchor);
+    },
   };
 }
 
-function Resistor({ part, selected }: { part: BoardPart; selected: boolean }) {
-  const onClick = useSelect(part.id);
+function Resistor({ part, mark }: { part: BoardPart; mark?: string }) {
+  const handlers = usePartHandlers(part);
   const a = new THREE.Vector3(...at(part.h1)), b = new THREE.Vector3(...at(part.h2));
   const dir = b.clone().sub(a);
   const dist = dir.length();
@@ -162,7 +175,7 @@ function Resistor({ part, selected }: { part: BoardPart; selected: boolean }) {
   const bands = colorBands(part.ohms ?? 1000).colors;
   const bandPos = [-0.32, -0.16, 0, 0.3];
   return (
-    <group onClick={onClick}>
+    <group {...handlers}>
       <Segment from={[a.x, 0, a.z]} to={[a.x, y, a.z]} />
       <Segment from={[a.x, y, a.z]} to={[e1.x, y, e1.z]} />
       <Segment from={[b.x, 0, b.z]} to={[b.x, y, b.z]} />
@@ -170,7 +183,7 @@ function Resistor({ part, selected }: { part: BoardPart; selected: boolean }) {
       <group position={[mid.x, y, mid.z]} quaternion={quat}>
         <mesh>
           <capsuleGeometry args={[0.2, bodyLen - 0.4, 6, 14]} />
-          <meshStandardMaterial color="#d8c39a" roughness={0.6} emissive={selected ? AMBER : '#000'} emissiveIntensity={selected ? 0.35 : 0} />
+          <meshStandardMaterial color="#d8c39a" roughness={0.6} emissive={mark ?? '#000'} emissiveIntensity={mark ? 0.45 : 0} />
         </mesh>
         {bands.map((c, i) => (
           <mesh key={i} position={[0, bandPos[i]! * (bodyLen / 1.2), 0]}>
@@ -183,15 +196,15 @@ function Resistor({ part, selected }: { part: BoardPart; selected: boolean }) {
   );
 }
 
-function Led({ part, selected, amps }: { part: BoardPart; selected: boolean; amps: number }) {
-  const onClick = useSelect(part.id);
+function Led({ part, mark, amps }: { part: BoardPart; mark?: string; amps: number }) {
+  const handlers = usePartHandlers(part);
   const a = at(part.h1), b = at(part.h2);
   const mid: V3 = [(a[0] + b[0]) / 2, 0, (a[2] + b[2]) / 2];
   const color = LED_HEX[part.color ?? 'red'];
   const level = part.burnt ? 0 : Math.min(1, Math.max(0, amps) / (LED_MAX_AMPS * 0.66));
   const bodyColor = part.burnt ? '#2a2326' : color;
   return (
-    <group onClick={onClick}>
+    <group {...handlers}>
       <Segment from={a} to={[mid[0] - 0.1, 0.9, mid[2]]} />
       <Segment from={b} to={[mid[0] + 0.1, 0.8, mid[2]]} />
       <mesh position={[mid[0], 1.15, mid[2]]}>
@@ -202,10 +215,10 @@ function Led({ part, selected, amps }: { part: BoardPart; selected: boolean; amp
         <sphereGeometry args={[0.34, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
         <meshStandardMaterial color={bodyColor} transparent opacity={0.85} emissive={part.burnt ? FAULT : color} emissiveIntensity={part.burnt ? 0.15 : 0.05 + level * 3} toneMapped={false} />
       </mesh>
-      {selected && (
+      {mark && (
         <mesh position={[mid[0], 0.03, mid[2]]} rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[0.5, 0.58, 32]} />
-          <meshBasicMaterial color={AMBER} toneMapped={false} />
+          <ringGeometry args={[0.5, 0.6, 32]} />
+          <meshBasicMaterial color={mark} toneMapped={false} />
         </mesh>
       )}
       {level > 0.02 && (
@@ -219,8 +232,8 @@ function Led({ part, selected, amps }: { part: BoardPart; selected: boolean; amp
   );
 }
 
-function Wire({ part, selected }: { part: BoardPart; selected: boolean }) {
-  const onClick = useSelect(part.id);
+function Wire({ part, mark }: { part: BoardPart; mark?: string }) {
+  const handlers = usePartHandlers(part);
   const geom = useMemo(() => {
     const a = new THREE.Vector3(...at(part.h1, -0.2)), b = new THREE.Vector3(...at(part.h2, -0.2));
     const lift = 0.5 + a.distanceTo(b) * 0.18;
@@ -233,20 +246,21 @@ function Wire({ part, selected }: { part: BoardPart; selected: boolean }) {
     return new THREE.TubeGeometry(curve, 48, 0.07, 8, false);
   }, [part.h1, part.h2]);
   return (
-    <mesh geometry={geom} onClick={onClick}>
-      <meshStandardMaterial color={part.wireColor ?? '#e8413c'} roughness={0.5} emissive={selected ? AMBER : '#000'} emissiveIntensity={selected ? 0.5 : 0} />
+    <mesh geometry={geom} {...handlers}>
+      <meshStandardMaterial color={part.wireColor ?? '#e8413c'} roughness={0.5} emissive={mark ?? '#000'} emissiveIntensity={mark ? 0.6 : 0} />
     </mesh>
   );
 }
 
-function Button({ part, selected }: { part: BoardPart; selected: boolean }) {
+function Button({ part, mark }: { part: BoardPart; mark?: string }) {
+  const handlers = usePartHandlers(part);
   const tool = useBench((s) => s.tool);
   const select = useBench((s) => s.select);
   const togglePress = useBench((s) => s.togglePress);
   const a = at(part.h1), b = at(part.h2);
   const mid: V3 = [(a[0] + b[0]) / 2, 0, (a[2] + b[2]) / 2];
   const down = (e: ThreeEvent<PointerEvent>) => {
-    if (tool !== 'select') return;
+    if (tool !== 'select' || e.nativeEvent.button !== 0 || useBench.getState().moving) return;
     e.stopPropagation();
     select(part.id);
     togglePress(part.id, true);
@@ -254,12 +268,12 @@ function Button({ part, selected }: { part: BoardPart; selected: boolean }) {
     window.addEventListener('pointerup', up);
   };
   return (
-    <group onPointerDown={down}>
+    <group onPointerDown={down} onContextMenu={handlers.onContextMenu}>
       <Segment from={a} to={[a[0], 0.25, a[2]]} />
       <Segment from={b} to={[b[0], 0.25, b[2]]} />
       <mesh position={[mid[0], 0.3, mid[2]]}>
         <boxGeometry args={[Math.max(1.0, Math.abs(b[0] - a[0]) + 0.4), 0.3, Math.max(1.0, Math.abs(b[2] - a[2]) + 0.4)]} />
-        <meshStandardMaterial color="#1a1f1c" roughness={0.7} emissive={selected ? AMBER : '#000'} emissiveIntensity={selected ? 0.25 : 0} />
+        <meshStandardMaterial color="#1a1f1c" roughness={0.7} emissive={mark ?? '#000'} emissiveIntensity={mark ? 0.35 : 0} />
       </mesh>
       <mesh position={[mid[0], part.pressed ? 0.5 : 0.62, mid[2]]}>
         <cylinderGeometry args={[0.26, 0.26, 0.3, 20]} />
@@ -320,23 +334,37 @@ export function BreadboardScene({ analysis }: { analysis: BoardAnalysis }) {
   const parts = useBench((s) => s.parts);
   const selected = useBench((s) => s.selected);
   const probes = useBench((s) => s.probes);
+  const moving = useBench((s) => s.moving);
+  const hover = useBench((s) => s.hover);
   const currents = analysis.result.currents;
+
+  // While moving, draw the parts where they'd land, tinted green (ok) or magenta (blocked).
+  const preview = useMemo(() => {
+    if (!moving || !hover) return null;
+    return translateParts(parts, moving.ids, moving.anchor, hover, moving.mode);
+  }, [parts, moving, hover]);
+  const shown = preview?.parts ?? parts;
+  const movingIds = new Set(moving?.ids ?? []);
+  const markOf = (id: string) =>
+    movingIds.has(id) ? (preview && !preview.valid ? FAULT : '#39ff88') : id === selected ? AMBER : undefined;
   return (
     <Canvas camera={{ position: [0, 27, 21], fov: 40 }} dpr={[1, 2]} shadows={false}>
       <color attach="background" args={['#030604']} />
-      <fog attach="fog" args={['#030604', 30, 60]} />
-      <ambientLight intensity={0.55} />
-      <directionalLight position={[8, 20, 10]} intensity={1.3} />
+      <fog attach="fog" args={['#030604', 70, 130]} />
+      <ambientLight intensity={0.9} />
+      <hemisphereLight args={['#c8ffe0', '#0a140e', 0.6]} />
+      <directionalLight position={[8, 20, 10]} intensity={1.6} />
       <directionalLight position={[-10, 8, -6]} intensity={0.35} color="#7fffc4" />
+      <gridHelper args={[80, 40, '#123824', '#0c2418']} position={[0, -BOARD.thickness - 0.01, 0]} />
       <Board analysis={analysis} />
       <Supply analysis={analysis} />
-      {parts.map((p) => {
-        const sel = p.id === selected;
+      {shown.map((p) => {
+        const mark = markOf(p.id);
         switch (p.kind) {
-          case 'resistor': return <Resistor key={p.id} part={p} selected={sel} />;
-          case 'led': return <Led key={p.id} part={p} selected={sel} amps={currents[p.id] ?? 0} />;
-          case 'wire': return <Wire key={p.id} part={p} selected={sel} />;
-          case 'button': return <Button key={p.id} part={p} selected={sel} />;
+          case 'resistor': return <Resistor key={p.id} part={p} mark={mark} />;
+          case 'led': return <Led key={p.id} part={p} mark={mark} amps={movingIds.has(p.id) ? 0 : currents[p.id] ?? 0} />;
+          case 'wire': return <Wire key={p.id} part={p} mark={mark} />;
+          case 'button': return <Button key={p.id} part={p} mark={mark} />;
         }
       })}
       {probes.red && <Probe h={probes.red} color="#e8413c" />}

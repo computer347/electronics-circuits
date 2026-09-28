@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { LedColor } from '../sim';
 import type { HoleId } from './layout';
 import type { BoardPart, BoardPartKind, BoardState } from './model';
+import { connectedGroup, occupiedHoles, translateParts, type MoveMode } from './move';
 
 export type Tool = 'select' | BoardPartKind | 'probe';
 
@@ -17,6 +18,12 @@ interface BenchStore extends BoardState {
   selected: string | null;
   probes: { red: HoleId | null; black: HoleId | null };
   showStrips: boolean;
+  /** Parts being dragged to a new spot (they follow the hovered hole). */
+  moving: { ids: string[]; anchor: HoleId; mode: MoveMode } | null;
+  /** Right-click menu for a part, at screen coordinates. */
+  menu: { partId: string; x: number; y: number; anchor: HoleId } | null;
+  /** Short message shown in the HUD (e.g. why a move can't be dropped). */
+  notice: string | null;
 
   setTool: (t: Tool) => void;
   setOhms: (o: number) => void;
@@ -31,6 +38,13 @@ interface BenchStore extends BoardState {
   markBurnt: (ids: string[]) => void;
   replaceLed: (id: string) => void;
   setShowStrips: (v: boolean) => void;
+  updatePart: (id: string, patch: Partial<BoardPart>) => void;
+  flipPart: (id: string) => void;
+  openMenu: (partId: string, x: number, y: number, anchor: HoleId) => void;
+  closeMenu: () => void;
+  startMove: (partId: string, anchor: HoleId, mode: MoveMode) => void;
+  cancelMove: () => void;
+  setNotice: (n: string | null) => void;
   load: (b: BoardState) => void;
   clear: () => void;
 }
@@ -55,8 +69,11 @@ export const useBench = create<BenchStore>((set, get) => ({
   selected: null,
   probes: { red: null, black: null },
   showStrips: true,
+  moving: null,
+  menu: null,
+  notice: null,
 
-  setTool: (tool) => set({ tool, pending: null }),
+  setTool: (tool) => set({ tool, pending: null, notice: null, moving: null }),
   setOhms: (ohms) => set({ ohms }),
   setLedColor: (ledColor) => set({ ledColor }),
   setVolts: (volts) => set((s) => ({ supply: { ...s.supply, volts } })),
@@ -65,6 +82,11 @@ export const useBench = create<BenchStore>((set, get) => ({
 
   clickHole: (h) => {
     const s = get();
+    if (s.moving) {
+      const r = translateParts(s.parts, s.moving.ids, s.moving.anchor, h, s.moving.mode);
+      if (!r.valid) return set({ notice: r.reason ?? "Can't drop there." });
+      return set({ parts: r.parts, moving: null, notice: null });
+    }
     if (s.tool === 'select') return set({ selected: null });
     if (s.tool === 'probe') {
       // first click places red, second black, then alternate
@@ -72,7 +94,8 @@ export const useBench = create<BenchStore>((set, get) => ({
       if (!red || (red && black)) return set({ probes: { red: h, black: red && black ? null : black } });
       return set({ probes: { red, black: h } });
     }
-    if (!s.pending) return set({ pending: h });
+    if (occupiedHoles(s.parts).has(h)) return set({ notice: 'That hole already has a leg in it.' });
+    if (!s.pending) return set({ pending: h, notice: null });
     if (s.pending === h) return set({ pending: null });
     const kind = s.tool;
     const id = nextId(kind, s.parts);
@@ -89,8 +112,19 @@ export const useBench = create<BenchStore>((set, get) => ({
   markBurnt: (ids) => set((s) => ({ parts: s.parts.map((p) => (ids.includes(p.id) ? { ...p, burnt: true } : p)) })),
   replaceLed: (id) => set((s) => ({ parts: s.parts.map((p) => (p.id === id ? { ...p, burnt: false } : p)) })),
   setShowStrips: (showStrips) => set({ showStrips }),
-  load: (b) => { counters = {}; set({ ...b, pending: null, selected: null, probes: { red: null, black: null } }); },
-  clear: () => { counters = {}; set({ parts: [], pending: null, selected: null, probes: { red: null, black: null } }); },
+  updatePart: (id, patch) => set((s) => ({ parts: s.parts.map((p) => (p.id === id ? { ...p, ...patch } : p)) })),
+  flipPart: (id) => set((s) => ({ parts: s.parts.map((p) => (p.id === id ? { ...p, h1: p.h2, h2: p.h1 } : p)) })),
+  openMenu: (partId, x, y, anchor) => set({ menu: { partId, x, y, anchor }, selected: partId }),
+  closeMenu: () => set({ menu: null }),
+  startMove: (partId, anchor, mode) => {
+    const s = get();
+    const ids = mode === 'group' ? connectedGroup(s.parts, partId) : [partId];
+    set({ moving: { ids, anchor, mode }, menu: null, pending: null, tool: 'select', notice: 'Click a hole to drop. Esc cancels.' });
+  },
+  cancelMove: () => set({ moving: null, notice: null }),
+  setNotice: (notice) => set({ notice }),
+  load: (b) => { counters = {}; set({ ...b, pending: null, selected: null, moving: null, menu: null, notice: null, probes: { red: null, black: null } }); },
+  clear: () => { counters = {}; set({ parts: [], pending: null, selected: null, moving: null, menu: null, notice: null, probes: { red: null, black: null } }); },
 }));
 
 export const BENCH_PRESETS: Record<string, BoardState> = {

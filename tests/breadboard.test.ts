@@ -137,3 +137,43 @@ describe('bench interactions', () => {
     expect(useBench.getState().probes).toEqual({ red: 'a1', black: 'b2' });
   });
 });
+
+describe('editing and moving on the bench', () => {
+  it('changes a value, flips an LED and group-moves through the store', () => {
+    const s = useBench.getState();
+    s.load(structuredClone({
+      supply: { volts: 9, on: true },
+      parts: [
+        { id: 'W1', kind: 'wire' as const, h1: 'T+:3', h2: 'j3' },
+        { id: 'R1', kind: 'resistor' as const, h1: 'g3', h2: 'g8', ohms: 330 },
+        { id: 'LED1', kind: 'led' as const, h1: 'h8', h2: 'h10', color: 'red' as const },
+        { id: 'W2', kind: 'wire' as const, h1: 'j10', h2: 'T-:9' },
+      ],
+    }));
+    useBench.getState().updatePart('R1', { ohms: 1000 });
+    expect(useBench.getState().parts.find((p) => p.id === 'R1')!.ohms).toBe(1000);
+
+    useBench.getState().flipPart('LED1');
+    expect(useBench.getState().parts.find((p) => p.id === 'LED1')).toMatchObject({ h1: 'h10', h2: 'h8' });
+    useBench.getState().flipPart('LED1');
+
+    useBench.getState().startMove('R1', 'g3', 'group');
+    expect(useBench.getState().moving!.ids.sort()).toEqual(['LED1', 'R1', 'W1', 'W2']);
+    useBench.getState().clickHole('g7');
+    const byId = Object.fromEntries(useBench.getState().parts.map((p) => [p.id, p]));
+    expect(byId.R1).toMatchObject({ h1: 'g7', h2: 'g12' });
+    expect(byId.W1).toMatchObject({ h1: 'T+:3', h2: 'j7' });
+    expect(useBench.getState().moving).toBeNull();
+  });
+
+  it('refuses to place a leg in a hole that is already used', () => {
+    const s = useBench.getState();
+    s.clear();
+    s.setTool('resistor');
+    s.clickHole('a1'); s.clickHole('a5');
+    s.setTool('wire');
+    s.clickHole('a5');
+    expect(useBench.getState().pending).toBeNull();
+    expect(useBench.getState().notice).toMatch(/already/);
+  });
+});

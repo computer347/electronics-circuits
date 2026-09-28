@@ -153,3 +153,18 @@ select { background: var(--bg); color: var(--signal); border: 1px solid var(--li
 button.primary { border-color: var(--signal); color: var(--signal); }
 .verdict { font-size: 16px; }
 .solution { font-size: 15px; }
+.stage-hud .notice { color: var(--amber); border-color: var(--amber); }
+.part-menu {
+  position: fixed; z-index: 20; min-width: 240px; padding: 6px; transform: translate(4px, 4px);
+  background: rgba(7, 16, 10, 0.97); border: 1px solid var(--signal-dim); border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 16px rgba(57, 255, 136, 0.15);
+}
+.part-menu-title { color: var(--text-dim); font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; padding: 6px 10px 4px; }
+.part-menu button { display: flex; justify-content: space-between; align-items: center; width: 100%; border: none; border-radius: 6px; text-align: left; padding: 8px 10px; font-size: 13px; }
+.part-menu button:hover { background: rgba(57, 255, 136, 0.1); }
+.part-menu button.danger:hover { color: var(--fault); background: rgba(255, 46, 136, 0.1); }
+.part-menu kbd { font-family: var(--mono); font-size: 11px; color: var(--text-dim); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
+.readouts td select { max-width: 150px; }
+.swatches { display: inline-flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.swatch { width: 20px; height: 20px; padding: 0; border-radius: 50%; border: 2px solid var(--line); }
+.swatch.active { border-color: var(--signal); box-shadow: 0 0 8px rgba(57, 255, 136, 0.6); }
