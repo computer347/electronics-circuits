@@ -28,9 +28,16 @@ import {
   type Waveform,
 } from './types';
 
-export const R_WIRE = 1e-6;
+/**
+ * Wires are 1 mΩ and every node has 10 pS to ground. The two are sized together: GMIN has to
+ * stay well above the rounding error of a wire's conductance (ulp(1e3) ≈ 1e-13), or a section
+ * joined only by wires and otherwise floating (two LEDs in series, both off) cancels to a
+ * singular matrix. 1 mΩ changes nothing you can measure (20 µV at 20 mA), and 10 pS leaks
+ * under 0.1 nA at 9 V.
+ */
+export const R_WIRE = 1e-3;
 export const R_DIODE_ON = 1e-3;
-export const GMIN = 1e-12;
+export const GMIN = 1e-11;
 const DIODE_TOL = 1e-9;
 
 export interface SolveOptions {

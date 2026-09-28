@@ -57,7 +57,17 @@ npm run build    # typecheck + production build
 
 **Exam drills** (`src/drills/`): nine question generators (Ohm's law, series and parallel, dividers, LED resistor sizing, RC charging, Wheatstone bridges, current sources) with random standard values, prefix-aware answer checking (`21.2m`, `4.7k`) and worked solutions. Tests check that the solver and each worked-solution formula agree on 60 random circuits per generator.
 
-**Campaign** (Play tab, `src/levels/`): the World 0 map and the first level, *First light* (light an LED with the right resistor). Levels are plain JSON (`src/levels/world0/`): a starting board, faults injected into it (`reverse`, `value`, `move-leg`, `remove`), a brief with a datasheet card, three hints, a spec the simulator checks, and a par. Pressing **Check** either passes the spec or says what is actually wrong ("Nothing else is plugged into column 12, where LED1's anode is…", "LED1 is in backwards…", "lit but dim: 7 mA"). The level's own parts are locked, LEDs that burn cost one of your spares, and stars follow the spec: ★ meet the spec, ★★ no hints and nothing burnt, ★★★ within par. Passing opens a debrief and a ride through your own circuit. Best stars and times are saved in the browser.
+**Campaign** (Play tab, `src/levels/`): World 0, five levels, each unlocked by passing the one before.
+
+| Level | Format | What you do |
+| --- | --- | --- |
+| 0–1 First light | Build | Pick the resistor that lights an LED at 10–25 mA without burning it |
+| 0–2 Wrong way round | Find the fault | An LED that stays dark: measure it (par 2 measurements), find it's backwards, flip it |
+| 0–3 Side by side | Build | Light two LEDs at ≥ 12 mA each on a 20 mA supply budget: only series fits |
+| 0–4 Split the difference | Build | A 3.0 V ± 0.2 V reference from 9 V with a divider drawing ≤ 1 mA |
+| 0–5 Slow blink | Build | Set an RC time constant of about 1 s and watch the charge curve on the scope |
+
+Levels are plain JSON (`src/levels/world0/`): a starting board, faults injected into it (`reverse`, `value`, `move-leg`, `remove`), locked and pinned parts, a brief with a datasheet card, three hints, a spec the simulator checks (`led-current`, `voltage`, `supply-current`, `charge-time` from a transient run, `no-burnt`), and a par. **Check** either passes the spec or says what's actually wrong ("LED1 is in backwards…", "the supply is delivering 29.8 mA, over the 20 mA budget…", "C1 reaches 63 % after 450 ms… too fast: τ = R × C"). Burnt LEDs cost a spare. Stars: ★ meet the spec, ★★ no hints and nothing burnt, ★★★ within par (checks, parts added, measurements). After a pass you can ride your circuit, then the Level Complete screen shows the score and leads to the next level or back to the map. Best stars and times are saved in the browser.
 
 **Breadboard bench** (`src/breadboard/`, Sandbox tab): a 3D half-size breadboard in React Three Fiber. Place jumper wires, resistors (with correct colour bands), LEDs, push buttons and batteries hole by hole, probe with a multimeter, and watch strips glow with their voltage. Breadboard wiring is modelled the real way (a–e / f–j strips, separate top and bottom rails), so classic mistakes like a resistor with both legs in one column show up. Overloaded LEDs burn out and stay dead until replaced. Click a part to change its value or colour; right-click to move it on its own or together with everything connected to it (wires stay plugged into the rails).
 

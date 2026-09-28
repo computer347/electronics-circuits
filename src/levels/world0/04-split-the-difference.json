@@ -1,0 +1,43 @@
+{
+  "id": "w0-04-split-the-difference",
+  "world": 0,
+  "number": 4,
+  "title": "Split the difference",
+  "format": "build",
+  "skills": ["voltage-divider", "ohms-law"],
+  "brief": {
+    "story": "A sensor board needs a 3 V reference and all the bench offers is 9 V. There's no regulator in the drawer, only resistors. The reference feeds a high-impedance input, so it should waste as little supply current as it can.",
+    "goal": "Make test point TP1 (column 14, the yellow link) sit at 3.0 V ± 0.2 V, drawing no more than 1 mA from the supply.",
+    "datasheet": {
+      "title": "Sensor input · TP1",
+      "rows": [
+        ["Needs", "3.0 V ± 0.2 V"],
+        ["Input current", "≈ 0 (high impedance)"],
+        ["Supply budget", "1 mA from 9 V"],
+        ["Where", "column 14"]
+      ]
+    }
+  },
+  "hints": [
+    "Two resistors in series from 9 V to ground share out the voltage. Put the top one from column 3 to column 14, and the bottom one from column 14 to column 25 (already wired to ground).",
+    "V(TP1) = 9 V × R_bottom / (R_top + R_bottom). For 3 V, the bottom resistor should be half the size of the top one.",
+    "The current is 9 V / (R_top + R_bottom), so keep the total above 9 kΩ. 6.8 kΩ over 3.3 kΩ gives 2.94 V at 0.89 mA."
+  ],
+  "board": {
+    "supply": { "volts": 9, "on": true },
+    "parts": [
+      { "id": "W1", "kind": "wire", "h1": "T+:3", "h2": "j3", "wireColor": "#e8413c" },
+      { "id": "TP1", "kind": "wire", "h1": "f14", "h2": "e14", "wireColor": "#f2c230" },
+      { "id": "W2", "kind": "wire", "h1": "j25", "h2": "T-:24", "wireColor": "#2f6fe0" }
+    ]
+  },
+  "locked": ["W1", "TP1", "W2"],
+  "tools": ["resistor", "wire", "probe"],
+  "resistorValues": [100, 220, 330, 470, 680, 1000, 1500, 2200, 3300, 4700, 6800, 10000, 15000, 22000, 33000, 47000, 68000, 100000],
+  "spec": [
+    { "kind": "voltage", "hole": "i14", "min": 2.8, "max": 3.2, "label": "TP1", "explain": "V(TP1) = 9 V × R_bottom / (R_top + R_bottom): too high means the top resistor is too small for the bottom one, too low the reverse." },
+    { "kind": "supply-current", "max": 0.001, "explain": "A divider's current is 9 V / (R_top + R_bottom). Keep the same ratio with bigger resistors." }
+  ],
+  "par": { "checks": 1, "partsAdded": 2 },
+  "debrief": "A voltage divider shares the supply in proportion to resistance: the bottom resistor gets R_bottom / (R_top + R_bottom) of it. It works here because the sensor input draws almost nothing. Hang something on TP1 that draws real current and the voltage sags, because that load sits in parallel with the bottom resistor. That's why dividers make references and level shifters, never power supplies."
+}

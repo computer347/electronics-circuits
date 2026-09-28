@@ -6,6 +6,10 @@ import { HOLE_BY_ID } from '../breadboard/layout';
 import { applyFaults } from './faults';
 import type { LevelDef } from './types';
 import firstLight from './world0/01-first-light.json';
+import wrongWayRound from './world0/02-wrong-way-round.json';
+import sideBySide from './world0/03-side-by-side.json';
+import splitTheDifference from './world0/04-split-the-difference.json';
+import slowBlink from './world0/05-slow-blink.json';
 
 export class LevelError extends Error {}
 
@@ -22,20 +26,22 @@ export function parseLevel(raw: unknown): LevelDef {
     ids.add(p.id);
     for (const h of [p.h1, p.h2]) if (!HOLE_BY_ID.has(h)) fail(`${p.id} uses a hole that doesn't exist: ${h}`);
   }
-  for (const id of l.locked ?? []) if (!ids.has(id)) fail(`locked part ${id} isn't on the board`);
+  for (const id of [...(l.locked ?? []), ...(l.pinned ?? [])]) if (!ids.has(id)) fail(`locked part ${id} isn't on the board`);
   for (const t of l.tools) if (!TOOLS.has(t)) fail(`unknown tool ${t}`);
   for (const c of l.spec) {
     if (c.kind === 'led-current' && !ids.has(c.part)) fail(`spec refers to missing part ${c.part}`);
     if (c.kind === 'led-current' && !(c.min < c.max)) fail(`spec window for ${c.part} is empty`);
     if (c.kind === 'voltage' && (!HOLE_BY_ID.has(c.hole) || (c.ref && !HOLE_BY_ID.has(c.ref)))) fail('spec refers to a missing hole');
+    if (c.kind === 'charge-time' && !l.board.parts.some((p) => p.id === c.part && p.kind === 'capacitor')) fail(`charge-time refers to ${c.part}, which isn't a capacitor`);
   }
   if (!l.spec.length) fail('no spec: nothing to pass');
+  for (const h of [l.scope?.ch1, l.scope?.ch2]) if (h && !HOLE_BY_ID.has(h)) fail(`scope probe on a missing hole: ${h}`);
   applyFaults(l.board, l.faults); // throws if a fault doesn't fit the board
   return l;
 }
 
-/** World 0, in order. Levels 2–5 slot in here as they're written. */
-export const WORLD0: LevelDef[] = [parseLevel(firstLight)];
+/** World 0, in order. */
+export const WORLD0: LevelDef[] = [firstLight, wrongWayRound, sideBySide, splitTheDifference, slowBlink].map(parseLevel);
 
 /** The five World 0 slots from the spec, so the map can show what's coming. */
 export const WORLD0_PLAN = [

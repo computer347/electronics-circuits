@@ -1,0 +1,45 @@
+{
+  "id": "w0-02-wrong-way-round",
+  "world": 0,
+  "number": 2,
+  "title": "Wrong way round",
+  "format": "find-fault",
+  "skills": ["diode.polarity", "multimeter.voltage", "debugging"],
+  "brief": {
+    "story": "A classmate built this status light on the 5 V rail and swears the wiring is right. It stays dark. Nothing is burnt and the supply is on. Something on the board is wrong: measure before you touch anything.",
+    "goal": "Find out why LED1 stays dark and fix it, so it lights at 10–25 mA. Par is 2 multimeter measurements.",
+    "datasheet": {
+      "title": "LED1 · red, 5 mm",
+      "rows": [
+        ["Anode (+)", "long leg"],
+        ["Cathode (−)", "short leg, flat side"],
+        ["Forward voltage", "2.0 V"],
+        ["Max reverse voltage", "5 V"]
+      ]
+    }
+  },
+  "hints": [
+    "Put the black probe on ground (the blue top rail) and the red probe on one leg of the LED, then on the other. Two measurements tell you almost everything.",
+    "A lit LED has its anode about 2 V above its cathode. Here the leg fed by the resistor sits at the full 5 V and the leg wired to ground at 0 V, and no current flows: the LED is blocking.",
+    "It's in backwards. Right-click LED1 and choose Flip polarity (or select it and press Flip)."
+  ],
+  "board": {
+    "supply": { "volts": 5, "on": true },
+    "parts": [
+      { "id": "W1", "kind": "wire", "h1": "T+:3", "h2": "j3", "wireColor": "#e8413c" },
+      { "id": "R1", "kind": "resistor", "h1": "g3", "h2": "g12", "ohms": 150 },
+      { "id": "LED1", "kind": "led", "h1": "h12", "h2": "h14", "color": "red" },
+      { "id": "W2", "kind": "wire", "h1": "j14", "h2": "T-:12", "wireColor": "#2f6fe0" }
+    ]
+  },
+  "faults": [{ "kind": "reverse", "part": "LED1" }],
+  "locked": ["W1", "R1", "W2"],
+  "pinned": ["LED1"],
+  "tools": ["probe"],
+  "spec": [
+    { "kind": "led-current", "part": "LED1", "min": 0.01, "max": 0.025 },
+    { "kind": "no-burnt" }
+  ],
+  "par": { "checks": 1, "partsAdded": 0, "measurements": 2 },
+  "debrief": "An LED is a diode: current only flows from the anode (long leg) to the cathode (flat side). Put in backwards it blocks, and the whole supply voltage ends up across it the wrong way. That's why this one sat on the 5 V rail: a real LED can be damaged by more than about 5 V in reverse. Two measurements against ground found it: 5 V on the leg that should have been low, 0 V on the one that should have been high."
+}

@@ -345,3 +345,28 @@ select:disabled { opacity: 0.6; }
 .ride-stop-actions button { padding: 6px 12px; }
 .ride-stop-actions button.primary { background: var(--signal); color: var(--bg); border-color: var(--signal); font-weight: 600; }
 .ride-stop-actions kbd { font-family: var(--mono); font-size: 10px; border: 1px solid currentColor; border-radius: 3px; padding: 0 4px; margin-left: 4px; opacity: 0.7; }
+
+/* ---------- level complete ---------- */
+.complete-backdrop { position: absolute; inset: 0; z-index: 8; display: grid; place-items: center; padding: 16px; background: radial-gradient(ellipse at center, rgba(3, 12, 7, 0.82), rgba(3, 6, 4, 0.94)); animation: fade-in 0.35s ease-out; }
+@keyframes fade-in { from { opacity: 0; } }
+.complete { width: min(520px, 100%); text-align: center; padding: 28px 28px 22px; border: 1px solid var(--signal-dim); border-radius: 14px; background: rgba(5, 12, 8, 0.96); box-shadow: 0 0 60px rgba(57, 255, 136, 0.15), 0 30px 80px rgba(0, 0, 0, 0.7); animation: card-on 0.45s ease-out; max-height: 100%; overflow-y: auto; }
+.complete-title { font-family: var(--display); font-size: clamp(30px, 4vw, 42px); margin: 6px 0 4px; color: var(--signal); text-shadow: 0 0 24px rgba(57, 255, 136, 0.45); }
+.stars-xl { font-size: 54px; display: block; margin: 6px 0 4px; letter-spacing: 0.18em; }
+.stars-xl .on { animation: star-on 0.5s ease-out backwards; }
+.stars-xl .on:nth-child(2) { animation-delay: 0.18s; }
+.stars-xl .on:nth-child(3) { animation-delay: 0.36s; }
+@keyframes star-on { from { opacity: 0; transform: scale(2.2); filter: brightness(3); } }
+.star-rules.center { display: inline-block; text-align: left; margin: 4px auto 12px; }
+.complete-stats { max-width: 300px; margin: 0 auto 10px; font-size: 13px; }
+.complete-best { display: inline-block; margin: 4px 0 8px; padding: 3px 10px; border: 1px solid var(--amber); color: var(--amber); border-radius: 999px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; }
+.complete-world { color: var(--amber); font-size: 13px; }
+.complete-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 16px; }
+.complete-actions button { padding: 8px 16px; }
+.complete-actions button.primary { background: var(--signal); color: var(--bg); border-color: var(--signal); font-weight: 600; }
+.complete-actions button:disabled { opacity: 0.5; cursor: default; }
+.ride-stop-actions button.finish, .ride-extra button { border-color: var(--amber); color: var(--amber); }
+.ride-extra { position: absolute; z-index: 4; top: 56px; left: 16px; }
+.ride-extra button { background: rgba(3, 8, 5, 0.9); padding: 6px 12px; }
+@media (prefers-reduced-motion: reduce) { .complete, .complete-backdrop, .stars-xl .on { animation: none; } }
+.datasheet td { white-space: normal; }
+.datasheet th { white-space: nowrap; padding-right: 10px; }

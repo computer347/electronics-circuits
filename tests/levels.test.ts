@@ -104,7 +104,7 @@ describe('level 1: First light', () => {
 });
 
 describe('stars', () => {
-  const base = { hintsUsed: 0, burnt: 0, checks: 1, partsAdded: 1, seconds: 60 };
+  const base = { hintsUsed: 0, burnt: 0, checks: 1, partsAdded: 1, seconds: 60, measurements: 0 };
   it('gold for a clean first-try pass, silver over par, bronze with hints or burns', () => {
     expect(stars(L1, base)).toBe(3);
     expect(stars(L1, { ...base, checks: 2 })).toBe(2);

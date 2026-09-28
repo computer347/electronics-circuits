@@ -230,3 +230,18 @@ describe('transient (capacitors)', () => {
     near(r.nodeVoltages.out!, 5);
   });
 });
+
+describe('numerical robustness', () => {
+  it('solves two LEDs in series joined by a wire (a wire-only island while both are off)', () => {
+    const r = solve(parseNetlist(`
+      V1 vcc 0 9
+      R1 vcc a 330
+      LED1 a b red
+      W1 b c
+      LED2 c 0 red
+    `));
+    expect(r.ok).toBe(true);
+    expect(r.currents.LED1).toBeCloseTo(5 / 330, 5);
+    expect(r.currents.LED2).toBeCloseTo(5 / 330, 5);
+  });
+});

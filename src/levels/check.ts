@@ -3,7 +3,8 @@
  * actually wrong in the circuit ("LED1 is in backwards"), never just "wrong".
  */
 import { hole, type HoleId } from '../breadboard/layout';
-import type { BoardAnalysis, BoardPart, BoardState } from '../breadboard/model';
+import { boardToCircuit, SUPPLY_ID, type BoardAnalysis, type BoardPart, type BoardState } from '../breadboard/model';
+import { Simulator, solve } from '../sim';
 import { formatSI } from '../lib/units';
 import type { LevelDef, SpecCheck } from './types';
 
@@ -113,6 +114,35 @@ function checkOne(c: SpecCheck, board: BoardState, analysis: BoardAnalysis): { l
         why: ok ? undefined : { message: `${label} is ${formatSI(v, 'V')}; it should be ${range(c.min, c.max, 'V')}.` },
       };
     }
+    case 'supply-current': {
+      const i = r.ok && board.supply.on ? Math.abs(r.currents[SUPPLY_ID] ?? 0) : 0;
+      const ok = r.ok && i <= c.max && (c.min === undefined || i >= c.min);
+      const label = c.min !== undefined ? `Supply current ${range(c.min, c.max, 'A')}` : `Supply current at most ${formatSI(c.max, 'A')}`;
+      return {
+        line: { ok, label, measured: mA(i) },
+        why: ok ? undefined : {
+          message: i > c.max
+            ? `The supply is delivering ${mA(i)}, over the ${formatSI(c.max, 'A')} budget.`
+            : `The supply is delivering only ${mA(i)}.`,
+        },
+      };
+    }
+    case 'charge-time': {
+      const t = chargeTime(board, c.part);
+      const ok = t.seconds !== undefined && t.seconds >= c.min && t.seconds <= c.max;
+      const sec = (x: number) => formatSI(x, 's');
+      return {
+        line: { ok, label: `${c.part} reaches 63 % in ${range(c.min, c.max, 's')}`, measured: t.seconds !== undefined ? sec(t.seconds) : t.final < 0.1 ? 'never charges' : 'over 20 s' },
+        why: ok ? undefined : t.seconds === undefined && t.final < 0.1
+          ? { part: c.part, message: `${c.part} never charges: even with the button held there's no path from the supply to its + leg.` }
+          : {
+            part: c.part,
+            message: t.seconds === undefined
+              ? `${c.part} is charging far too slowly (not at 63 % after 20 s).`
+              : `${c.part} reaches 63 % of its final ${formatSI(t.final, 'V')} after ${sec(t.seconds)}. The target is ${range(c.min, c.max, 's')}. ${t.seconds < c.min ? 'Too fast' : 'Too slow'}: the time constant is τ = R × C.`,
+          },
+      };
+    }
     case 'no-burnt': {
       const burnt = board.parts.filter((p) => p.burnt).map((p) => p.id);
       return {
@@ -123,14 +153,52 @@ function checkOne(c: SpecCheck, board: BoardState, analysis: BoardAnalysis): { l
   }
 }
 
+/**
+ * One time constant, measured the way you would on the bench: start with the capacitor empty,
+ * hold every button down, and time how long it takes to reach 63 % of where it settles.
+ */
+export function chargeTime(board: BoardState, capId: string, maxSeconds = 20): { seconds?: number; final: number } {
+  const held: BoardState = { ...board, parts: board.parts.map((p) => (p.kind === 'button' ? { ...p, pressed: true } : p)) };
+  const { circuit, nodeOf } = boardToCircuit(held);
+  const cap = held.parts.find((p) => p.id === capId);
+  if (!cap) return { final: 0 };
+  const v = (r: { nodeVoltages: Record<string, number> }) => (r.nodeVoltages[nodeOf(cap.h1)] ?? 0) - (r.nodeVoltages[nodeOf(cap.h2)] ?? 0);
+  const dc = solve(circuit);
+  if (!dc.ok) return { final: 0 };
+  const final = v(dc);
+  if (Math.abs(final) < 0.1) return { final };
+  const target = 0.632 * final;
+  const sim = new Simulator(circuit);
+  const dt = 2e-3;
+  let prev = 0, t = 0;
+  while (t < maxSeconds) {
+    const r = sim.step(dt);
+    if (!r.ok) return { final };
+    t = r.time;
+    const now = v(r);
+    if (Math.abs(now) >= Math.abs(target)) {
+      const f = (target - prev) / (now - prev || 1);
+      return { seconds: t - dt + f * dt, final };
+    }
+    prev = now;
+  }
+  return { final };
+}
+
 export function checkLevel(level: LevelDef, board: BoardState, analysis: BoardAnalysis): CheckResult {
-  const results = level.spec.map((c) => checkOne(c, board, analysis));
+  const results = level.spec.map((c) => {
+    const x = checkOne(c, board, analysis);
+    if (!x.line.ok && c.explain) x.why = { ...(x.why ?? { message: '' }), message: `${x.why?.message ?? ''} ${c.explain}`.trim() };
+    return x;
+  });
   const pass = results.every((x) => x.line.ok);
   return { pass, lines: results.map((x) => x.line), diagnosis: results.find((x) => !x.line.ok && x.why)?.why };
 }
 
 export interface RunStats {
   hintsUsed: number;
+  /** Multimeter measurements made. */
+  measurements: number;
   burnt: number;
   checks: number;
   partsAdded: number;
@@ -140,7 +208,9 @@ export interface RunStats {
 /** 1 = bronze (spec met), 2 = silver (no hints, nothing burnt), 3 = gold (silver, within par). */
 export function stars(level: LevelDef, s: RunStats): 1 | 2 | 3 {
   if (s.hintsUsed > 0 || s.burnt > 0) return 1;
-  const withinPar = s.checks <= level.par.checks && (level.par.partsAdded === undefined || s.partsAdded <= level.par.partsAdded);
+  const withinPar = s.checks <= level.par.checks
+    && (level.par.partsAdded === undefined || s.partsAdded <= level.par.partsAdded)
+    && (level.par.measurements === undefined || s.measurements <= level.par.measurements);
   return withinPar ? 3 : 2;
 }
 

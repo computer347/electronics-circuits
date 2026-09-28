@@ -1,0 +1,47 @@
+{
+  "id": "w0-03-side-by-side",
+  "world": 0,
+  "number": 3,
+  "title": "Side by side",
+  "format": "build",
+  "skills": ["series-parallel", "kvl", "ohms-law"],
+  "brief": {
+    "story": "The bench needs two indicator LEDs, but this corner's 9 V supply is budgeted at 20 mA. Both LEDs still have to be clearly lit.",
+    "goal": "Light LED1 and LED2 at 12 mA or more each, while the supply delivers no more than 20 mA.",
+    "datasheet": {
+      "title": "LED1, LED2 · red, 5 mm",
+      "rows": [
+        ["Forward voltage (each)", "2.0 V"],
+        ["Typical current", "20 mA"],
+        ["Max continuous current", "25 mA"],
+        ["Supply budget", "20 mA"]
+      ]
+    }
+  },
+  "hints": [
+    "In parallel, each LED takes its own current and the supply pays for both. In series, the same current flows through one LED and then the other.",
+    "Chain them: supply column 3 → resistor → LED1's anode (column 10). Then a jumper from LED1's cathode (column 12) to LED2's anode (column 16). LED2's cathode is already wired to ground.",
+    "In series the two LEDs take 2.0 V each, so the resistor gets 9 − 2 − 2 = 5 V. For 15 mA: R = 5 V / 0.015 A ≈ 330 Ω."
+  ],
+  "board": {
+    "supply": { "volts": 9, "on": true },
+    "parts": [
+      { "id": "W1", "kind": "wire", "h1": "T+:3", "h2": "j3", "wireColor": "#e8413c" },
+      { "id": "LED1", "kind": "led", "h1": "h10", "h2": "h12", "color": "red" },
+      { "id": "LED2", "kind": "led", "h1": "h16", "h2": "h18", "color": "red" },
+      { "id": "W2", "kind": "wire", "h1": "j18", "h2": "T-:17", "wireColor": "#2f6fe0" }
+    ]
+  },
+  "locked": ["W1", "LED1", "LED2", "W2"],
+  "tools": ["resistor", "wire", "probe"],
+  "resistorValues": [100, 150, 220, 270, 330, 390, 470, 560, 680, 1000],
+  "spares": { "led": 2 },
+  "spec": [
+    { "kind": "led-current", "part": "LED1", "min": 0.012, "max": 0.025 },
+    { "kind": "led-current", "part": "LED2", "min": 0.012, "max": 0.025 },
+    { "kind": "supply-current", "max": 0.02, "explain": "Side by side, each LED needs its own current and the supply has to deliver the sum. In series, one current passes through both." },
+    { "kind": "no-burnt" }
+  ],
+  "par": { "checks": 1, "partsAdded": 2 },
+  "debrief": "In series, one current does both jobs: the 15 mA through LED1 is the same 15 mA through LED2, so the supply only delivers 15 mA. The voltages add up instead: 2 V + 2 V across the LEDs and 5 V across the resistor make the supply's 9 V. In parallel it's the other way round: every branch gets the same voltage, and the currents add. That's the whole difference between series and parallel."
+}

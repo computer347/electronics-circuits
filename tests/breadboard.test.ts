@@ -177,3 +177,23 @@ describe('editing and moving on the bench', () => {
     expect(useBench.getState().notice).toMatch(/already/);
   });
 });
+
+describe('multimeter probes', () => {
+  it('keep black on its reference while red moves, and count measurements', () => {
+    const s = () => useBench.getState();
+    s().clear();
+    s().setTool('probe');
+    const m0 = s().measurements;
+    s().clickHole('a1');
+    s().clickHole('T-:3');
+    expect(s().probes).toEqual({ red: 'a1', black: 'T-:3' });
+    s().clickHole('b5');
+    expect(s().probes).toEqual({ red: 'b5', black: 'T-:3' });
+    expect(s().measurements - m0).toBe(2);
+    s().clickHole('T-:3'); // lift black
+    expect(s().probes).toEqual({ red: 'b5', black: null });
+    s().clickHole('T-:9');
+    expect(s().probes).toEqual({ red: 'b5', black: 'T-:9' });
+    expect(s().measurements - m0).toBe(3);
+  });
+});

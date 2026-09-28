@@ -83,10 +83,14 @@ interface BenchStore extends BoardState {
   load: (b: BoardState & BenchExtras) => void;
   /** Level rules: parts the player can't touch, and how many spare LEDs they have (null = unlimited). */
   locked: string[];
+  /** Parts the player can flip or edit but not move or remove (e.g. the suspect in a find-the-fault level). */
+  pinned: string[];
   spares: number | null;
+  /** Multimeter measurements made (both probes placed) since the page loaded. */
+  measurements: number;
   /** LEDs burnt out since the page loaded (levels diff this to count burns). */
   burnEvents: number;
-  setRules: (rules: { locked?: string[]; spares?: number | null }) => void;
+  setRules: (rules: { locked?: string[]; pinned?: string[]; spares?: number | null }) => void;
   isLocked: (id: string) => boolean;
   clear: () => void;
 }
@@ -135,7 +139,9 @@ export const useBench = create<BenchStore>((set, get) => ({
   menu: null,
   notice: null,
   locked: [],
+  pinned: [],
   spares: null,
+  measurements: 0,
   burnEvents: 0,
 
   setTool: (tool) => set({ tool, pending: null, notice: null, moving: null }),
@@ -167,9 +173,15 @@ export const useBench = create<BenchStore>((set, get) => ({
     if (s.tool === 'select') return set({ selected: null });
     if (s.tool === 'probe') {
       // first click places red, second black, then alternate
+      // Red first, then black. After that a click moves the red probe (black stays on your
+      // reference, usually ground), and clicking a probe's own hole lifts it off.
+      // A measurement is counted each time both probes end up on the board.
       const { red, black } = s.probes;
-      if (!red || (red && black)) return set({ probes: { red: h, black: red && black ? null : black } });
-      return set({ probes: { red, black: h } });
+      if (h === red) return set({ probes: { red: null, black } });
+      if (h === black) return set({ probes: { red, black: null } });
+      if (!red) return set({ probes: { red: h, black }, measurements: s.measurements + (black ? 1 : 0) });
+      if (!black) return set({ probes: { red, black: h }, measurements: s.measurements + 1 });
+      return set({ probes: { red: h, black }, measurements: s.measurements + 1 });
     }
     if (s.tool === 'scope') {
       // clip CH1, then CH2, then alternate; clicking a probe's own hole takes it off
@@ -194,7 +206,7 @@ export const useBench = create<BenchStore>((set, get) => ({
   },
 
   select: (selected) => set({ selected }),
-  removeSelected: () => set((s) => (s.selected && s.locked.includes(s.selected)
+  removeSelected: () => set((s) => (s.selected && (s.locked.includes(s.selected) || s.pinned.includes(s.selected))
     ? { notice: 'That part belongs to the level, so it stays put.' }
     : { parts: s.parts.filter((p) => p.id !== s.selected), selected: null })),
   togglePress: (id, pressed) => set((s) => ({ parts: s.parts.map((p) => (p.id === id ? { ...p, pressed } : p)) })),
@@ -223,7 +235,7 @@ export const useBench = create<BenchStore>((set, get) => ({
   startMove: (partId, anchor, mode) => {
     const s = get();
     const ids = mode === 'group' ? connectedGroup(s.parts, partId) : [partId];
-    if (ids.some((id) => s.locked.includes(id))) {
+    if (ids.some((id) => s.locked.includes(id) || s.pinned.includes(id))) {
       return set({ menu: null, notice: mode === 'group' ? "That group includes the level's own parts, which stay put. Move the part on its own." : 'That part belongs to the level, so it stays put.' });
     }
     set({ moving: { ids, anchor, mode }, menu: null, pending: null, tool: 'select', notice: 'Click a hole to drop. Esc cancels.' });
@@ -233,15 +245,15 @@ export const useBench = create<BenchStore>((set, get) => ({
   load: ({ scope, scopeSetup: _setup, ...b }) => {
     counters = {};
     set({
-      locked: [], spares: null,
+      locked: [], pinned: [], spares: null,
       ...b, pending: null, selected: null, moving: null, menu: null, notice: null, probes: { red: null, black: null },
       scopeProbes: { ch1: scope?.ch1 ?? null, ch2: scope?.ch2 ?? null }, scopeNext: 'ch1',
       ...(scope ? { scopeOpen: true } : {}),
     });
   },
-  setRules: ({ locked, spares }) => set((s) => ({ locked: locked ?? s.locked, spares: spares === undefined ? s.spares : spares })),
+  setRules: ({ locked, pinned, spares }) => set((s) => ({ locked: locked ?? s.locked, pinned: pinned ?? s.pinned, spares: spares === undefined ? s.spares : spares })),
   isLocked: (id) => get().locked.includes(id),
-  clear: () => { counters = {}; set({ locked: [], spares: null, parts: [], pending: null, selected: null, moving: null, menu: null, notice: null, probes: { red: null, black: null }, scopeProbes: { ch1: null, ch2: null }, scopeNext: 'ch1' }); },
+  clear: () => { counters = {}; set({ locked: [], pinned: [], spares: null, parts: [], pending: null, selected: null, moving: null, menu: null, notice: null, probes: { red: null, black: null }, scopeProbes: { ch1: null, ch2: null }, scopeNext: 'ch1' }); },
 }));
 
 export const BENCH_PRESETS: Record<string, BoardState & BenchExtras> = {

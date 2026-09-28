@@ -99,7 +99,7 @@ function voltageParts(a: BoardAnalysis, h1: string, h2: string): Record<string, 
 function instruction(tool: Tool, pending: boolean): string {
   switch (tool) {
     case 'select': return 'Click a part to edit it, right-click to move it. Hold a push button to press it. Drag to orbit.';
-    case 'probe': return 'Click a hole for the red probe, then another for the black probe.';
+    case 'probe': return 'Click a hole for the red probe, then one for the black. After that, clicks move the red probe; click a probe to lift it off.';
     case 'battery': return pending ? 'Now click the hole for the − terminal.' : 'Click the hole for the + terminal.';
     case 'capacitor': return pending ? 'Now the second leg (the − leg, by the stripe, for electrolytics).' : 'Click the first leg (the + leg for electrolytics, 1 µF and up).';
     case 'generator': return pending ? 'Now the COM clip (usually ground).' : 'Click the hole for the signal lead.';
@@ -126,6 +126,8 @@ export interface BenchMode {
   actions?: ReactNode;
   /** Shown at the top of the right panel (story, datasheet, hints). */
   side?: ReactNode;
+  /** Extra buttons on the ride's stop cards (e.g. "Finish level" once it's passed). */
+  rideExtra?: ReactNode;
   /** Shown over the 3D stage (the result card). */
   overlay?: ReactNode;
 }
@@ -201,6 +203,8 @@ export function BenchView({ mode }: { mode?: BenchMode } = {}) {
   const selLocked = !!sel && s.locked.includes(sel.id);
   const menuPart = s.menu ? s.parts.find((p) => p.id === s.menu!.partId) : undefined;
   const menuLocked = !!menuPart && s.locked.includes(menuPart.id);
+  const menuPinned = !!menuPart && s.pinned.includes(menuPart.id);
+  const selPinned = !!sel && s.pinned.includes(sel.id);
   const groupSize = menuPart ? connectedGroup(s.parts, menuPart.id).length : 0;
   const r = shown;
   const meter = (() => {
@@ -336,9 +340,11 @@ export function BenchView({ mode }: { mode?: BenchMode } = {}) {
             <div className="ride-stop-actions">
               <button className="primary" onClick={s.rideContinue} autoFocus>Go ▶ <kbd>Space</kbd></button>
               <button onClick={() => s.setRideStep(false)}>Ride without stops <kbd>A</kbd></button>
+              {mode?.rideExtra}
             </div>
           </div>
         )}
+        {s.view === 'ride' && !s.rideStop && mode?.rideExtra && <div className="ride-extra">{mode.rideExtra}</div>}
         {s.view === 'ride' && !s.rideStop && s.rideInfo && (
           <div className="ride-hud">
             <div className="ride-title">{s.rideInfo.title}</div>
@@ -360,8 +366,8 @@ export function BenchView({ mode }: { mode?: BenchMode } = {}) {
           <div className="part-menu" style={{ left: s.menu.x, top: s.menu.y }} role="menu">
             <div className="part-menu-title">{menuPart.id}</div>
             {menuLocked ? <p className="part-menu-note">Part of the level: it stays where it is.</p> : <>
-            <button role="menuitem" onClick={() => s.startMove(menuPart.id, s.menu!.anchor, 'single')}>Move <kbd>M</kbd></button>
-            {groupSize > 1 && (
+            {!menuPinned && <button role="menuitem" onClick={() => s.startMove(menuPart.id, s.menu!.anchor, 'single')}>Move <kbd>M</kbd></button>}
+            {groupSize > 1 && !menuPinned && (
               <button role="menuitem" onClick={() => s.startMove(menuPart.id, s.menu!.anchor, 'group')}>
                 Move with connected parts ({groupSize}) <kbd>⇧M</kbd>
               </button>
@@ -372,7 +378,7 @@ export function BenchView({ mode }: { mode?: BenchMode } = {}) {
               </button>
             )}
             <button role="menuitem" onClick={() => { s.select(menuPart.id); s.closeMenu(); }}>Edit value…</button>
-            <button role="menuitem" className="danger" onClick={() => { s.select(menuPart.id); s.removeSelected(); s.closeMenu(); }}>Delete <kbd>Del</kbd></button>
+            {!menuPinned && <button role="menuitem" className="danger" onClick={() => { s.select(menuPart.id); s.removeSelected(); s.closeMenu(); }}>Delete <kbd>Del</kbd></button>}
             </>}
           </div>
         )}
@@ -465,9 +471,9 @@ export function BenchView({ mode }: { mode?: BenchMode } = {}) {
             <div className="presets" style={{ marginTop: 12 }}>
               {sel.burnt && <button onClick={() => s.replaceLed(sel.id)}>Replace LED{s.spares !== null ? ` (${s.spares} spare${s.spares === 1 ? '' : 's'})` : ''}</button>}
               {!selLocked && <>
-                <button onClick={() => s.startMove(sel.id, sel.h1, 'single')}>Move (M)</button>
+                {!selPinned && <button onClick={() => s.startMove(sel.id, sel.h1, 'single')}>Move (M)</button>}
                 {(sel.kind === 'led' || isElectrolytic(sel)) && <button onClick={() => s.flipPart(sel.id)}>Flip</button>}
-                <button onClick={s.removeSelected}>Remove (Del)</button>
+                {!selPinned && <button onClick={s.removeSelected}>Remove (Del)</button>}
               </>}
             </div>
           </>

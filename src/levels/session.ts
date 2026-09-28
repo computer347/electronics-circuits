@@ -28,9 +28,12 @@ interface Session {
   hintsShown: number;
   checks: number;
   burnsAtStart: number;
+  measurementsAtStart: number;
   last: Attempt | null;
   /** Result card open over the bench. */
   showResult: boolean;
+  /** The Level Complete screen is showing (after a pass). */
+  complete: boolean;
   stash: BoardState | null;
   start: (id: string) => void;
   restart: () => void;
@@ -38,6 +41,10 @@ interface Session {
   showHint: () => void;
   check: () => Attempt | null;
   closeResult: () => void;
+  /** Show the Level Complete screen (only after a pass). */
+  finish: () => void;
+  /** Hide it and keep tinkering with the passed circuit. */
+  closeComplete: () => void;
 }
 
 export const useSession = create<Session>((set, get) => ({
@@ -47,8 +54,10 @@ export const useSession = create<Session>((set, get) => ({
   hintsShown: 0,
   checks: 0,
   burnsAtStart: 0,
+  measurementsAtStart: 0,
   last: null,
   showResult: false,
+  complete: false,
   stash: null,
 
   start: (id) => {
@@ -56,15 +65,17 @@ export const useSession = create<Session>((set, get) => ({
     if (!level) return;
     const bench = useBench.getState();
     const stash = get().levelId ? get().stash : { supply: bench.supply, parts: bench.parts };
-    bench.load(structuredClone(startingBoard(level)));
-    bench.setRules({ locked: level.locked ?? [], spares: level.spares?.led ?? null });
+    bench.load({ ...structuredClone(startingBoard(level)), scope: { ch1: level.scope?.ch1, ch2: level.scope?.ch2 } });
+    bench.setRules({ locked: level.locked ?? [], pinned: level.pinned ?? [], spares: level.spares?.led ?? null });
     bench.setView('build');
     bench.setScopeOpen(level.tools.includes('scope'));
+    if (level.scope?.setup) useScope.getState().apply(level.scope.setup);
     if (level.resistorValues && !level.resistorValues.includes(bench.ohms)) bench.setOhms(level.resistorValues[0]!);
     useScope.getState().setRunning(true);
     set({
       levelId: id, startedAt: Date.now(), finishedIn: null, hintsShown: 0, checks: 0,
-      burnsAtStart: useBench.getState().burnEvents, last: null, showResult: false, stash,
+      burnsAtStart: useBench.getState().burnEvents, measurementsAtStart: useBench.getState().measurements,
+      last: null, showResult: false, complete: false, stash,
     });
   },
 
@@ -76,7 +87,7 @@ export const useSession = create<Session>((set, get) => ({
     const bench = useBench.getState();
     bench.load(stash ?? { supply: { volts: 9, on: true }, parts: [] });
     bench.setScopeOpen(true);
-    set({ levelId: null, stash: null, last: null, showResult: false });
+    set({ levelId: null, stash: null, last: null, showResult: false, complete: false });
   },
 
   showHint: () => {
@@ -95,6 +106,7 @@ export const useSession = create<Session>((set, get) => ({
     const seconds = get().finishedIn ?? Math.round((Date.now() - get().startedAt) / 1000);
     const stats: RunStats = {
       hintsUsed: get().hintsShown,
+      measurements: bench.measurements - get().measurementsAtStart,
       burnt: bench.burnEvents - get().burnsAtStart,
       checks,
       partsAdded: partsAdded(level, board),
@@ -112,6 +124,12 @@ export const useSession = create<Session>((set, get) => ({
   },
 
   closeResult: () => set({ showResult: false }),
+  finish: () => {
+    if (!get().last?.check.pass) return;
+    useBench.getState().setView('build');
+    set({ showResult: false, complete: true });
+  },
+  closeComplete: () => set({ complete: false }),
 }));
 
 export const activeLevel = (): LevelDef | undefined => {

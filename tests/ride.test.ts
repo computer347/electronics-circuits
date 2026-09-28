@@ -31,7 +31,8 @@ describe('step-by-step ride', () => {
     expect(led.body).toMatch(/gives up 2 V as red light/);
     const src = describeStop(edge('SUPPLY'), undefined, analysis, 1, false);
     expect(src.stop.title).toBe('Bench supply');
-    expect(src.entry).toMatchObject({ kind: 'gain', volts: 9 });
+    expect(src.entry.kind).toBe('gain');
+    expect(src.entry.volts).toBeCloseTo(9, 3);
     expect(describeStop(edge('SUPPLY'), undefined, analysis, 1, true).stop.body).toMatch(/lifts every bit of charge 9 V uphill/);
   });
 

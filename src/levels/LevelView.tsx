@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { BenchView } from '../breadboard/BenchView';
 import { useBench } from '../breadboard/store';
 import { WORLD0, WORLD0_PLAN } from '.';
+import { useProgress } from './progress';
 import { useSession } from './session';
 import type { LevelDef } from './types';
 
@@ -13,7 +14,7 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2,
 
 export const STAR_RULES = ['Meet the spec', 'No hints, nothing burnt', 'Within par'];
 
-export function Stars({ n, size = 'md' }: { n: number; size?: 'sm' | 'md' | 'lg' }) {
+export function Stars({ n, size = 'md' }: { n: number; size?: 'sm' | 'md' | 'lg' | 'xl' }) {
   return (
     <span className={`stars stars-${size}`} aria-label={`${n} of 3 stars`}>
       {[1, 2, 3].map((i) => <span key={i} className={i <= n ? 'on' : ''}>★</span>)}
@@ -35,6 +36,7 @@ function useElapsed() {
 function parText(l: LevelDef) {
   const bits = [`${l.par.checks} check${l.par.checks === 1 ? '' : 's'}`];
   if (l.par.partsAdded !== undefined) bits.push(`${l.par.partsAdded} part${l.par.partsAdded === 1 ? '' : 's'} added`);
+  if (l.par.measurements !== undefined) bits.push(`${l.par.measurements} measurement${l.par.measurements === 1 ? '' : 's'}`);
   return bits.join(', ');
 }
 
@@ -84,12 +86,14 @@ function LevelActions({ level }: { level: LevelDef }) {
   const session = useSession();
   const spares = useBench((s) => s.spares);
   const parts = useBench((s) => s.parts);
+  const measurements = useBench((s) => s.measurements);
   const outOfSpares = spares === 0 && parts.some((p) => p.burnt);
   const passed = session.last?.check.pass;
   return (
     <section className="level-actions-box">
       <div className="level-stats">
         <span>Checks <b>{session.checks}</b></span>
+        {level.par.measurements !== undefined && <span title="A measurement is both multimeter probes on the board">Measurements <b>{measurements - session.measurementsAtStart}</b></span>}
         {spares !== null && <span>Spare LEDs <b className={spares === 0 ? 'bad' : ''}>{spares}</b></span>}
         <span title="Gold star: pass within par, with no hints and nothing burnt">Par <b>{parText(level)}</b></span>
       </div>
@@ -103,6 +107,7 @@ function LevelActions({ level }: { level: LevelDef }) {
             Hint {session.hintsShown + 1} of {level.hints.length}
           </button>
         )}
+        {passed && <button onClick={session.finish}>Level summary</button>}
         <button onClick={session.restart}>Restart</button>
       </div>
       <p className="hint">
@@ -113,14 +118,11 @@ function LevelActions({ level }: { level: LevelDef }) {
   );
 }
 
-function ResultCard({ level, onExit }: { level: LevelDef; onExit: () => void }) {
-  const { last, showResult, closeResult, restart } = useSession();
+function ResultCard({ level }: { level: LevelDef }) {
+  const { last, showResult, closeResult, finish } = useSession();
   const setView = useBench((s) => s.setView);
   if (!last || !showResult) return null;
   const { check, stars } = last;
-  const idx = WORLD0.findIndex((l) => l.id === level.id);
-  const next = WORLD0[idx + 1];
-  const nextPlan = WORLD0_PLAN.find((p) => p.number === level.number + 1);
 
   if (!check.pass) {
     return (
@@ -141,21 +143,70 @@ function ResultCard({ level, onExit }: { level: LevelDef; onExit: () => void }) 
       <div className="result-kicker">Spec met</div>
       <h3 className="result-title">{level.title}</h3>
       <Stars n={stars ?? 1} size="lg" />
-      <ul className="star-rules">
-        {STAR_RULES.map((r, i) => <li key={r} className={(stars ?? 1) > i ? 'on' : ''}>{'★'} {r}{i === 2 ? ` (${parText(level)})` : ''}</li>)}
-      </ul>
       <ul className="result-lines">
         {check.lines.map((l) => <li key={l.label} className="ok"><span>✓ {l.label}</span><b>{l.measured}</b></li>)}
       </ul>
       <p className="result-debrief">{level.debrief}</p>
-      <p className="hint">{clock(last.stats.seconds)} · {last.stats.checks} check{last.stats.checks === 1 ? '' : 's'}{last.improved ? ' · new best' : ''}</p>
+      <p className="hint">Ride through your circuit to see where the energy goes, or carry on to the level summary.</p>
       <div className="result-actions">
         <button className="primary" onClick={() => { closeResult(); setView('ride'); }} autoFocus>Ride your circuit <kbd>R</kbd></button>
-        {next ? <button onClick={() => useSession.getState().start(next.id)}>Next: {next.title}</button>
-          : nextPlan && <button disabled title="Being built next">Next: {nextPlan.title} (coming soon)</button>}
-        <button onClick={restart}>Replay</button>
-        <button onClick={onExit}>World map</button>
+        <button onClick={finish}>Continue →</button>
         <button onClick={closeResult}>Keep tinkering</button>
+      </div>
+    </div>
+  );
+}
+
+/** On the ride's stop cards once the level is passed: go to the summary. */
+function FinishButton() {
+  const passed = useSession((s) => !!s.last?.check.pass);
+  const finish = useSession((s) => s.finish);
+  return passed ? <button className="finish" onClick={finish}>Finish level ✓</button> : null;
+}
+
+/** Shown once a level is passed: the score, then on to the next level or back to the map. */
+function CompleteScreen({ level, onExit }: { level: LevelDef; onExit: () => void }) {
+  const { complete, last, restart, closeComplete, start } = useSession();
+  const records = useProgress((s) => s.levels);
+  if (!complete || !last?.check.pass) return null;
+  const idx = WORLD0.findIndex((l) => l.id === level.id);
+  const next = WORLD0[idx + 1];
+  const nextPlan = WORLD0_PLAN.find((p) => p.number === level.number + 1);
+  const worldDone = WORLD0.length === WORLD0_PLAN.length && WORLD0.every((l) => records[l.id]);
+  const s = last.stats;
+  const best = records[level.id];
+  const rows: [string, string][] = [
+    ['Time', clock(s.seconds)],
+    ['Checks', `${s.checks} (par ${level.par.checks})`],
+    ...(level.par.measurements !== undefined ? [['Measurements', `${s.measurements} (par ${level.par.measurements})`] as [string, string]] : []),
+    ['Hints used', String(s.hintsUsed)],
+    ...(level.spares ? [['LEDs burnt', String(s.burnt)] as [string, string]] : []),
+  ];
+  return (
+    <div className="complete-backdrop">
+      <div className="complete" role="dialog" aria-label="Level complete">
+        <div className="result-kicker">Level {level.world}–{level.number} complete</div>
+        <h3 className="complete-title">{level.title}</h3>
+        <Stars n={last.stars ?? 1} size="xl" />
+        <ul className="star-rules center">
+          {STAR_RULES.map((r, i) => <li key={r} className={(last.stars ?? 1) > i ? 'on' : ''}>★ {r}{i === 2 ? ` (${parText(level)})` : ''}</li>)}
+        </ul>
+        <table className="complete-stats"><tbody>
+          {rows.map(([k, v]) => <tr key={k}><th>{k}</th><td className="num">{v}</td></tr>)}
+        </tbody></table>
+        {last.improved && <div className="complete-best">New best</div>}
+        {best && !last.improved && <p className="hint">Your best: {'★'.repeat(best.stars)} in {clock(best.seconds)}</p>}
+        {worldDone && !next && <p className="complete-world">World 0 complete. Every level's stars count toward the next world.</p>}
+        <div className="complete-actions">
+          {next ? (
+            <button className="primary" onClick={() => start(next.id)} autoFocus>Next level: {next.title} →</button>
+          ) : nextPlan ? (
+            <button className="primary" disabled>Next: {nextPlan.title} (coming soon)</button>
+          ) : null}
+          <button className={next ? '' : 'primary'} onClick={onExit} autoFocus={!next}>Back to menu</button>
+          <button onClick={restart}>Replay</button>
+          <button onClick={closeComplete}>Keep tinkering</button>
+        </div>
       </div>
     </div>
   );
@@ -170,7 +221,8 @@ export function LevelView({ level, onExit }: { level: LevelDef; onExit: () => vo
         panel: <LevelPanel level={level} onExit={onExit} />,
         actions: <LevelActions level={level} />,
         side: <LevelBrief level={level} />,
-        overlay: <ResultCard level={level} onExit={onExit} />,
+        overlay: <><ResultCard level={level} /><CompleteScreen level={level} onExit={onExit} /></>,
+        rideExtra: <FinishButton />,
       }}
     />
   );

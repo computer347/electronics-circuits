@@ -1,0 +1,47 @@
+{
+  "id": "w0-05-slow-blink",
+  "world": 0,
+  "number": 5,
+  "title": "Slow blink",
+  "format": "build",
+  "skills": ["rc-time-constant", "oscilloscope"],
+  "brief": {
+    "story": "The bench's standby line should rise slowly when you press the button, taking about a second, so whatever it drives fades in instead of snapping on. The capacitor is fitted, with a 100 kΩ bleed resistor that empties it when you let go. The resistor that sets the timing isn't.",
+    "goal": "Make C1 charge to 63 % of its final voltage in 0.8–1.2 s after you press SW1. Hold the button and watch it on the scope.",
+    "datasheet": {
+      "title": "C1 · 100 µF electrolytic",
+      "rows": [
+        ["Capacitance", "100 µF"],
+        ["+ leg", "column 14"],
+        ["Bleed resistor R2", "100 kΩ"],
+        ["Scope CH1", "on column 14"]
+      ]
+    }
+  },
+  "hints": [
+    "The timing resistor goes from the button's output (column 6) to C1's + leg (column 14). The current through it is what charges the capacitor.",
+    "The time constant τ = R × C is how long a capacitor takes to charge to 63 % of its final voltage.",
+    "For τ = 1 s with C = 100 µF: R = 1 s / 0.0001 F = 10 kΩ."
+  ],
+  "board": {
+    "supply": { "volts": 9, "on": true },
+    "parts": [
+      { "id": "W1", "kind": "wire", "h1": "T+:3", "h2": "j3", "wireColor": "#e8413c" },
+      { "id": "SW1", "kind": "button", "h1": "g3", "h2": "g6", "pressed": false },
+      { "id": "C1", "kind": "capacitor", "h1": "h14", "h2": "T-:13", "farads": 0.0001 },
+      { "id": "R2", "kind": "resistor", "h1": "j14", "h2": "T-:15", "ohms": 100000 }
+    ]
+  },
+  "locked": ["W1", "SW1", "C1", "R2"],
+  "tools": ["resistor", "wire", "probe", "scope"],
+  "resistorValues": [1000, 2200, 4700, 10000, 22000, 47000, 100000],
+  "scope": {
+    "ch1": "i14",
+    "setup": { "tdiv": 0.5, "ch1": { "on": true, "vdiv": 2, "pos": -3 }, "ch2": { "on": false }, "trigger": { "source": "ch1", "level": 1, "edge": "rise", "mode": "auto" } }
+  },
+  "spec": [
+    { "kind": "charge-time", "part": "C1", "min": 0.8, "max": 1.2 }
+  ],
+  "par": { "checks": 1, "partsAdded": 1 },
+  "debrief": "A capacitor can't change its voltage instantly: it fills through the resistor, fast at first and slower as it fills up. After one time constant, τ = R × C, it's at 63 %; after five it's practically full. The 100 kΩ bleed resistor steals a little of the charging current, which is why the scope shows about 0.9 s instead of exactly 1. RC timing is how circuits make delays, debounce buttons and blink LEDs without a microcontroller."
+}
