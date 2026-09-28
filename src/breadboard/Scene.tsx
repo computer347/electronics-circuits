@@ -3,8 +3,8 @@
  * and reports hole hovers/clicks and part clicks back to the store.
  */
 import { OrbitControls } from '@react-three/drei';
-import { Canvas, type ThreeEvent } from '@react-three/fiber';
-import { useMemo } from 'react';
+import { Canvas, useThree, type ThreeEvent } from '@react-three/fiber';
+import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { colorBands } from './colorCode';
 import { BOARD, HOLES, hole, type HoleId } from './layout';
@@ -471,6 +471,42 @@ function Probe({ h, color }: { h: HoleId; color: string }) {
 
 // ---------------------------------------------------------------- scene
 
+/** Dev only: lets browser tests find a hole's position on screen, to click it like a player. */
+function DevProject() {
+  const { camera, size, gl } = useThree();
+  useEffect(() => {
+    const w = window as unknown as { __signalPathProject?: (id: HoleId) => [number, number] };
+    w.__signalPathProject = (id) => {
+      const h = hole(id);
+      const v = new THREE.Vector3(h.x, 0.02, h.z).project(camera);
+      const r = gl.domElement.getBoundingClientRect();
+      return [r.left + ((v.x + 1) / 2) * size.width, r.top + ((1 - v.y) / 2) * size.height];
+    };
+  }, [camera, size, gl]);
+  return null;
+}
+
+/** Camera looks at the board from above and in front, along this direction. */
+const VIEW_DIR = new THREE.Vector3(0, 22, 17).normalize();
+
+/**
+ * Frame the whole board (and the bench supply) whatever shape the stage has: a wide, short
+ * stage with the scope open needs a different distance from a tall one without it.
+ */
+function FitCamera() {
+  const { camera, size } = useThree();
+  const view = useBench((s) => s.view);
+  useEffect(() => {
+    if (view === 'ride' || !(camera instanceof THREE.PerspectiveCamera)) return;
+    const v = THREE.MathUtils.degToRad(camera.fov) / 2;
+    const h = Math.atan(Math.tan(v) * (size.width / Math.max(1, size.height)));
+    const dist = Math.max(18.5 / Math.tan(h), 12.5 / Math.tan(v));
+    camera.position.copy(VIEW_DIR).multiplyScalar(dist);
+    camera.lookAt(0, 0, 0);
+  }, [camera, size.width, size.height, view]);
+  return null;
+}
+
 export function BreadboardScene({ analysis, dynamic }: { analysis: BoardAnalysis; dynamic: boolean }) {
   const parts = useBench((s) => s.parts);
   const selected = useBench((s) => s.selected);
@@ -529,7 +565,9 @@ export function BreadboardScene({ analysis, dynamic }: { analysis: BoardAnalysis
       {probes.black && <Probe h={probes.black} color="#222" />}
       {scopeProbes.ch1 && <ScopeProbe h={scopeProbes.ch1} color="#39ff88" label="CH1" />}
       {scopeProbes.ch2 && <ScopeProbe h={scopeProbes.ch2} color="#3ad7ff" label="CH2" />}
-      <OrbitControls makeDefault enabled={view !== 'ride'} enablePan target={[0, 0, 0]} maxPolarAngle={Math.PI / 2.3} minDistance={8} maxDistance={45} />
+      <FitCamera />
+      {import.meta.env.DEV && <DevProject />}
+      <OrbitControls makeDefault enabled={view !== 'ride'} enablePan target={[0, 0, 0]} maxPolarAngle={Math.PI / 2.3} minDistance={8} maxDistance={60} />
     </Canvas>
   );
 }

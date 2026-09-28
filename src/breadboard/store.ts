@@ -71,6 +71,13 @@ interface BenchStore extends BoardState {
   cancelMove: () => void;
   setNotice: (n: string | null) => void;
   load: (b: BoardState & BenchExtras) => void;
+  /** Level rules: parts the player can't touch, and how many spare LEDs they have (null = unlimited). */
+  locked: string[];
+  spares: number | null;
+  /** LEDs burnt out since the page loaded (levels diff this to count burns). */
+  burnEvents: number;
+  setRules: (rules: { locked?: string[]; spares?: number | null }) => void;
+  isLocked: (id: string) => boolean;
   clear: () => void;
 }
 
@@ -114,6 +121,9 @@ export const useBench = create<BenchStore>((set, get) => ({
   moving: null,
   menu: null,
   notice: null,
+  locked: [],
+  spares: null,
+  burnEvents: 0,
 
   setTool: (tool) => set({ tool, pending: null, notice: null, moving: null }),
   setOhms: (ohms) => set({ ohms }),
@@ -168,18 +178,38 @@ export const useBench = create<BenchStore>((set, get) => ({
   },
 
   select: (selected) => set({ selected }),
-  removeSelected: () => set((s) => ({ parts: s.parts.filter((p) => p.id !== s.selected), selected: null })),
+  removeSelected: () => set((s) => (s.selected && s.locked.includes(s.selected)
+    ? { notice: 'That part belongs to the level, so it stays put.' }
+    : { parts: s.parts.filter((p) => p.id !== s.selected), selected: null })),
   togglePress: (id, pressed) => set((s) => ({ parts: s.parts.map((p) => (p.id === id ? { ...p, pressed } : p)) })),
-  markBurnt: (ids) => set((s) => ({ parts: s.parts.map((p) => (ids.includes(p.id) ? { ...p, burnt: true } : p)) })),
-  replaceLed: (id) => set((s) => ({ parts: s.parts.map((p) => (p.id === id ? { ...p, burnt: false } : p)) })),
+  markBurnt: (ids) => set((s) => {
+    const fresh = s.parts.filter((p) => ids.includes(p.id) && !p.burnt).length;
+    const names = s.parts.filter((p) => ids.includes(p.id) && !p.burnt).map((p) => p.id).join(', ');
+    return {
+      parts: s.parts.map((p) => (ids.includes(p.id) ? { ...p, burnt: true } : p)),
+      burnEvents: s.burnEvents + fresh,
+      ...(fresh ? { notice: `${names} burnt out: too much current went through it. Fix the circuit, then replace it.` } : {}),
+    };
+  }),
+  replaceLed: (id) => set((s) => {
+    if (s.spares === 0) return { notice: 'No spare LEDs left. Restart the level to get a fresh set.' };
+    return {
+      parts: s.parts.map((p) => (p.id === id ? { ...p, burnt: false } : p)),
+      spares: s.spares === null ? null : s.spares - 1,
+      notice: s.spares === null ? null : `Fitted a spare LED (${s.spares - 1} left).`,
+    };
+  }),
   setShowStrips: (showStrips) => set({ showStrips }),
-  updatePart: (id, patch) => set((s) => ({ parts: s.parts.map((p) => (p.id === id ? { ...p, ...patch } : p)) })),
-  flipPart: (id) => set((s) => ({ parts: s.parts.map((p) => (p.id === id ? { ...p, h1: p.h2, h2: p.h1 } : p)) })),
+  updatePart: (id, patch) => set((s) => (s.locked.includes(id) ? { notice: 'That part belongs to the level, so it stays put.' } : { parts: s.parts.map((p) => (p.id === id ? { ...p, ...patch } : p)) })),
+  flipPart: (id) => set((s) => (s.locked.includes(id) ? { notice: 'That part belongs to the level, so it stays put.' } : { parts: s.parts.map((p) => (p.id === id ? { ...p, h1: p.h2, h2: p.h1 } : p)) })),
   openMenu: (partId, x, y, anchor) => set({ menu: { partId, x, y, anchor }, selected: partId }),
   closeMenu: () => set({ menu: null }),
   startMove: (partId, anchor, mode) => {
     const s = get();
     const ids = mode === 'group' ? connectedGroup(s.parts, partId) : [partId];
+    if (ids.some((id) => s.locked.includes(id))) {
+      return set({ menu: null, notice: mode === 'group' ? "That group includes the level's own parts, which stay put. Move the part on its own." : 'That part belongs to the level, so it stays put.' });
+    }
     set({ moving: { ids, anchor, mode }, menu: null, pending: null, tool: 'select', notice: 'Click a hole to drop. Esc cancels.' });
   },
   cancelMove: () => set({ moving: null, notice: null }),
@@ -187,12 +217,15 @@ export const useBench = create<BenchStore>((set, get) => ({
   load: ({ scope, scopeSetup: _setup, ...b }) => {
     counters = {};
     set({
+      locked: [], spares: null,
       ...b, pending: null, selected: null, moving: null, menu: null, notice: null, probes: { red: null, black: null },
       scopeProbes: { ch1: scope?.ch1 ?? null, ch2: scope?.ch2 ?? null }, scopeNext: 'ch1',
       ...(scope ? { scopeOpen: true } : {}),
     });
   },
-  clear: () => { counters = {}; set({ parts: [], pending: null, selected: null, moving: null, menu: null, notice: null, probes: { red: null, black: null }, scopeProbes: { ch1: null, ch2: null }, scopeNext: 'ch1' }); },
+  setRules: ({ locked, spares }) => set((s) => ({ locked: locked ?? s.locked, spares: spares === undefined ? s.spares : spares })),
+  isLocked: (id) => get().locked.includes(id),
+  clear: () => { counters = {}; set({ locked: [], spares: null, parts: [], pending: null, selected: null, moving: null, menu: null, notice: null, probes: { red: null, black: null }, scopeProbes: { ch1: null, ch2: null }, scopeNext: 'ch1' }); },
 }));
 
 export const BENCH_PRESETS: Record<string, BoardState & BenchExtras> = {

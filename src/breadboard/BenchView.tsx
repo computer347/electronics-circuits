@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, type ReactNode } from 'react';
 import { formatSI } from '../lib/units';
 import { ScopePanel } from '../instruments/ScopePanel';
 import { useScope } from '../instruments/scopeStore';
@@ -115,8 +115,25 @@ function describeStrip(id: string) {
   return h.strip.startsWith('L') ? `connected to a–e in column ${col}` : `connected to f–j in column ${col}`;
 }
 
-export function BenchView() {
+/** Level mode: which tools the player gets, and the level's own panel and overlay. */
+export interface BenchMode {
+  tools: Tool[];
+  resistorValues?: number[];
+  /** Shown at the top of the left panel (the brief). */
+  panel: ReactNode;
+  /** Shown right under the parts, so the Check button is never far away. */
+  actions?: ReactNode;
+  /** Shown at the top of the right panel (story, datasheet, hints). */
+  side?: ReactNode;
+  /** Shown over the 3D stage (the result card). */
+  overlay?: ReactNode;
+}
+
+export function BenchView({ mode }: { mode?: BenchMode } = {}) {
   const s = useBench();
+  const tools = mode ? TOOLS.filter((t) => t.id === 'select' || mode.tools.includes(t.id)) : TOOLS;
+  const ohmsList = mode?.resistorValues ?? E12_OHMS;
+  const scopeAllowed = !mode || mode.tools.includes('scope');
   const board = useMemo(() => ({ supply: s.supply, parts: s.parts }), [s.supply, s.parts]);
   const analysis = useMemo(() => analyzeBoard(board), [board]);
   const dynamic = isDynamicBoard(board);
@@ -150,10 +167,10 @@ export function BenchView() {
       if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'SELECT') return;
       if (e.key === 'f' || e.key === 'F') return s.setView(s.view === 'flow' ? 'build' : 'flow');
       if (e.key === 'r' || e.key === 'R') return s.setView(s.view === 'ride' ? 'build' : 'ride');
-      if (e.key === 'o' || e.key === 'O') return s.setScopeOpen(!s.scopeOpen);
+      if ((e.key === 'o' || e.key === 'O') && scopeAllowed) return s.setScopeOpen(!s.scopeOpen);
       if (e.key === 'Escape' && s.view === 'ride') return s.setView('flow');
       if (s.view === 'ride') return;
-      const t = TOOLS.find((x) => x.key === e.key);
+      const t = tools.find((x) => x.key === e.key);
       if (t) s.setTool(t.id);
       if ((e.key === 'Delete' || e.key === 'Backspace') && s.selected) s.removeSelected();
       if (e.key === 'Escape') {
@@ -168,7 +185,7 @@ export function BenchView() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [s]);
+  }, [s, tools, scopeAllowed]);
 
   useEffect(() => {
     if (!s.menu) return;
@@ -178,7 +195,9 @@ export function BenchView() {
   }, [s.menu]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sel = s.parts.find((p) => p.id === s.selected);
+  const selLocked = !!sel && s.locked.includes(sel.id);
   const menuPart = s.menu ? s.parts.find((p) => p.id === s.menu!.partId) : undefined;
+  const menuLocked = !!menuPart && s.locked.includes(menuPart.id);
   const groupSize = menuPart ? connectedGroup(s.parts, menuPart.id).length : 0;
   const r = shown;
   const meter = (() => {
@@ -201,18 +220,21 @@ export function BenchView() {
   const burnt = s.parts.filter((p) => p.burnt);
 
   return (
-    <div className="bench3d">
-      <aside className="panel tools">
+    <div className={mode ? 'bench3d level' : 'bench3d'}>
+      <aside className={mode ? 'panel tools compact' : 'panel tools'}>
+        {mode?.panel}
         <h2>Parts</h2>
-        {TOOLS.map((t) => (
-          <button key={t.id} className={s.tool === t.id ? 'active' : ''} onClick={() => s.setTool(t.id)}>
-            <span className="key">{t.key}</span>{t.label}
-          </button>
-        ))}
+        <div className="tool-list">
+          {tools.map((t) => (
+            <button key={t.id} className={s.tool === t.id ? 'active' : ''} onClick={() => s.setTool(t.id)}>
+              <span className="key">{t.key}</span>{t.label}
+            </button>
+          ))}
+        </div>
         {s.tool === 'resistor' && (
           <label className="field">Value
             <select value={s.ohms} onChange={(e) => s.setOhms(Number(e.target.value))}>
-              {E12_OHMS.map((o) => <option key={o} value={o}>{formatSI(o, 'Ω')}</option>)}
+              {ohmsList.map((o) => <option key={o} value={o}>{formatSI(o, 'Ω')}</option>)}
             </select>
           </label>
         )}
@@ -231,6 +253,7 @@ export function BenchView() {
           </label>
         )}
         {s.tool === 'generator' && <WaveEditor wave={s.wave} onChange={s.setWave} />}
+        {mode?.actions}
         {s.tool === 'led' && (
           <label className="field">Colour
             <select value={s.ledColor} onChange={(e) => s.setLedColor(e.target.value as LedColor)}>
@@ -249,10 +272,13 @@ export function BenchView() {
           <label className="check"><input type="checkbox" checked={s.conventional} onChange={s.toggleConventional} /> Conventional current (+ → −)</label>
         )}
         {s.view !== 'build' && dynamic && <p className="hint">Flow shows the steady DC picture: capacitors count as open, generators sit at their t = 0 value.</p>}
-        <div className="presets">
-          <button className={s.scopeOpen ? 'active' : ''} onClick={() => s.setScopeOpen(!s.scopeOpen)}>Oscilloscope <kbd>O</kbd></button>
-        </div>
+        {scopeAllowed && (
+          <div className="presets">
+            <button className={s.scopeOpen ? 'active' : ''} onClick={() => s.setScopeOpen(!s.scopeOpen)}>Oscilloscope <kbd>O</kbd></button>
+          </div>
+        )}
 
+        {!mode && <>
         <h2>Bench supply</h2>
         <div className="supply-row">
           <select value={s.supply.volts} onChange={(e) => s.setVolts(Number(e.target.value))} aria-label="Supply voltage">
@@ -273,12 +299,14 @@ export function BenchView() {
           ))}
           <button onClick={s.clear}>Clear</button>
         </div>
+        </>}
         <label className="check"><input type="checkbox" checked={s.showStrips} onChange={(e) => s.setShowStrips(e.target.checked)} /> Glow strips by voltage</label>
       </aside>
 
       <div className="stage-col">
       <section className="stage" onContextMenu={(e) => e.preventDefault()}>
         <BreadboardScene analysis={analysis} dynamic={dynamic} />
+        {mode?.overlay}
         {s.view !== 'build' && sourceKeys.length > 0 && (
           <div className="legend">
             <span className="legend-title">{s.conventional ? 'Conventional current' : 'Electron flow'} by source</span>
@@ -305,6 +333,7 @@ export function BenchView() {
         {s.menu && menuPart && (
           <div className="part-menu" style={{ left: s.menu.x, top: s.menu.y }} role="menu">
             <div className="part-menu-title">{menuPart.id}</div>
+            {menuLocked ? <p className="part-menu-note">Part of the level: it stays where it is.</p> : <>
             <button role="menuitem" onClick={() => s.startMove(menuPart.id, s.menu!.anchor, 'single')}>Move <kbd>M</kbd></button>
             {groupSize > 1 && (
               <button role="menuitem" onClick={() => s.startMove(menuPart.id, s.menu!.anchor, 'group')}>
@@ -318,13 +347,15 @@ export function BenchView() {
             )}
             <button role="menuitem" onClick={() => { s.select(menuPart.id); s.closeMenu(); }}>Edit value…</button>
             <button role="menuitem" className="danger" onClick={() => { s.select(menuPart.id); s.removeSelected(); s.closeMenu(); }}>Delete <kbd>Del</kbd></button>
+            </>}
           </div>
         )}
       </section>
-      {s.scopeOpen && <ScopePanel onClose={() => s.setScopeOpen(false)} />}
+      {s.scopeOpen && scopeAllowed && <ScopePanel onClose={() => s.setScopeOpen(false)} />}
       </div>
 
       <aside className="panel readouts">
+        {mode?.side}
         <h2>Multimeter · DC V</h2>
         <div className="dmm">
           <div className="dmm-screen">{meter.text}<span>V</span></div>
@@ -345,34 +376,34 @@ export function BenchView() {
 
         {sel && (
           <>
-            <h2>{sel.id}</h2>
+            <h2>{sel.id}{selLocked ? ' · part of the level' : ''}</h2>
             <table>
               <tbody>
                 <tr><th>Type</th><td className="num">{sel.kind === 'led' ? 'LED' : sel.kind === 'generator' ? 'function generator' : isElectrolytic(sel) ? 'electrolytic capacitor' : sel.kind}</td></tr>
                 {sel.kind === 'capacitor' && (
                   <tr><th>Value</th><td className="num">
-                    <select value={sel.farads} onChange={(e) => s.updatePart(sel.id, { farads: Number(e.target.value) })} aria-label="Capacitance">
+                    <select value={sel.farads} onChange={(e) => s.updatePart(sel.id, { farads: Number(e.target.value) })} disabled={selLocked} aria-label="Capacitance">
                       {CAP_VALUES.map((f) => <option key={f} value={f}>{fmtCap(f)}</option>)}
                     </select>
                   </td></tr>
                 )}
                 {sel.kind === 'battery' && (
                   <tr><th>Voltage</th><td className="num">
-                    <select value={sel.volts} onChange={(e) => s.updatePart(sel.id, { volts: Number(e.target.value) })} aria-label="Battery voltage">
+                    <select value={sel.volts} onChange={(e) => s.updatePart(sel.id, { volts: Number(e.target.value) })} disabled={selLocked} aria-label="Battery voltage">
                       {BATTERY_VOLTS.map((v) => <option key={v} value={v}>{v} V</option>)}
                     </select>
                   </td></tr>
                 )}
                 {sel.kind === 'resistor' && (
                   <tr><th>Value</th><td className="num">
-                    <select value={sel.ohms} onChange={(e) => s.updatePart(sel.id, { ohms: Number(e.target.value) })} aria-label="Resistance">
-                      {E12_OHMS.map((o) => <option key={o} value={o}>{formatSI(o, 'Ω')}</option>)}
+                    <select value={sel.ohms} onChange={(e) => s.updatePart(sel.id, { ohms: Number(e.target.value) })} disabled={selLocked} aria-label="Resistance">
+                      {ohmsList.map((o) => <option key={o} value={o}>{formatSI(o, 'Ω')}</option>)}
                     </select>
                   </td></tr>
                 )}
                 {sel.kind === 'led' && (
                   <tr><th>Colour</th><td className="num">
-                    <select value={sel.color} onChange={(e) => s.updatePart(sel.id, { color: e.target.value as LedColor })} aria-label="LED colour">
+                    <select value={sel.color} onChange={(e) => s.updatePart(sel.id, { color: e.target.value as LedColor })} disabled={selLocked} aria-label="LED colour">
                       {(Object.keys(LED_VF) as LedColor[]).map((c) => <option key={c} value={c}>{c} ({LED_VF[c]} V)</option>)}
                     </select>
                   </td></tr>
@@ -398,7 +429,7 @@ export function BenchView() {
               </tbody>
             </table>
             {sel.kind === 'generator' && <WaveEditor wave={sel.wave ?? DEFAULT_WAVE} onChange={(w) => s.updatePart(sel.id, { wave: w })} />}
-            {r.ok && analysis.contributions?.currents[sel.id] && sel.kind !== 'wire' && sel.kind !== 'capacitor'
+            {!mode && r.ok && analysis.contributions?.currents[sel.id] && sel.kind !== 'wire' && sel.kind !== 'capacitor'
               && Object.values(analysis.contributions.currents[sel.id]!).some((v) => Math.abs(v) > 1e-9) && (
               <>
                 <h2>Current by source</h2>
@@ -406,10 +437,12 @@ export function BenchView() {
               </>
             )}
             <div className="presets" style={{ marginTop: 12 }}>
-              {sel.burnt && <button onClick={() => s.replaceLed(sel.id)}>Replace LED</button>}
-              <button onClick={() => s.startMove(sel.id, sel.h1, 'single')}>Move (M)</button>
-              {(sel.kind === 'led' || isElectrolytic(sel)) && <button onClick={() => s.flipPart(sel.id)}>Flip</button>}
-              <button onClick={s.removeSelected}>Remove (Del)</button>
+              {sel.burnt && <button onClick={() => s.replaceLed(sel.id)}>Replace LED{s.spares !== null ? ` (${s.spares} spare${s.spares === 1 ? '' : 's'})` : ''}</button>}
+              {!selLocked && <>
+                <button onClick={() => s.startMove(sel.id, sel.h1, 'single')}>Move (M)</button>
+                {(sel.kind === 'led' || isElectrolytic(sel)) && <button onClick={() => s.flipPart(sel.id)}>Flip</button>}
+                <button onClick={s.removeSelected}>Remove (Del)</button>
+              </>}
             </div>
           </>
         )}

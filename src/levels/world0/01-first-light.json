@@ -1,0 +1,44 @@
+{
+  "id": "w0-01-first-light",
+  "world": 0,
+  "number": 1,
+  "title": "First light",
+  "format": "build",
+  "skills": ["ohms-law", "led.current-limit"],
+  "brief": {
+    "story": "The bench's status light is dead. The LED and its wiring are already on the board. What's missing is the one part that stops the 9 V supply from pushing as much current through it as it can.",
+    "goal": "Light LED1 at 10–25 mA using one resistor, without burning the LED out.",
+    "datasheet": {
+      "title": "LED1 · red, 5 mm",
+      "rows": [
+        ["Forward voltage (Vf)", "2.0 V"],
+        ["Typical current (If)", "20 mA"],
+        ["Max continuous current", "25 mA"],
+        ["Burns out above", "30 mA"]
+      ]
+    }
+  },
+  "hints": [
+    "The resistor goes between the supply's column (column 3, rows f–j) and the LED's long leg (column 12, rows f–j). Current has to pass through it to reach the LED.",
+    "The LED keeps about 2.0 V for itself, so the resistor takes the rest: 9 V − 2.0 V = 7 V.",
+    "Ohm's law: R = V / I = 7 V / 0.020 A = 350 Ω. The nearest values in the parts bin are 330 Ω and 390 Ω."
+  ],
+  "board": {
+    "supply": { "volts": 9, "on": true },
+    "parts": [
+      { "id": "W1", "kind": "wire", "h1": "T+:3", "h2": "j3", "wireColor": "#e8413c" },
+      { "id": "LED1", "kind": "led", "h1": "h12", "h2": "h14", "color": "red" },
+      { "id": "W2", "kind": "wire", "h1": "j14", "h2": "T-:12", "wireColor": "#2f6fe0" }
+    ]
+  },
+  "locked": ["W1", "LED1", "W2"],
+  "tools": ["resistor", "wire", "probe"],
+  "resistorValues": [100, 150, 220, 270, 330, 390, 470, 560, 680, 820, 1000, 2200, 4700, 10000],
+  "spares": { "led": 2 },
+  "spec": [
+    { "kind": "led-current", "part": "LED1", "min": 0.01, "max": 0.025 },
+    { "kind": "no-burnt" }
+  ],
+  "par": { "checks": 1, "partsAdded": 1 },
+  "debrief": "An LED holds its own voltage at about 2 V whatever you do, so it can't limit its own current. The resistor does that job: I = (9 V − 2.0 V) / R. Without it, only the wires would limit the current and the LED would burn out at once. Every indicator LED on every circuit board has a resistor like this next to it."
+}

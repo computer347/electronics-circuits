@@ -1,6 +1,10 @@
 import { useMemo, useState } from 'react';
 import { BenchView } from '../breadboard/BenchView';
 import { DrillView } from '../drills/DrillView';
+import { levelById } from '../levels';
+import { LevelSelect } from '../levels/LevelSelect';
+import { LevelView } from '../levels/LevelView';
+import { useSession } from '../levels/session';
 import { parseNetlist, solve, type SolveResult } from '../sim';
 import { CurrentStrip } from './CurrentStrip';
 import { PRESETS } from './presets';
@@ -16,8 +20,21 @@ function fmtA(a: number) {
 
 type Outcome = { result: SolveResult; error?: undefined } | { result?: undefined; error: string };
 
+type Tab = 'play' | 'drills' | 'breadboard' | 'bench';
+
+/** The campaign: the World 0 map, or the level being played. */
+function Play() {
+  const levelId = useSession((s) => s.levelId);
+  const start = useSession((s) => s.start);
+  const exit = useSession((s) => s.exit);
+  const level = levelId ? levelById(levelId) : undefined;
+  return level ? <LevelView key={level.id} level={level} onExit={exit} /> : <LevelSelect onPlay={start} />;
+}
+
 export function App() {
-  const [tab, setTab] = useState<'drills' | 'breadboard' | 'bench'>('drills');
+  const [tab, setTabRaw] = useState<Tab>('play');
+  // Leaving the campaign puts the sandbox bench back the way it was.
+  const setTab = (t: Tab) => { if (t !== 'play') useSession.getState().exit(); setTabRaw(t); };
   const [text, setText] = useState(PRESETS['LED + resistor']!);
 
   const outcome: Outcome = useMemo(() => {
@@ -39,13 +56,14 @@ export function App() {
         <h1>SIGNAL PATH</h1>
         <span>phase 0 · prototype</span>
         <nav className="tabs">
+          <button className={tab === 'play' ? 'active' : ''} onClick={() => setTab('play')}>Play</button>
           <button className={tab === 'drills' ? 'active' : ''} onClick={() => setTab('drills')}>Exam drills</button>
-          <button className={tab === 'breadboard' ? 'active' : ''} onClick={() => setTab('breadboard')}>Breadboard</button>
+          <button className={tab === 'breadboard' ? 'active' : ''} onClick={() => setTab('breadboard')}>Sandbox</button>
           <button className={tab === 'bench' ? 'active' : ''} onClick={() => setTab('bench')}>Solver bench</button>
         </nav>
       </header>
 
-      {tab === 'drills' ? <DrillView /> : tab === 'breadboard' ? <BenchView /> : (
+      {tab === 'play' ? <Play /> : tab === 'drills' ? <DrillView /> : tab === 'breadboard' ? <BenchView /> : (
       <main className="bench">
         <section className="panel">
           <h2>Netlist</h2>
