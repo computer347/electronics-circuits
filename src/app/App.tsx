@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { DrillView } from '../drills/DrillView';
 import { parseNetlist, solve, type SolveResult } from '../sim';
 import { CurrentStrip } from './CurrentStrip';
 import { PRESETS } from './presets';
@@ -15,6 +16,7 @@ function fmtA(a: number) {
 type Outcome = { result: SolveResult; error?: undefined } | { result?: undefined; error: string };
 
 export function App() {
+  const [tab, setTab] = useState<'drills' | 'bench'>('drills');
   const [text, setText] = useState(PRESETS['LED + resistor']!);
 
   const outcome: Outcome = useMemo(() => {
@@ -34,9 +36,14 @@ export function App() {
     <div className="app">
       <header className="header">
         <h1>SIGNAL PATH</h1>
-        <span>solver test bench · phase 0</span>
+        <span>phase 0 · prototype</span>
+        <nav className="tabs">
+          <button className={tab === 'drills' ? 'active' : ''} onClick={() => setTab('drills')}>Exam drills</button>
+          <button className={tab === 'bench' ? 'active' : ''} onClick={() => setTab('bench')}>Solver bench</button>
+        </nav>
       </header>
 
+      {tab === 'drills' ? <DrillView /> : (
       <main className="bench">
         <section className="panel">
           <h2>Netlist</h2>
@@ -91,6 +98,7 @@ export function App() {
           )}
         </section>
       </main>
+      )}
     </div>
   );
 }

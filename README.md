@@ -27,7 +27,7 @@ Needs Node 20+.
 
 ```bash
 npm install
-npm run dev      # test bench at http://localhost:5173
+npm run dev      # drills + solver bench at http://localhost:5173
 npm test         # solver test suite
 npm run build    # typecheck + production build
 ```
@@ -49,8 +49,12 @@ npm run build    # typecheck + production build
 
 - `tests/`: textbook circuits checked against hand-calculated answers (dividers, bridges, LEDs, RC charge/discharge, energy conservation)
 
-**Test bench** (`src/app/`): edit a netlist, see node voltages, currents and faults live, with a placeholder electron-flow strip in Three.js.
+**Schematics** (`src/schematic/`): 2D SVG circuit drawings with IEC symbols. Parts sit between grid points and connect where they meet; the netlist is derived from the drawing, so the picture and the simulation always agree.
+
+**Exam drills** (`src/drills/`): nine question generators (Ohm's law, series and parallel, dividers, LED resistor sizing, RC charging, Wheatstone bridges, current sources) with random standard values, prefix-aware answer checking (`21.2m`, `4.7k`) and worked solutions. Tests check that the solver and each worked-solution formula agree on 60 random circuits per generator.
+
+**Solver bench** (`src/app/`): edit a netlist, see node voltages, currents and faults live, with a placeholder electron-flow strip in Three.js.
 
 ## Next up (Phase 0)
 
-2D schematics and exam drills → Breadboard Bench → Electron Run → five World 0 levels → landing page.
+More drill types and theory classes → Breadboard Bench → Electron Run → five World 0 levels → landing page.

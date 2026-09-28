@@ -66,3 +66,49 @@ td.num { text-align: right; color: var(--signal); font-variant-numeric: tabular-
 @media (max-width: 520px) { .grid2 { grid-template-columns: 1fr; } }
 
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+/* ---------- schematics ---------- */
+.schematic { width: 100%; height: auto; max-height: 420px; display: block; }
+.sch-part { stroke: var(--signal); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.sch-part .sch-body { fill: var(--bg); }
+.sch-part .sch-fill { fill: var(--signal); stroke: none; }
+.sch-part text { stroke: none; font-family: var(--mono); }
+.sch-id { fill: var(--text-dim); font-size: 12px; }
+.sch-value { fill: var(--text); font-size: 13px; }
+.sch-part.hot { stroke: var(--amber); filter: drop-shadow(0 0 6px rgba(255, 176, 0, 0.55)); }
+.sch-part.hot .sch-fill { fill: var(--amber); }
+.sch-part.hot .sch-value { fill: var(--amber); }
+.sch-dot { fill: var(--signal); }
+.sch-node circle { fill: var(--signal); }
+.sch-node text { fill: var(--signal); font-size: 13px; font-family: var(--mono); font-weight: 600; }
+.sch-node.hot circle { fill: var(--amber); filter: drop-shadow(0 0 6px rgba(255, 176, 0, 0.7)); }
+.sch-node.hot text { fill: var(--amber); }
+
+/* ---------- tabs + drills ---------- */
+.tabs { display: flex; gap: 8px; margin-left: auto; }
+.tabs button.active, .presets button.active { border-color: var(--signal); color: var(--signal); box-shadow: 0 0 12px rgba(57, 255, 136, 0.25); }
+.header { flex-wrap: wrap; }
+
+.drills { padding: 16px 32px 32px; max-width: 980px; }
+@media (max-width: 820px) { .drills { padding: 16px; } }
+.drill-bar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
+.score { display: flex; gap: 16px; color: var(--text-dim); font-size: 12px; }
+.drill-card { margin-top: 4px; }
+.drill-meta { display: flex; justify-content: space-between; color: var(--text-dim); font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; }
+.drill-meta .seed { text-transform: none; letter-spacing: 0; opacity: 0.6; }
+.drill-title { font-family: var(--display); font-size: 22px !important; text-transform: none !important; letter-spacing: 0 !important; color: var(--text) !important; margin: 6px 0 8px !important; }
+.drill-prompt { font-size: 16px; line-height: 1.5; margin: 8px 0 16px; }
+.answer { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.answer input {
+  flex: 1 1 220px; background: var(--bg); color: var(--signal); border: 1px solid var(--line); border-radius: 6px;
+  font: inherit; font-size: 16px; padding: 8px 12px; outline: none;
+}
+.answer input:focus { border-color: var(--signal-dim); }
+.answer .unit { color: var(--text-dim); min-width: 18px; }
+.answer button { padding: 8px 14px; }
+.verdict { margin: 12px 0 0; }
+.verdict.good { color: var(--signal); }
+.verdict.bad { color: var(--fault); }
+.verdict.warn { color: var(--amber); }
+.solution { margin: 16px 0 0; padding: 12px 12px 12px 32px; border-left: 2px solid var(--signal-dim); background: rgba(14, 59, 38, 0.25); line-height: 1.7; }
+.solution .final { color: var(--signal); list-style: none; margin-left: -20px; margin-top: 6px; }
