@@ -106,6 +106,8 @@ function describe(e: FlowEdge, analysis: BoardAnalysis): { title: string; detail
   if (e.label.includes('LED')) return { title: `Through ${id}`, detail: `${amps} · giving up ${drop} as light` };
   if (e.label.includes('battery')) return { title: `Inside battery ${id}`, detail: `Pumped up ${drop} · ${amps}` };
   if (e.label.includes('button')) return { title: `Across push button ${id}`, detail: amps };
+  if (e.label.includes('generator')) return { title: `Inside function generator ${id}`, detail: `Pumped up ${drop} right now · ${amps}` };
+  if (e.label.includes('capacitor')) return { title: `Onto the plates of ${id}`, detail: `${amps} · charge piling up, not passing through` };
   return { title: `Along jumper wire ${id}`, detail: `${amps} · practically no voltage drop` };
 }
 
@@ -130,7 +132,7 @@ export function RideElectron({ edges, analysis, colors }: { edges: FlowEdge[]; a
   // start (or restart) at the busiest source
   const start = () => {
     if (!flowing.length) { state.current = null; return; }
-    const src = flowing.filter(({ e }) => e.kind === 'supply' || e.label.includes('battery'));
+    const src = flowing.filter(({ e }) => e.kind === 'supply' || e.label.includes('battery') || e.label.includes('generator'));
     const pick = (src.length ? src : flowing).reduce((a, b) => (Math.abs(b.e.amps) > Math.abs(a.e.amps) ? b : a));
     const dir = electronDir(pick.e, conventional);
     state.current = { edge: pick.i, s: dir > 0 ? 0 : pick.e.length, dir, lastInfo: 0, color: particleColor(pick.e, 0, colors) };

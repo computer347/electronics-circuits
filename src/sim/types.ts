@@ -22,7 +22,28 @@ interface Base {
 }
 
 export interface Resistor extends Base { kind: 'resistor'; ohms: number }
-export interface VoltageSource extends Base { kind: 'vsource'; volts: number }
+export interface VoltageSource extends Base {
+  kind: 'vsource';
+  /** DC value, used when there is no waveform. */
+  volts: number;
+  /** Time-varying output (a function generator). Replaces `volts` in transient and at t = 0 for DC. */
+  wave?: Waveform;
+}
+
+export type WaveShape = 'square' | 'sine' | 'triangle';
+
+/** Function-generator output: offset + a shape swinging `vpp` peak to peak. */
+export interface Waveform {
+  shape: WaveShape;
+  /** Hz. */
+  freq: number;
+  /** Peak-to-peak amplitude in volts. */
+  vpp: number;
+  /** DC offset in volts (the middle of the swing). */
+  offset: number;
+  /** Square wave: fraction of each period spent high (default 0.5). */
+  duty?: number;
+}
 /** Current `amps` flows through the source from a to b (SPICE convention). */
 export interface CurrentSource extends Base { kind: 'isource'; amps: number }
 /** Ideal wire (modelled as a tiny resistance so every branch has a current). */

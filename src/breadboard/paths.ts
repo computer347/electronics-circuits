@@ -10,6 +10,7 @@ export type V3 = [number, number, number];
 const at = (id: HoleId, y = 0): V3 => { const h = hole(id); return [h.x, y, h.z]; };
 
 export const RESISTOR_Y = 0.55;
+export const CAP_Y = 0.75;
 export const SUPPLY_BOX: V3 = [-13.2, 0.5, -11.8];
 export const SUPPLY_HOLES = { plus: 'T+:1', minus: 'T-:1' } as const;
 
@@ -68,6 +69,14 @@ export function partPoints(part: BoardPart): V3[] {
     }
     case 'button':
       return [a, [a[0], 0.25, a[2]], [b[0], 0.25, b[2]], b];
+    case 'capacitor': {
+      const m = ledMid(part);
+      return [a, [a[0], 0.35, a[2]], [m[0], CAP_Y, m[2]], [b[0], 0.35, b[2]], b];
+    }
+    case 'generator': {
+      const m = ledMid(part);
+      return [a, [a[0], 0.6, a[2]], [m[0], 1.1, m[2]], [b[0], 0.6, b[2]], b];
+    }
     case 'wire':
       return wireCurve(part.h1, part.h2).getSpacedPoints(24).map((p) => [p.x, p.y, p.z] as V3);
   }

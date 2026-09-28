@@ -1,10 +1,12 @@
 import { create } from 'zustand';
-import type { LedColor } from '../sim';
+import type { LedColor, Waveform } from '../sim';
 import type { HoleId } from './layout';
-import type { BoardPart, BoardPartKind, BoardState } from './model';
+import type { ScopeSetup } from '../instruments/scopeStore';
+import { DEFAULT_WAVE, type BoardPart, type BoardPartKind, type BoardState } from './model';
 import { connectedGroup, occupiedHoles, translateParts, type MoveMode } from './move';
 
-export type Tool = 'select' | BoardPartKind | 'probe';
+export type Tool = 'select' | BoardPartKind | 'probe' | 'scope';
+export type ScopeChannel = 'ch1' | 'ch2';
 export type View = 'build' | 'flow' | 'ride';
 
 const WIRE_COLORS = ['#e8413c', '#2f6fe0', '#f2c230', '#39c46a', '#e8e8e8', '#ff8a2a'];
@@ -14,6 +16,13 @@ interface BenchStore extends BoardState {
   ohms: number;
   ledColor: LedColor;
   batteryVolts: number;
+  farads: number;
+  wave: Waveform;
+  /** Oscilloscope probe tips (the ground clip is always on board ground). */
+  scopeProbes: Record<ScopeChannel, HoleId | null>;
+  /** Next channel the scope tool places. */
+  scopeNext: ScopeChannel;
+  scopeOpen: boolean;
   /** Build = normal bench; flow = electrons shown on every path; ride = camera follows one electron. */
   view: View;
   /** Show conventional current (+ to -) instead of electron flow (- to +). */
@@ -37,6 +46,10 @@ interface BenchStore extends BoardState {
   setOhms: (o: number) => void;
   setLedColor: (c: LedColor) => void;
   setBatteryVolts: (v: number) => void;
+  setFarads: (f: number) => void;
+  setWave: (w: Waveform) => void;
+  setScopeProbe: (ch: ScopeChannel, h: HoleId | null) => void;
+  setScopeOpen: (open: boolean) => void;
   setView: (v: View) => void;
   toggleConventional: () => void;
   setRideInfo: (i: { title: string; detail: string } | null) => void;
@@ -57,13 +70,21 @@ interface BenchStore extends BoardState {
   startMove: (partId: string, anchor: HoleId, mode: MoveMode) => void;
   cancelMove: () => void;
   setNotice: (n: string | null) => void;
-  load: (b: BoardState) => void;
+  load: (b: BoardState & BenchExtras) => void;
   clear: () => void;
 }
 
 let counters: Record<string, number> = {};
+/** Optional bench setup that comes with a preset (e.g. where the scope probes go). */
+export interface BenchExtras {
+  scope?: Partial<Record<ScopeChannel, HoleId>>;
+  /** Scope knob settings that suit the circuit. */
+  scopeSetup?: ScopeSetup;
+}
+
+const PREFIX: Record<BoardPartKind, string> = { resistor: 'R', led: 'LED', wire: 'W', button: 'SW', battery: 'B', capacitor: 'C', generator: 'FG' };
 const nextId = (kind: BoardPartKind, parts: BoardPart[]) => {
-  const prefix = { resistor: 'R', led: 'LED', wire: 'W', button: 'SW', battery: 'B' }[kind];
+  const prefix = PREFIX[kind];
   let n = counters[prefix] ?? 0;
   do { n++; } while (parts.some((p) => p.id === `${prefix}${n}`));
   counters[prefix] = n;
@@ -77,6 +98,11 @@ export const useBench = create<BenchStore>((set, get) => ({
   ohms: 330,
   ledColor: 'red',
   batteryVolts: 6,
+  farads: 100e-9,
+  wave: { ...DEFAULT_WAVE },
+  scopeProbes: { ch1: null, ch2: null },
+  scopeNext: 'ch1',
+  scopeOpen: true,
   view: 'build',
   conventional: false,
   rideInfo: null,
@@ -93,6 +119,10 @@ export const useBench = create<BenchStore>((set, get) => ({
   setOhms: (ohms) => set({ ohms }),
   setLedColor: (ledColor) => set({ ledColor }),
   setBatteryVolts: (batteryVolts) => set({ batteryVolts }),
+  setFarads: (farads) => set({ farads }),
+  setWave: (wave) => set({ wave }),
+  setScopeProbe: (ch, h) => set((s) => ({ scopeProbes: { ...s.scopeProbes, [ch]: h } })),
+  setScopeOpen: (scopeOpen) => set({ scopeOpen }),
   setView: (view) => set({ view, rideInfo: null, pending: null, moving: null, menu: null, tool: 'select' }),
   toggleConventional: () => set((s) => ({ conventional: !s.conventional })),
   setRideInfo: (rideInfo) => set({ rideInfo }),
@@ -115,6 +145,13 @@ export const useBench = create<BenchStore>((set, get) => ({
       if (!red || (red && black)) return set({ probes: { red: h, black: red && black ? null : black } });
       return set({ probes: { red, black: h } });
     }
+    if (s.tool === 'scope') {
+      // clip CH1, then CH2, then alternate; clicking a probe's own hole takes it off
+      const ch = s.scopeProbes.ch1 === h ? 'ch1' : s.scopeProbes.ch2 === h ? 'ch2' : null;
+      if (ch) return set({ scopeProbes: { ...s.scopeProbes, [ch]: null }, scopeNext: ch });
+      const next = s.scopeNext;
+      return set({ scopeProbes: { ...s.scopeProbes, [next]: h }, scopeNext: next === 'ch1' ? 'ch2' : 'ch1', scopeOpen: true });
+    }
     if (occupiedHoles(s.parts).has(h)) return set({ notice: 'That hole already has a leg in it.' });
     if (!s.pending) return set({ pending: h, notice: null });
     if (s.pending === h) return set({ pending: null });
@@ -124,6 +161,8 @@ export const useBench = create<BenchStore>((set, get) => ({
     if (kind === 'resistor') part.ohms = s.ohms;
     if (kind === 'led') part.color = s.ledColor;
     if (kind === 'battery') part.volts = s.batteryVolts;
+    if (kind === 'capacitor') part.farads = s.farads;
+    if (kind === 'generator') part.wave = { ...s.wave };
     if (kind === 'wire') part.wireColor = WIRE_COLORS[s.parts.filter((p) => p.kind === 'wire').length % WIRE_COLORS.length];
     set({ parts: [...s.parts, part], pending: null, selected: id });
   },
@@ -145,11 +184,18 @@ export const useBench = create<BenchStore>((set, get) => ({
   },
   cancelMove: () => set({ moving: null, notice: null }),
   setNotice: (notice) => set({ notice }),
-  load: (b) => { counters = {}; set({ ...b, pending: null, selected: null, moving: null, menu: null, notice: null, probes: { red: null, black: null } }); },
-  clear: () => { counters = {}; set({ parts: [], pending: null, selected: null, moving: null, menu: null, notice: null, probes: { red: null, black: null } }); },
+  load: ({ scope, scopeSetup: _setup, ...b }) => {
+    counters = {};
+    set({
+      ...b, pending: null, selected: null, moving: null, menu: null, notice: null, probes: { red: null, black: null },
+      scopeProbes: { ch1: scope?.ch1 ?? null, ch2: scope?.ch2 ?? null }, scopeNext: 'ch1',
+      ...(scope ? { scopeOpen: true } : {}),
+    });
+  },
+  clear: () => { counters = {}; set({ parts: [], pending: null, selected: null, moving: null, menu: null, notice: null, probes: { red: null, black: null }, scopeProbes: { ch1: null, ch2: null }, scopeNext: 'ch1' }); },
 }));
 
-export const BENCH_PRESETS: Record<string, BoardState> = {
+export const BENCH_PRESETS: Record<string, BoardState & BenchExtras> = {
   'LED + resistor': {
     supply: { volts: 9, on: true },
     parts: [
@@ -190,5 +236,30 @@ export const BENCH_PRESETS: Record<string, BoardState> = {
       { id: 'LED1', kind: 'led', h1: 'h8', h2: 'h10', color: 'yellow' },
       { id: 'W2', kind: 'wire', h1: 'j10', h2: 'T-:9', wireColor: '#2f6fe0' },
     ],
+  },
+  'RC filter': {
+    // 1 kHz square wave into a 1 kΩ / 100 nF low-pass: τ = 0.1 ms, so each half period is 5 τ.
+    supply: { volts: 9, on: false },
+    parts: [
+      { id: 'FG1', kind: 'generator', h1: 'j4', h2: 'T-:3', wave: { shape: 'square', freq: 1000, vpp: 5, offset: 2.5 } },
+      { id: 'R1', kind: 'resistor', h1: 'g4', h2: 'g10', ohms: 1000 },
+      { id: 'C1', kind: 'capacitor', h1: 'h10', h2: 'T-:9', farads: 100e-9 },
+    ],
+    scope: { ch1: 'i4', ch2: 'i10' },
+    scopeSetup: { tdiv: 200e-6, ch1: { vdiv: 2, pos: 0, on: true }, ch2: { vdiv: 2, pos: -3.5, on: true }, trigger: { level: 2.5, source: 'ch1', mode: 'auto' } },
+  },
+  'RC charge': {
+    // Hold the button: 100 µF charges through 10 kΩ (τ = 1 s). Let go: it drains through 22 kΩ.
+    supply: { volts: 9, on: true },
+    parts: [
+      { id: 'W1', kind: 'wire', h1: 'T+:3', h2: 'j4', wireColor: '#e8413c' },
+      { id: 'SW1', kind: 'button', h1: 'g4', h2: 'g7', pressed: false },
+      { id: 'R1', kind: 'resistor', h1: 'h7', h2: 'h13', ohms: 10000 },
+      { id: 'C1', kind: 'capacitor', h1: 'i13', h2: 'T-:11', farads: 100e-6 },
+      { id: 'R2', kind: 'resistor', h1: 'f13', h2: 'f19', ohms: 22000 },
+      { id: 'W2', kind: 'wire', h1: 'j19', h2: 'T-:16', wireColor: '#2f6fe0' },
+    ],
+    scope: { ch1: 'j13' },
+    scopeSetup: { tdiv: 500e-3, ch1: { vdiv: 1, pos: -3, on: true }, ch2: { on: false }, trigger: { level: 1, source: 'ch1', mode: 'auto' } },
   },
 };

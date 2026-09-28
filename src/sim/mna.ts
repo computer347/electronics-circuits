@@ -24,6 +24,8 @@ import {
   type Fault,
   type NodeId,
   type SolveResult,
+  type VoltageSource,
+  type Waveform,
 } from './types';
 
 export const R_WIRE = 1e-6;
@@ -48,6 +50,20 @@ export interface SolveOptions {
 }
 
 const isGround = (n: NodeId) => GROUND_NAMES.has(n);
+
+/** Value of a waveform at time t (seconds). Square waves start high at t = 0. */
+export function waveValue(w: Waveform, t: number): number {
+  const ph = (((t * w.freq) % 1) + 1) % 1;
+  const half = w.vpp / 2;
+  switch (w.shape) {
+    case 'square': return w.offset + (ph < (w.duty ?? 0.5) ? half : -half);
+    case 'sine': return w.offset + half * Math.sin(2 * Math.PI * ph);
+    case 'triangle': return w.offset + half * (ph < 0.5 ? 4 * ph - 1 : 3 - 4 * ph);
+  }
+}
+
+/** A voltage source's output at time t. */
+export const sourceVolts = (c: VoltageSource, t: number) => (c.wave ? waveValue(c.wave, t) : c.volts);
 
 /** Index map for non-ground nodes. */
 function indexNodes(components: Component[]): { nodes: NodeId[]; index: Map<NodeId, number> } {
@@ -180,7 +196,7 @@ function build(
         const k = vsrcCol.get(c.id)!;
         addA(a, k, 1); addA(b, k, -1);
         addA(k, a, 1); addA(k, b, -1);
-        rhs[k] = opts.zeroSources?.has(c.id) ? 0 : c.volts;
+        rhs[k] = opts.zeroSources?.has(c.id) ? 0 : sourceVolts(c, opts.time ?? 0);
         break;
       }
       case 'diode':

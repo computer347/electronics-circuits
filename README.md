@@ -40,7 +40,7 @@ npm run build    # typecheck + production build
 
 **Circuit solver** (`src/sim/`): modified nodal analysis in TypeScript with ideal parts.
 
-- Parts: resistors, voltage and current sources, wires, switches, diodes, LEDs (by colour), capacitors
+- Parts: resistors, voltage and current sources (DC or square / sine / triangle waveforms), wires, switches, diodes, LEDs (by colour), capacitors
 - DC operating point and transient steps (backward Euler) via `Simulator.step(dt)`, fast enough to run every frame
 - Fault detection: short circuits, source conflicts, LED overcurrent and reverse overvoltage, floating nodes
 - SPICE-like netlist format, e.g.
@@ -61,8 +61,10 @@ npm run build    # typecheck + production build
 
 **Electron flow and ride** (Breadboard tab, **F** / **R**): every current path fills with moving charge, coloured by the source driving it and moving at a speed that follows the current. Where two sources share a wire, the colours mix in proportion to each one's share (superposition, `src/sim/superposition.ts`). Ride mode puts the camera on a single electron that picks its way through junctions weighted by current, slowing in resistors and LEDs, with a caption telling you where the energy goes. Click any part (or place the multimeter probes) to see its current or voltage broken down by source. Toggle conventional current to see + → − instead of electron flow.
 
+**Oscilloscope and live bench** (Breadboard tab, **O**; `src/instruments/`, `src/breadboard/live.ts`): the bench now runs a real-time transient simulation, so capacitors charge and function generators swing. New parts: **capacitors** (ceramic below 1 µF, polarised electrolytics from 1 µF, flagged if put in backwards) and a **function generator** (square, sine or triangle, 1 Hz–20 kHz, amplitude and offset). The two-channel scope clips onto any breadboard hole (**Scope probes**, key **0**), with its ground on board ground, and draws the trace live on the WebGL phosphor shader from `docs/demos/`: afterglow, bloom, curved glass and a graticule that catches the glow. It has V/div and position per channel, time/div from 10 µs to 500 ms, edge trigger on either channel with Auto / Normal / Single modes, Run/Stop, and Vpp / mean / max / min / frequency readouts. The whole bench runs on the scope's timebase: 50 ms/div and slower is real time, faster timebases put the bench in slow motion so a 1 kHz square wave is watchable (the HUD shows the factor). LEDs on a changing board glow with their average current and burn out on their peak current. Presets **RC filter** (1 kHz into 1 kΩ / 100 nF) and **RC charge** (hold the button, 100 µF through 10 kΩ) come with the probes already clipped on.
+
 **Solver bench** (`src/app/`): edit a netlist, see node voltages, currents and faults live, with a placeholder electron-flow strip in Three.js.
 
 ## Next up (Phase 0)
 
-Oscilloscope with the phosphor shader → five World 0 levels → theory classes → landing page.
+Five World 0 levels with fault injection and "find the fault" → theory classes and superposition/Thevenin drills → landing page → ride extras (pick the branch at junctions, diode walls).

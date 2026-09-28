@@ -34,12 +34,12 @@ export const SOURCE_PALETTE = ['#39ff88', '#3ad7ff', '#ffb000', '#ff5cf0', '#f5f
 export function sourceColors(board: BoardState): Record<string, string> {
   const out: Record<string, string> = { [SUPPLY_ID]: SOURCE_PALETTE[0]! };
   let i = 1;
-  for (const p of board.parts) if (p.kind === 'battery') out[p.id] = SOURCE_PALETTE[i++ % SOURCE_PALETTE.length]!;
+  for (const p of board.parts) if (p.kind === 'battery' || p.kind === 'generator') out[p.id] = SOURCE_PALETTE[i++ % SOURCE_PALETTE.length]!;
   out[DIODE_KEY] = '#ff2e88';
   return out;
 }
 
-const PART_LABEL: Record<string, string> = { resistor: 'resistor', led: 'LED', wire: 'jumper wire', button: 'push button', battery: 'battery' };
+const PART_LABEL: Record<string, string> = { resistor: 'resistor', led: 'LED', wire: 'jumper wire', button: 'push button', battery: 'battery', capacitor: 'capacitor', generator: 'function generator' };
 
 export function buildFlow(board: BoardState, analysis: BoardAnalysis): FlowEdge[] {
   const r = analysis.result;

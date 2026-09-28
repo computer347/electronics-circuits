@@ -1,10 +1,13 @@
 import { useEffect, useMemo } from 'react';
 import { formatSI } from '../lib/units';
-import { DIODE_KEY, LED_VF, type LedColor } from '../sim';
+import { ScopePanel } from '../instruments/ScopePanel';
+import { useScope } from '../instruments/scopeStore';
+import { DIODE_KEY, LED_VF, type LedColor, type SolveResult, type Waveform, type WaveShape } from '../sim';
 import { colorBands } from './colorCode';
 import { hole } from './layout';
 import { sourceColors } from './flow';
-import { analyzeBoard, SUPPLY_ID, type BoardAnalysis } from './model';
+import { startLiveBench, useLive } from './live';
+import { analyzeBoard, DEFAULT_WAVE, isDynamicBoard, isElectrolytic, LED_MAX_AMPS, reversedElectrolytics, SUPPLY_ID, type BoardAnalysis } from './model';
 import { connectedGroup } from './move';
 import { BreadboardScene } from './Scene';
 import { BENCH_PRESETS, useBench, type Tool } from './store';
@@ -23,8 +26,43 @@ const TOOLS: { id: Tool; label: string; key: string }[] = [
   { id: 'button', label: 'Push button', key: '5' },
   { id: 'battery', label: 'Battery', key: '6' },
   { id: 'probe', label: 'Multimeter probes', key: '7' },
+  { id: 'capacitor', label: 'Capacitor', key: '8' },
+  { id: 'generator', label: 'Function generator', key: '9' },
+  { id: 'scope', label: 'Scope probes', key: '0' },
 ];
 const BATTERY_VOLTS = [1.5, 3, 4.5, 6, 9];
+const CAP_VALUES = [1e-9, 2.2e-9, 4.7e-9, 10e-9, 22e-9, 47e-9, 100e-9, 220e-9, 470e-9, 1e-6, 2.2e-6, 4.7e-6, 10e-6, 22e-6, 47e-6, 100e-6, 220e-6, 470e-6, 1000e-6];
+const FREQS = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
+const VPPS = [0.5, 1, 2, 3.3, 5, 9, 10];
+const SHAPES: WaveShape[] = ['square', 'sine', 'triangle'];
+/** Capacitors are labelled in nF and µF, never mF (a "1000 µF" can, not "1 mF"). */
+const fmtCap = (f: number) => (f >= 1e-6 ? `${Number((f * 1e6).toPrecision(3))} µF` : formatSI(f, 'F'));
+
+/** Shape, frequency, amplitude and offset of a function generator. */
+function WaveEditor({ wave, onChange }: { wave: Waveform; onChange: (w: Waveform) => void }) {
+  return (
+    <div className="wave-editor">
+      <label className="field">Shape
+        <select value={wave.shape} onChange={(e) => onChange({ ...wave, shape: e.target.value as WaveShape })}>
+          {SHAPES.map((x) => <option key={x} value={x}>{x}</option>)}
+        </select>
+      </label>
+      <label className="field">Frequency
+        <select value={wave.freq} onChange={(e) => onChange({ ...wave, freq: Number(e.target.value) })}>
+          {FREQS.map((f) => <option key={f} value={f}>{formatSI(f, 'Hz')}</option>)}
+        </select>
+      </label>
+      <label className="field">Amplitude
+        <select value={wave.vpp} onChange={(e) => onChange({ ...wave, vpp: Number(e.target.value) })}>
+          {VPPS.map((v) => <option key={v} value={v}>{v} Vpp</option>)}
+        </select>
+      </label>
+      <label className="field">Offset
+        <input type="number" step={0.5} min={-10} max={10} value={wave.offset} onChange={(e) => onChange({ ...wave, offset: Number(e.target.value) })} />
+      </label>
+    </div>
+  );
+}
 
 const keyLabel = (k: string) => (k === SUPPLY_ID ? 'Bench supply' : k === DIODE_KEY ? 'LED/diode drops' : k);
 
@@ -62,6 +100,9 @@ function instruction(tool: Tool, pending: boolean): string {
     case 'select': return 'Click a part to edit it, right-click to move it. Hold a push button to press it. Drag to orbit.';
     case 'probe': return 'Click a hole for the red probe, then another for the black probe.';
     case 'battery': return pending ? 'Now click the hole for the − terminal.' : 'Click the hole for the + terminal.';
+    case 'capacitor': return pending ? 'Now the second leg (the − leg, by the stripe, for electrolytics).' : 'Click the first leg (the + leg for electrolytics, 1 µF and up).';
+    case 'generator': return pending ? 'Now the COM clip (usually ground).' : 'Click the hole for the signal lead.';
+    case 'scope': return 'Click a hole to clip on CH1, then CH2. Click a probe again to take it off. Ground is the blue rail.';
     case 'led': return pending ? 'Now click the hole for the cathode (short leg, flat side).' : 'Click the hole for the anode (long leg, +).';
     default: return pending ? 'Click the second hole.' : 'Click the first hole.';
   }
@@ -78,18 +119,38 @@ export function BenchView() {
   const s = useBench();
   const board = useMemo(() => ({ supply: s.supply, parts: s.parts }), [s.supply, s.parts]);
   const analysis = useMemo(() => analyzeBoard(board), [board]);
+  const dynamic = isDynamicBoard(board);
+  const live = useLive();
+  const scopeApply = useScope((x) => x.apply);
 
-  // LEDs that got overloaded stay burnt, like real ones.
+  // The transient simulation runs while the bench is open.
+  useEffect(() => startLiveBench(), []);
+
+  // LEDs that got overloaded stay burnt, like real ones. On a changing board it's the peak that counts.
   useEffect(() => {
+    if (dynamic) return;
     const fresh = analysis.newlyBurnt.filter((id) => !s.parts.find((p) => p.id === id)?.burnt);
     if (fresh.length) s.markBurnt(fresh);
   }, [analysis]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!dynamic || !live.result?.ok) return;
+    const over = Object.entries(live.peakCurrents).filter(([, a]) => a > LED_MAX_AMPS).map(([id]) => id);
+    const reverse = live.result.faults.filter((f) => f.kind === 'reverse-overvoltage' && f.component).map((f) => f.component!);
+    const fresh = [...over, ...reverse].filter((id) => { const p = s.parts.find((x) => x.id === id); return p?.kind === 'led' && !p.burnt; });
+    if (fresh.length) s.markBurnt([...new Set(fresh)]);
+  }, [live]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** The result the readouts show: live transient on a changing board, DC otherwise. */
+  const shown: SolveResult = dynamic && live.result ? live.result : analysis.result;
+  const voltAt = (h: string) => (shown.ok ? shown.nodeVoltages[analysis.nodeOf(h)] : undefined);
+  const partAmps = (id: string) => (dynamic ? live.avgCurrents[id] : shown.currents[id]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'SELECT') return;
       if (e.key === 'f' || e.key === 'F') return s.setView(s.view === 'flow' ? 'build' : 'flow');
       if (e.key === 'r' || e.key === 'R') return s.setView(s.view === 'ride' ? 'build' : 'ride');
+      if (e.key === 'o' || e.key === 'O') return s.setScopeOpen(!s.scopeOpen);
       if (e.key === 'Escape' && s.view === 'ride') return s.setView('flow');
       if (s.view === 'ride') return;
       const t = TOOLS.find((x) => x.key === e.key);
@@ -119,20 +180,22 @@ export function BenchView() {
   const sel = s.parts.find((p) => p.id === s.selected);
   const menuPart = s.menu ? s.parts.find((p) => p.id === s.menu!.partId) : undefined;
   const groupSize = menuPart ? connectedGroup(s.parts, menuPart.id).length : 0;
-  const r = analysis.result;
+  const r = shown;
   const meter = (() => {
     const { red, black } = s.probes;
     if (!red || !black) return { text: '- - -', note: 'Place both probes' };
-    const vr = analysis.voltageAt(red);
-    const vb = analysis.voltageAt(black);
+    const vr = voltAt(red);
+    const vb = voltAt(black);
     if (vr === undefined || vb === undefined || !r.ok) return { text: '0.000', note: 'A probe is on a strip with nothing connected' };
     return { text: (vr - vb).toFixed(3), note: `${hole(red).label} → ${hole(black).label}` };
   })();
 
   const colors = sourceColors(board);
   const sourceKeys = analysis.contributions?.keys.filter((k) => k !== DIODE_KEY) ?? [];
+  const reversed = reversedElectrolytics(board, analysis.nodeOf, r);
   const faults = [
-    ...r.faults.filter((f) => f.kind !== 'floating-node'),
+    ...r.faults.filter((f) => f.kind !== 'floating-node' && !(dynamic && f.kind === 'overcurrent')),
+    ...reversed.map((id) => ({ kind: 'reversed-cap', severity: 'warning' as const, message: `${id} is an electrolytic in backwards: its − leg is more positive. Real ones bulge and leak. Swap its legs.` })),
     ...analysis.shortedParts.map((id) => ({ kind: 'same-strip', severity: 'warning' as const, message: `${id} has both legs on the same strip, so it's bypassed.` })),
   ];
   const burnt = s.parts.filter((p) => p.burnt);
@@ -160,6 +223,14 @@ export function BenchView() {
             </select>
           </label>
         )}
+        {s.tool === 'capacitor' && (
+          <label className="field">Value
+            <select value={s.farads} onChange={(e) => s.setFarads(Number(e.target.value))}>
+              {CAP_VALUES.map((f) => <option key={f} value={f}>{fmtCap(f)}{f >= 1e-6 ? ' (electrolytic)' : ''}</option>)}
+            </select>
+          </label>
+        )}
+        {s.tool === 'generator' && <WaveEditor wave={s.wave} onChange={s.setWave} />}
         {s.tool === 'led' && (
           <label className="field">Colour
             <select value={s.ledColor} onChange={(e) => s.setLedColor(e.target.value as LedColor)}>
@@ -177,6 +248,10 @@ export function BenchView() {
         {s.view !== 'build' && (
           <label className="check"><input type="checkbox" checked={s.conventional} onChange={s.toggleConventional} /> Conventional current (+ → −)</label>
         )}
+        {s.view !== 'build' && dynamic && <p className="hint">Flow shows the steady DC picture: capacitors count as open, generators sit at their t = 0 value.</p>}
+        <div className="presets">
+          <button className={s.scopeOpen ? 'active' : ''} onClick={() => s.setScopeOpen(!s.scopeOpen)}>Oscilloscope <kbd>O</kbd></button>
+        </div>
 
         <h2>Bench supply</h2>
         <div className="supply-row">
@@ -190,15 +265,20 @@ export function BenchView() {
         <h2>Circuits</h2>
         <div className="presets">
           {Object.keys(BENCH_PRESETS).map((name) => (
-            <button key={name} onClick={() => s.load(structuredClone(BENCH_PRESETS[name]!))}>{name}</button>
+            <button key={name} onClick={() => {
+              const p = structuredClone(BENCH_PRESETS[name]!);
+              s.load(p);
+              if (p.scopeSetup) scopeApply(p.scopeSetup);
+            }}>{name}</button>
           ))}
           <button onClick={s.clear}>Clear</button>
         </div>
         <label className="check"><input type="checkbox" checked={s.showStrips} onChange={(e) => s.setShowStrips(e.target.checked)} /> Glow strips by voltage</label>
       </aside>
 
+      <div className="stage-col">
       <section className="stage" onContextMenu={(e) => e.preventDefault()}>
-        <BreadboardScene analysis={analysis} />
+        <BreadboardScene analysis={analysis} dynamic={dynamic} />
         {s.view !== 'build' && sourceKeys.length > 0 && (
           <div className="legend">
             <span className="legend-title">{s.conventional ? 'Conventional current' : 'Electron flow'} by source</span>
@@ -218,7 +298,7 @@ export function BenchView() {
           {s.hover && (
             <span className="hover-info">
               {hole(s.hover).label} · {describeStrip(s.hover)}
-              {analysis.voltageAt(s.hover) !== undefined && r.ok ? ` · ${formatSI(analysis.voltageAt(s.hover)!, 'V')}` : ''}
+              {voltAt(s.hover) !== undefined && r.ok ? ` · ${formatSI(voltAt(s.hover)!, 'V')}` : ''}
             </span>
           )}
         </div>
@@ -233,7 +313,7 @@ export function BenchView() {
             )}
             {menuPart.kind !== 'wire' && (
               <button role="menuitem" onClick={() => { s.flipPart(menuPart.id); s.closeMenu(); }}>
-                {menuPart.kind === 'led' ? 'Flip polarity' : 'Swap legs'}
+                {menuPart.kind === 'led' || isElectrolytic(menuPart) ? 'Flip polarity' : 'Swap legs'}
               </button>
             )}
             <button role="menuitem" onClick={() => { s.select(menuPart.id); s.closeMenu(); }}>Edit value…</button>
@@ -241,6 +321,8 @@ export function BenchView() {
           </div>
         )}
       </section>
+      {s.scopeOpen && <ScopePanel onClose={() => s.setScopeOpen(false)} />}
+      </div>
 
       <aside className="panel readouts">
         <h2>Multimeter · DC V</h2>
@@ -259,14 +341,21 @@ export function BenchView() {
             {burnt.map((p) => <li key={p.id} className="error">{p.id} burnt out. Fix the circuit, then replace it.</li>)}
           </ul>
         )}
-        {r.ok && s.supply.on && <p className="hint">Supply current: {amps(r.currents[SUPPLY_ID])}</p>}
+        {r.ok && s.supply.on && <p className="hint">Supply current: {amps(partAmps(SUPPLY_ID))}</p>}
 
         {sel && (
           <>
             <h2>{sel.id}</h2>
             <table>
               <tbody>
-                <tr><th>Type</th><td className="num">{sel.kind === 'led' ? 'LED' : sel.kind}</td></tr>
+                <tr><th>Type</th><td className="num">{sel.kind === 'led' ? 'LED' : sel.kind === 'generator' ? 'function generator' : isElectrolytic(sel) ? 'electrolytic capacitor' : sel.kind}</td></tr>
+                {sel.kind === 'capacitor' && (
+                  <tr><th>Value</th><td className="num">
+                    <select value={sel.farads} onChange={(e) => s.updatePart(sel.id, { farads: Number(e.target.value) })} aria-label="Capacitance">
+                      {CAP_VALUES.map((f) => <option key={f} value={f}>{fmtCap(f)}</option>)}
+                    </select>
+                  </td></tr>
+                )}
                 {sel.kind === 'battery' && (
                   <tr><th>Voltage</th><td className="num">
                     <select value={sel.volts} onChange={(e) => s.updatePart(sel.id, { volts: Number(e.target.value) })} aria-label="Battery voltage">
@@ -301,14 +390,16 @@ export function BenchView() {
                 <tr><th>Legs</th><td className="num">{hole(sel.h1).label} → {hole(sel.h2).label}</td></tr>
                 {sel.kind !== 'wire' && r.ok && (
                   <>
-                    <tr><th>Current</th><td className="num">{amps(r.currents[sel.id])}</td></tr>
-                    <tr><th>Voltage</th><td className="num">{formatSI(Math.abs((analysis.voltageAt(sel.h1) ?? 0) - (analysis.voltageAt(sel.h2) ?? 0)), 'V')}</td></tr>
-                    <tr><th>Power</th><td className="num">{formatSI(Math.abs(r.power[sel.id] ?? 0), 'W')}</td></tr>
+                    <tr><th>Current{dynamic ? ' (avg)' : ''}</th><td className="num">{amps(partAmps(sel.id))}</td></tr>
+                    <tr><th>Voltage{dynamic ? ' (now)' : ''}</th><td className="num">{formatSI(Math.abs((voltAt(sel.h1) ?? 0) - (voltAt(sel.h2) ?? 0)), 'V')}</td></tr>
+                    {sel.kind !== 'capacitor' && <tr><th>Power{dynamic ? ' (now)' : ''}</th><td className="num">{formatSI(Math.abs(r.power[sel.id] ?? 0), 'W')}</td></tr>}
                   </>
                 )}
               </tbody>
             </table>
-            {r.ok && analysis.contributions?.currents[sel.id] && sel.kind !== 'wire' && (
+            {sel.kind === 'generator' && <WaveEditor wave={sel.wave ?? DEFAULT_WAVE} onChange={(w) => s.updatePart(sel.id, { wave: w })} />}
+            {r.ok && analysis.contributions?.currents[sel.id] && sel.kind !== 'wire' && sel.kind !== 'capacitor'
+              && Object.values(analysis.contributions.currents[sel.id]!).some((v) => Math.abs(v) > 1e-9) && (
               <>
                 <h2>Current by source</h2>
                 <Breakdown parts={analysis.contributions.currents[sel.id]!} unit="A" colors={colors} />
@@ -317,7 +408,7 @@ export function BenchView() {
             <div className="presets" style={{ marginTop: 12 }}>
               {sel.burnt && <button onClick={() => s.replaceLed(sel.id)}>Replace LED</button>}
               <button onClick={() => s.startMove(sel.id, sel.h1, 'single')}>Move (M)</button>
-              {sel.kind === 'led' && <button onClick={() => s.flipPart(sel.id)}>Flip</button>}
+              {(sel.kind === 'led' || isElectrolytic(sel)) && <button onClick={() => s.flipPart(sel.id)}>Flip</button>}
               <button onClick={s.removeSelected}>Remove (Del)</button>
             </div>
           </>

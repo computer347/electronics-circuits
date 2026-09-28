@@ -8,11 +8,12 @@ import { useMemo } from 'react';
 import * as THREE from 'three';
 import { colorBands } from './colorCode';
 import { BOARD, HOLES, hole, type HoleId } from './layout';
-import { LED_MAX_AMPS, type BoardAnalysis, type BoardPart } from './model';
+import { useLive } from './live';
+import { isElectrolytic, LED_MAX_AMPS, type BoardAnalysis, type BoardPart, type BoardState } from './model';
 import { buildFlow, sourceColors } from './flow';
 import { FlowParticles, RideElectron } from './FlowScene';
 import { translateParts } from './move';
-import { ledMid, supplyLeadCurve, wireCurve, SUPPLY_BOX, SUPPLY_HOLES } from './paths';
+import { CAP_Y, ledMid, supplyLeadCurve, wireCurve, SUPPLY_BOX, SUPPLY_HOLES } from './paths';
 import { useBench } from './store';
 
 const LED_HEX = { red: '#ff3b30', yellow: '#ffd60a', green: '#39ff88', blue: '#3a8bff', white: '#f5f5ff' } as const;
@@ -45,8 +46,21 @@ function Segment({ from, to, r = 0.045, color = '#b9c2bd', emissive }: { from: V
 
 // ---------------------------------------------------------------- board
 
-function Board({ analysis }: { analysis: BoardAnalysis }) {
-  const { hover, showStrips, supply, pending, tool } = useBench();
+/** Largest source voltage on the board, for scaling the strip glow. */
+function boardVref(b: BoardState): number {
+  let v = b.supply.on ? b.supply.volts : 0;
+  for (const p of b.parts) {
+    if (p.kind === 'battery') v = Math.max(v, p.volts ?? 0);
+    if (p.kind === 'generator' && p.wave) v = Math.max(v, Math.abs(p.wave.offset) + p.wave.vpp / 2);
+  }
+  return Math.max(v, 0.1);
+}
+
+function Board({ analysis, dynamic }: { analysis: BoardAnalysis; dynamic: boolean }) {
+  const { hover, showStrips, supply, parts, pending, tool } = useBench();
+  const live = useLive((st) => (dynamic ? st.result : null));
+  const vref = boardVref({ supply, parts });
+  const voltageAt = (h: HoleId) => (live?.ok ? live.nodeVoltages[analysis.nodeOf(h)] : analysis.voltageAt(h));
   const setHover = useBench((s) => s.setHover);
   const clickHole = useBench((s) => s.clickHole);
 
@@ -95,8 +109,8 @@ function Board({ analysis }: { analysis: BoardAnalysis }) {
         </mesh>
       ))}
       {strips.map((s) => {
-        const v = analysis.voltageAt(s.sample);
-        const level = v === undefined || !supply.on ? 0 : Math.min(1, Math.abs(v) / Math.max(supply.volts, 0.1));
+        const v = voltageAt(s.sample);
+        const level = v === undefined ? 0 : Math.min(1, Math.abs(v) / vref);
         const hot = s.strip === hoverStrip;
         const color = hot ? SIGNAL : new THREE.Color('#2a6b4a').lerp(SIGNAL, showStrips ? level * 0.85 : 0);
         return (
@@ -199,8 +213,11 @@ function Resistor({ part, mark }: { part: BoardPart; mark?: string }) {
   );
 }
 
-function Led({ part, mark, amps }: { part: BoardPart; mark?: string; amps: number }) {
+function Led({ part, mark, amps: dcAmps, dynamic }: { part: BoardPart; mark?: string; amps: number; dynamic: boolean }) {
   const handlers = usePartHandlers(part);
+  // On a changing board the LED shows its average current, the way your eye averages a fast blink.
+  const liveAmps = useLive((st) => (dynamic ? st.avgCurrents[part.id] ?? 0 : null));
+  const amps = liveAmps ?? dcAmps;
   const a = at(part.h1), b = at(part.h2);
   const mid: V3 = [(a[0] + b[0]) / 2, 0, (a[2] + b[2]) / 2];
   const color = LED_HEX[part.color ?? 'red'];
@@ -303,6 +320,114 @@ function Battery({ part, mark, color }: { part: BoardPart; mark?: string; color:
   );
 }
 
+function Capacitor({ part, mark }: { part: BoardPart; mark?: string }) {
+  const handlers = usePartHandlers(part);
+  const a = at(part.h1), b = at(part.h2);
+  const m = ledMid(part);
+  const dir = new THREE.Vector3(b[0] - a[0], 0, b[2] - a[2]);
+  const yaw = Math.atan2(-dir.z, dir.x);
+  if (isElectrolytic(part)) {
+    // Upright can with a light stripe down the − side (h2), like a real electrolytic.
+    const big = (part.farads ?? 0) >= 100e-6;
+    const r = big ? 0.42 : 0.3, h = big ? 1.3 : 0.95;
+    return (
+      <group {...handlers}>
+        <Segment from={a} to={[m[0] - 0.12, 0.25, m[2]]} />
+        <Segment from={b} to={[m[0] + 0.12, 0.25, m[2]]} />
+        <group position={[m[0], 0.25 + h / 2, m[2]]} rotation={[0, yaw, 0]}>
+          <mesh>
+            <cylinderGeometry args={[r, r, h, 28]} />
+            <meshStandardMaterial color="#1d3f8f" roughness={0.45} emissive={mark ?? '#000'} emissiveIntensity={mark ? 0.45 : 0} />
+          </mesh>
+          <mesh position={[r * 0.72, 0, 0]} rotation={[0, 0, 0]}>
+            <boxGeometry args={[r * 0.6, h * 1.002, r * 0.55]} />
+            <meshStandardMaterial color="#c9d3e6" roughness={0.5} />
+          </mesh>
+          <mesh position={[0, h / 2 + 0.005, 0]}>
+            <cylinderGeometry args={[r * 0.96, r * 0.96, 0.01, 28]} />
+            <meshStandardMaterial color="#9aa3ad" metalness={0.8} roughness={0.3} />
+          </mesh>
+        </group>
+      </group>
+    );
+  }
+  // Ceramic disc on two legs.
+  return (
+    <group {...handlers}>
+      <Segment from={a} to={[a[0], 0.35, a[2]]} />
+      <Segment from={[a[0], 0.35, a[2]]} to={[m[0] - 0.12, CAP_Y, m[2]]} />
+      <Segment from={b} to={[b[0], 0.35, b[2]]} />
+      <Segment from={[b[0], 0.35, b[2]]} to={[m[0] + 0.12, CAP_Y, m[2]]} />
+      <mesh position={[m[0], CAP_Y + 0.28, m[2]]} rotation={[Math.PI / 2, 0, yaw + Math.PI / 2]}>
+        <cylinderGeometry args={[0.38, 0.38, 0.16, 28]} />
+        <meshStandardMaterial color="#d98a2b" roughness={0.55} emissive={mark ?? '#000'} emissiveIntensity={mark ? 0.45 : 0} />
+      </mesh>
+    </group>
+  );
+}
+
+function Generator({ part, mark, color }: { part: BoardPart; mark?: string; color: string }) {
+  const handlers = usePartHandlers(part);
+  const a = at(part.h1), b = at(part.h2);
+  const m = ledMid(part);
+  const y = 1.1;
+  // little waveform icon on the lid, in the source's colour
+  const icon = useMemo(() => {
+    const shape = part.wave?.shape ?? 'square';
+    const pts: THREE.Vector3[] = [];
+    for (let i = 0; i <= 40; i++) {
+      const u = i / 40, ph = (u * 2) % 1;
+      const v = shape === 'sine' ? Math.sin(ph * Math.PI * 2) : shape === 'triangle' ? (ph < 0.5 ? 4 * ph - 1 : 3 - 4 * ph) : ph < 0.5 ? 1 : -1;
+      pts.push(new THREE.Vector3(-0.55 + u * 1.1, 0, -v * 0.16));
+    }
+    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0), 80, 0.025, 4, false);
+  }, [part.wave?.shape]);
+  return (
+    <group {...handlers}>
+      <Segment from={a} to={[a[0], 0.6, a[2]]} color="#e8413c" />
+      <Segment from={[a[0], 0.6, a[2]]} to={[m[0] - 0.6, y, m[2]]} color="#e8413c" />
+      <Segment from={b} to={[b[0], 0.6, b[2]]} color="#222" />
+      <Segment from={[b[0], 0.6, b[2]]} to={[m[0] + 0.6, y, m[2]]} color="#222" />
+      <mesh position={[m[0], y, m[2]]}>
+        <boxGeometry args={[1.8, 0.8, 1.0]} />
+        <meshStandardMaterial color="#141a17" roughness={0.5} emissive={mark ?? '#000'} emissiveIntensity={mark ? 0.4 : 0} />
+      </mesh>
+      <mesh geometry={icon} position={[m[0], y + 0.42, m[2]]}>
+        <meshBasicMaterial color={color} toneMapped={false} />
+      </mesh>
+    </group>
+  );
+}
+
+/** Oscilloscope probe tip with a coloured hook, clipped onto a hole. */
+function ScopeProbe({ h, color, label }: { h: HoleId; color: string; label: string }) {
+  const p = at(h);
+  return (
+    <group position={[p[0], 0, p[2]]}>
+      <mesh position={[0, 0.35, 0]}>
+        <torusGeometry args={[0.16, 0.035, 8, 20, Math.PI * 1.4]} />
+        <meshStandardMaterial color="#d0d4d2" metalness={0.8} roughness={0.25} />
+      </mesh>
+      <mesh position={[0.25, 1.35, -0.2]} rotation={[0.25, 0, -0.25]}>
+        <cylinderGeometry args={[0.15, 0.12, 1.8, 14]} />
+        <meshStandardMaterial color="#1b211e" roughness={0.6} />
+      </mesh>
+      <mesh position={[0.1, 0.62, -0.08]} rotation={[0.25, 0, -0.25]}>
+        <cylinderGeometry args={[0.17, 0.17, 0.12, 14]} />
+        <meshBasicMaterial color={color} toneMapped={false} />
+      </mesh>
+      <mesh position={[0, 0.04, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.22, 0.32, 24]} />
+        <meshBasicMaterial color={color} toneMapped={false} transparent opacity={0.9} />
+      </mesh>
+      <mesh position={[0.45, 2.4, -0.45]} name={label}>
+        <sphereGeometry args={[0.06, 8, 6]} />
+        <meshBasicMaterial color={color} toneMapped={false} />
+      </mesh>
+    </group>
+  );
+}
+
 function Supply({ analysis }: { analysis: BoardAnalysis }) {
   const supply = useBench((s) => s.supply);
   const shorted = analysis.result.faults.some((f) => f.kind === 'short-circuit');
@@ -346,10 +471,11 @@ function Probe({ h, color }: { h: HoleId; color: string }) {
 
 // ---------------------------------------------------------------- scene
 
-export function BreadboardScene({ analysis }: { analysis: BoardAnalysis }) {
+export function BreadboardScene({ analysis, dynamic }: { analysis: BoardAnalysis; dynamic: boolean }) {
   const parts = useBench((s) => s.parts);
   const selected = useBench((s) => s.selected);
   const probes = useBench((s) => s.probes);
+  const scopeProbes = useBench((s) => s.scopeProbes);
   const moving = useBench((s) => s.moving);
   const hover = useBench((s) => s.hover);
   const view = useBench((s) => s.view);
@@ -370,7 +496,7 @@ export function BreadboardScene({ analysis }: { analysis: BoardAnalysis }) {
   const markOf = (id: string) =>
     movingIds.has(id) ? (preview && !preview.valid ? FAULT : '#39ff88') : id === selected ? AMBER : undefined;
   return (
-    <Canvas camera={{ position: [0, 27, 21], fov: 40 }} dpr={[1, 2]} shadows={false}>
+    <Canvas camera={{ position: [0, 22, 17], fov: 40 }} dpr={[1, 2]} shadows={false}>
       <color attach="background" args={['#030604']} />
       <fog attach="fog" args={['#030604', 70, 130]} />
       <ambientLight intensity={dim ? 0.35 : 0.9} />
@@ -378,16 +504,18 @@ export function BreadboardScene({ analysis }: { analysis: BoardAnalysis }) {
       <directionalLight position={[8, 20, 10]} intensity={dim ? 0.6 : 1.6} />
       <directionalLight position={[-10, 8, -6]} intensity={0.35} color="#7fffc4" />
       <gridHelper args={[80, 40, '#123824', '#0c2418']} position={[0, -BOARD.thickness - 0.01, 0]} />
-      <Board analysis={analysis} />
+      <Board analysis={analysis} dynamic={dynamic} />
       <Supply analysis={analysis} />
       {shown.map((p) => {
         const mark = markOf(p.id);
         switch (p.kind) {
           case 'resistor': return <Resistor key={p.id} part={p} mark={mark} />;
-          case 'led': return <Led key={p.id} part={p} mark={mark} amps={movingIds.has(p.id) ? 0 : currents[p.id] ?? 0} />;
+          case 'led': return <Led key={p.id} part={p} mark={mark} amps={movingIds.has(p.id) ? 0 : currents[p.id] ?? 0} dynamic={dynamic && !movingIds.has(p.id)} />;
           case 'wire': return <Wire key={p.id} part={p} mark={mark} />;
           case 'button': return <Button key={p.id} part={p} mark={mark} />;
           case 'battery': return <Battery key={p.id} part={p} mark={mark} color={colors[p.id] ?? '#3ad7ff'} />;
+          case 'capacitor': return <Capacitor key={p.id} part={p} mark={mark} />;
+          case 'generator': return <Generator key={p.id} part={p} mark={mark} color={colors[p.id] ?? '#ffb000'} />;
         }
       })}
       {view === 'flow' && <FlowParticles edges={edges} colors={colors} />}
@@ -399,6 +527,8 @@ export function BreadboardScene({ analysis }: { analysis: BoardAnalysis }) {
       )}
       {probes.red && <Probe h={probes.red} color="#e8413c" />}
       {probes.black && <Probe h={probes.black} color="#222" />}
+      {scopeProbes.ch1 && <ScopeProbe h={scopeProbes.ch1} color="#39ff88" label="CH1" />}
+      {scopeProbes.ch2 && <ScopeProbe h={scopeProbes.ch2} color="#3ad7ff" label="CH2" />}
       <OrbitControls makeDefault enabled={view !== 'ride'} enablePan target={[0, 0, 0]} maxPolarAngle={Math.PI / 2.3} minDistance={8} maxDistance={45} />
     </Canvas>
   );

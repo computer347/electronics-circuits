@@ -37,6 +37,7 @@ export function contributions(circuit: Circuit, full: SolveResult): Contribution
       zeroSources: zero,
       fixedDiodeStates: full.diodeStates,
       zeroDiodeOffsets: key !== DIODE_KEY,
+      time: full.time,
     });
     if (!r.ok) return null;
     for (const [id, i] of Object.entries(r.currents)) (currents[id] ??= {})[key] = i;
