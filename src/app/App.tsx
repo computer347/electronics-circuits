@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { BenchView } from '../breadboard/BenchView';
 import { DrillView } from '../drills/DrillView';
 import { parseNetlist, solve, type SolveResult } from '../sim';
 import { CurrentStrip } from './CurrentStrip';
@@ -16,7 +17,7 @@ function fmtA(a: number) {
 type Outcome = { result: SolveResult; error?: undefined } | { result?: undefined; error: string };
 
 export function App() {
-  const [tab, setTab] = useState<'drills' | 'bench'>('drills');
+  const [tab, setTab] = useState<'drills' | 'breadboard' | 'bench'>('drills');
   const [text, setText] = useState(PRESETS['LED + resistor']!);
 
   const outcome: Outcome = useMemo(() => {
@@ -39,11 +40,12 @@ export function App() {
         <span>phase 0 · prototype</span>
         <nav className="tabs">
           <button className={tab === 'drills' ? 'active' : ''} onClick={() => setTab('drills')}>Exam drills</button>
+          <button className={tab === 'breadboard' ? 'active' : ''} onClick={() => setTab('breadboard')}>Breadboard</button>
           <button className={tab === 'bench' ? 'active' : ''} onClick={() => setTab('bench')}>Solver bench</button>
         </nav>
       </header>
 
-      {tab === 'drills' ? <DrillView /> : (
+      {tab === 'drills' ? <DrillView /> : tab === 'breadboard' ? <BenchView /> : (
       <main className="bench">
         <section className="panel">
           <h2>Netlist</h2>

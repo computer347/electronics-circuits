@@ -53,8 +53,10 @@ npm run build    # typecheck + production build
 
 **Exam drills** (`src/drills/`): nine question generators (Ohm's law, series and parallel, dividers, LED resistor sizing, RC charging, Wheatstone bridges, current sources) with random standard values, prefix-aware answer checking (`21.2m`, `4.7k`) and worked solutions. Tests check that the solver and each worked-solution formula agree on 60 random circuits per generator.
 
+**Breadboard bench** (`src/breadboard/`): a 3D half-size breadboard in React Three Fiber. Place jumper wires, resistors (with correct colour bands), LEDs and push buttons hole by hole, probe with a multimeter, and watch strips glow with their voltage. Breadboard wiring is modelled the real way (a–e / f–j strips, separate top and bottom rails), so classic mistakes like a resistor with both legs in one column show up. Overloaded LEDs burn out and stay dead until replaced.
+
 **Solver bench** (`src/app/`): edit a netlist, see node voltages, currents and faults live, with a placeholder electron-flow strip in Three.js.
 
 ## Next up (Phase 0)
 
-More drill types and theory classes → Breadboard Bench → Electron Run → five World 0 levels → landing page.
+More drill types and theory classes → Electron Run → five World 0 levels → landing page.

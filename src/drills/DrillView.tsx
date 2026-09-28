@@ -56,39 +56,49 @@ export function DrillView() {
       </div>
 
       <section className="panel drill-card">
-        <div className="drill-meta">
-          <span>{drill.topic}</span>
-          <span className="seed">#{drill.generator}-{drill.seed}</span>
+        <div className="drill-layout">
+          <div className="drill-figure">
+            <SchematicView schematic={drill.schematic} highlight={drill.highlight} title={drill.title} />
+          </div>
+          <div className="drill-side">
+            <div className="drill-meta">
+              <span>{drill.topic}</span>
+              <span className="seed">#{drill.generator}-{drill.seed}</span>
+            </div>
+            <h2 className="drill-title">{drill.title}</h2>
+            <p className="drill-prompt">{drill.prompt}</p>
+
+            <form className="answer" onSubmit={(e) => { e.preventDefault(); check(); }}>
+              <div className="answer-input">
+                <input
+                  value={input}
+                  onChange={(e) => { setInput(e.target.value); setVerdict(null); }}
+                  placeholder={UNIT_HINT[drill.answer.unit]}
+                  aria-label="Your answer"
+                  inputMode="decimal"
+                  autoFocus
+                />
+                <span className="unit">{drill.answer.unit}</span>
+              </div>
+              <div className="answer-buttons">
+                <button type="submit" className="primary">Check</button>
+                <button type="button" onClick={() => setShowSolution((v) => !v)}>{showSolution ? 'Hide' : 'Show'} solution</button>
+                <button type="button" onClick={() => next()}>Next →</button>
+              </div>
+            </form>
+
+            {verdict?.kind === 'correct' && <p className="verdict good">● Correct: {formatSI(drill.answer.value, drill.answer.unit)}</p>}
+            {verdict?.kind === 'wrong' && <p className="verdict bad">▲ Not quite. {verdict.hint ?? 'Try again or open the solution.'}</p>}
+            {verdict?.kind === 'unreadable' && <p className="verdict warn">Couldn't read that number. Try something like 4.7k or 21.2m.</p>}
+
+            {showSolution && (
+              <ol className="solution">
+                {drill.solution.map((line, i) => <li key={i}>{line}</li>)}
+                <li className="final">Answer: {formatSI(drill.answer.value, drill.answer.unit, 4)}</li>
+              </ol>
+            )}
+          </div>
         </div>
-        <h2 className="drill-title">{drill.title}</h2>
-        <SchematicView schematic={drill.schematic} highlight={drill.highlight} title={drill.title} />
-        <p className="drill-prompt">{drill.prompt}</p>
-
-        <form className="answer" onSubmit={(e) => { e.preventDefault(); check(); }}>
-          <input
-            value={input}
-            onChange={(e) => { setInput(e.target.value); setVerdict(null); }}
-            placeholder={UNIT_HINT[drill.answer.unit]}
-            aria-label="Your answer"
-            inputMode="decimal"
-            autoFocus
-          />
-          <span className="unit">{drill.answer.unit}</span>
-          <button type="submit">Check</button>
-          <button type="button" onClick={() => setShowSolution((s) => !s)}>{showSolution ? 'Hide' : 'Show'} solution</button>
-          <button type="button" onClick={() => next()}>Next →</button>
-        </form>
-
-        {verdict?.kind === 'correct' && <p className="verdict good">● Correct: {formatSI(drill.answer.value, drill.answer.unit)}</p>}
-        {verdict?.kind === 'wrong' && <p className="verdict bad">▲ Not quite. {verdict.hint ?? 'Try again or open the solution.'}</p>}
-        {verdict?.kind === 'unreadable' && <p className="verdict warn">Couldn't read that number. Try something like 4.7k or 21.2m.</p>}
-
-        {showSolution && (
-          <ol className="solution">
-            {drill.solution.map((s, i) => <li key={i}>{s}</li>)}
-            <li className="final">Answer: {formatSI(drill.answer.value, drill.answer.unit, 4)}</li>
-          </ol>
-        )}
       </section>
     </div>
   );
