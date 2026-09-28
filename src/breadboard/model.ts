@@ -1,12 +1,13 @@
 /**
- * Breadboard state -> circuit. Holes join into strips, jumper wires join strips, and the
- * bench supply drives the top rails (T+ positive, T- ground).
+ * Breadboard state -> circuit. Every strip is a node (T- is ground), jumper wires are
+ * real (tiny-resistance) components so their currents are known, and the bench supply
+ * drives the top rails.
  */
 
-import { LED_VF, solve, type Circuit, type Component, type LedColor, type SolveResult } from '../sim';
+import { contributions, LED_VF, solve, type Circuit, type Component, type Contributions, type LedColor, type SolveResult } from '../sim';
 import { hole, type HoleId } from './layout';
 
-export type BoardPartKind = 'resistor' | 'led' | 'wire' | 'button';
+export type BoardPartKind = 'resistor' | 'led' | 'wire' | 'button' | 'battery';
 
 export interface BoardPart {
   id: string;
@@ -15,6 +16,8 @@ export interface BoardPart {
   h1: HoleId;
   h2: HoleId;
   ohms?: number;
+  /** Batteries: terminal voltage; h1 is the + terminal. */
+  volts?: number;
   color?: LedColor;
   /** Wire colour for display. */
   wireColor?: string;
@@ -42,13 +45,11 @@ class UnionFind {
     this.p.set(x, r);
     return r;
   }
-  union(a: string, b: string) {
-    const ra = this.find(a), rb = this.find(b);
-    if (ra === rb) return;
-    // keep ground as the root so its name wins
-    if (rb === GROUND_STRIP) this.p.set(ra, rb); else this.p.set(rb, ra);
-  }
+  union(a: string, b: string) { this.p.set(this.find(a), this.find(b)); }
 }
+
+/** Netlist node for a strip: its own name, except the top ground rail, which is 0. */
+export const stripNode = (strip: string) => (strip === GROUND_STRIP ? '0' : strip);
 
 export interface BoardCircuit {
   circuit: Circuit;
@@ -57,19 +58,10 @@ export interface BoardCircuit {
 }
 
 export function boardToCircuit(board: BoardState): BoardCircuit {
-  const uf = new UnionFind();
-  for (const p of board.parts) {
-    if (p.kind === 'wire') uf.union(hole(p.h1).strip, hole(p.h2).strip);
-  }
-  const nodeOfStrip = (strip: string) => {
-    const root = uf.find(strip);
-    return uf.find(GROUND_STRIP) === root ? '0' : root;
-  };
-  const nodeOf = (h: HoleId) => nodeOfStrip(hole(h).strip);
-
+  const nodeOf = (h: HoleId) => stripNode(hole(h).strip);
   const components: Component[] = [];
   if (board.supply.on) {
-    components.push({ kind: 'vsource', id: SUPPLY_ID, a: nodeOfStrip('T+'), b: nodeOfStrip('T-'), volts: board.supply.volts });
+    components.push({ kind: 'vsource', id: SUPPLY_ID, a: stripNode('T+'), b: '0', volts: board.supply.volts });
   }
   for (const p of board.parts) {
     const a = nodeOf(p.h1);
@@ -88,7 +80,11 @@ export function boardToCircuit(board: BoardState): BoardCircuit {
         components.push({ kind: 'switch', id: p.id, a, b, closed: !!p.pressed });
         break;
       case 'wire':
-        break; // already merged into nodes
+        components.push({ kind: 'wire', id: p.id, a, b });
+        break;
+      case 'battery':
+        components.push({ kind: 'vsource', id: p.id, a, b, volts: p.volts ?? 9 });
+        break;
     }
   }
   return { circuit: { components }, nodeOf };
@@ -101,8 +97,11 @@ export interface BoardAnalysis {
   voltageAt: (h: HoleId) => number | undefined;
   /** LED ids that this solve would burn out. */
   newlyBurnt: string[];
-  /** Resistors with both legs on the same strip (a classic mistake: they do nothing). */
+  /** Parts whose legs are joined by strips/wires only (a classic mistake: they do nothing). */
   shortedParts: string[];
+  /** Per-source breakdown of every current and voltage (null if the solve failed). */
+  contributions: Contributions | null;
+  circuit: Circuit;
 }
 
 export function analyzeBoard(board: BoardState): BoardAnalysis {
@@ -111,8 +110,10 @@ export function analyzeBoard(board: BoardState): BoardAnalysis {
   const newlyBurnt = result.faults
     .filter((f) => (f.kind === 'overcurrent' || f.kind === 'reverse-overvoltage') && f.component)
     .map((f) => f.component!);
+  const joined = new UnionFind();
+  for (const p of board.parts) if (p.kind === 'wire') joined.union(hole(p.h1).strip, hole(p.h2).strip);
   const shortedParts = board.parts
-    .filter((p) => p.kind !== 'wire' && nodeOf(p.h1) === nodeOf(p.h2))
+    .filter((p) => p.kind !== 'wire' && p.kind !== 'battery' && joined.find(hole(p.h1).strip) === joined.find(hole(p.h2).strip))
     .map((p) => p.id);
   return {
     result,
@@ -120,5 +121,7 @@ export function analyzeBoard(board: BoardState): BoardAnalysis {
     voltageAt: (h) => result.nodeVoltages[nodeOf(h)],
     newlyBurnt,
     shortedParts,
+    contributions: contributions(circuit, result),
+    circuit,
   };
 }

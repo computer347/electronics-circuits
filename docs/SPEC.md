@@ -1,6 +1,6 @@
 # SIGNAL PATH — Circuits Learning Game Spec
 
-Mikael Salomaa · September 2026 · design spec, pre-implementation
+Mikael Salomaa · September 2026 · design spec (living copy in Claude Docs; this is a snapshot)
 
 ## Concept & pitch
 
@@ -40,6 +40,22 @@ The electron run is the payoff and the diagnostic: you see where current actuall
 | Field Incident (boss) | Timed, multi-mode debug scenario: "the board resets whenever the motor starts" | Putting it all together under pressure | Scripted faults over any of the above |
 
 A free **Sandbox** unlocks every part and mode you have earned, and doubles as a portfolio tool (export a build as a shareable link).
+
+### Source-traced flow and the analyser probe
+
+**Every source gets its own colour, and the flow on each wire shows how much of it comes from which source.** A probe can then break any point's voltage, or any part's current, down into what each source contributes. It's the superposition theorem made visible.
+
+- **Colour-coded flow:** in the Electron Run and on the breadboard, electrons carry the colour of the source that drives them (battery 1 green, battery 2 cyan, the current source amber). Where two sources share a wire, the stream is a mix in proportion to each one's share. Currents that oppose each other show as streams flowing in opposite directions, with the net flow brightest.
+- **Analyser probe (Instrument Bench):** tap any node, wire or part.
+  - **A node:** its voltage and a stacked bar of each source's contribution, e.g. "4.2 V = 3.0 V from V1 + 1.2 V from V2".
+  - **A part:** the current through it, the voltage across it and the power, each split by source the same way.
+  - **Drill link:** shows the superposition working ("switch off V2: here's what's left") and links to the superposition and Thevenin drills.
+
+**How it's computed:** re-solve the circuit once per source with the others switched off (voltage sources shorted, current sources opened). The results add up exactly because the circuit is linear.
+
+**Diodes and LEDs:** these aren't linear, so superposition doesn't strictly apply. We freeze each diode in the on/off state from the full solve. A diode that is on then behaves as a fixed voltage drop plus a small resistance. Each drop becomes its own entry in the breakdown ("−2.0 V across LED1"). The parts still sum to the true answer, and the display says the split is valid only at this operating point.
+
+**When:** the colour-coded flow comes with the Electron Run (Phase 0 stretch goal). The analyser probe joins the Instrument Bench in Phase 1, alongside a superposition drill type.
 
 ### Learn and drill layer (outside the 3D game)
 
@@ -156,6 +172,28 @@ The fault library doubles as a content engine: a level is a base circuit plus a 
 - **Transitions:** screen wipes as an oscilloscope sweep; UI panels "power on" with a CRT flicker and settle.
 - **Post-processing:** bloom, subtle scanlines and chromatic aberration, film grain; all toned down in editors where readability matters.
 - **Failure feedback:** a burnt part gets a smoke particle burst and a brief magnetic-field distortion; a short circuit whites out the bloom for a frame.
+
+**Phosphor shader layer**
+
+One shared WebGL post-processing layer gives every screen the look of a real phosphor tube, at three strengths: full on instrument screens, medium on 3D views, light on UI panels. A working demo is in [docs/demos/crt-phosphor-shader.html](demos/crt-phosphor-shader.html).
+
+- **Passes:**
+  - Persistence buffer with exponential decay that drifts warmer (P31 phosphor).
+  - Beam brightness set by dwell time, so fast edges draw faint.
+  - Two-level bloom: a tight glow plus wide halation.
+  - Tube effects: barrel curvature, a tone curve with mint-white hot cores, a graticule on the glass that catches nearby glow, fine scanlines, vignette and grain.
+- **Settings:** a toggle plus softness, afterglow and curvature controls. It switches off automatically on weak GPUs and in reduced-motion mode.
+
+| Where | Strength | What it adds |
+| --- | --- | --- |
+| Instrument Bench (scope, logic analyser, spectrum) | Full | Probes on breadboard holes draw live waveforms on a phosphor screen; the multimeter readout gets a subtle version |
+| Electron Run | Medium | Electrons leave phosphor trails, bloom makes current glow, per-source colour streams blend softly where they merge |
+| Tier 6 levels (signal integrity, EMC) | Full | Reflections show as ghost echoes in the afterglow, noise as haze and jitter |
+| RC and timing levels | Full | Afterglow keeps charge curves and switch bounce visible long enough to read |
+| Landing page | Full | The scroll-driven signal is drawn through the shader |
+| Transitions and world map | Medium | Screen changes as a scope sweep, panels power on with a CRT flicker, visited nodes glow |
+| Firmware IDE serial monitor and plotter | Medium | UART output and live plots in phosphor style |
+| Exam drills and 2D schematics | Light or off | Readability first: at most a faint glow, fully off in reduced-motion mode |
 
 **Audio**
 

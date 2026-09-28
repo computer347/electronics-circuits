@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Phosphor Shader Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+<style>
+  :root { --bg:#030604; --phosphor:#5dff9d; --dim:#7fa892; --mono:'JetBrains Mono',ui-monospace,monospace; --display:'Space Grotesk',system-ui,sans-serif; }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; background:radial-gradient(ellipse at 50% 15%, #0c1611 0%, var(--bg) 62%); color:#d8f5e3; font-family:var(--mono); display:grid; place-items:center; padding:24px 16px 40px; }
+  .wrap { width:min(940px,100%); }
+  h1 { font-family:var(--display); letter-spacing:.08em; color:var(--phosphor); margin:0 0 4px; font-size:clamp(20px,4vw,28px); text-shadow:0 0 18px rgba(93,255,157,.45); }
+  .sub { color:var(--dim); font-size:12px; margin:0 0 18px; }
+  .scope { background:linear-gradient(180deg,#181e1a,#101512); border:1px solid #1f2923; border-radius:20px; padding:clamp(12px,3vw,22px); box-shadow:0 30px 80px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.05); display:grid; grid-template-columns:minmax(0,1fr) 190px; gap:18px; }
+  @media (max-width:700px) { .scope { grid-template-columns:1fr; } }
+  .tube { position:relative; aspect-ratio:5/4; border-radius:26px/22px; overflow:hidden; background:#000; box-shadow:inset 0 0 30px rgba(0,0,0,.9), 0 0 0 7px #0a0e0c, 0 0 0 8px #26302a, 0 0 0 14px #0e1310; }
+  .tube canvas { position:absolute; inset:0; width:100%; height:100%; display:block; }
+  .fallback { position:absolute; inset:0; display:none; place-items:center; text-align:center; padding:20px; color:var(--dim); font-size:13px; }
+  .controls { display:grid; gap:14px; align-content:start; }
+  @media (max-width:700px) { .controls { grid-template-columns:1fr 1fr; } }
+  .label { font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--dim); margin-bottom:8px; display:flex; justify-content:space-between; }
+  .label output { color:var(--phosphor); letter-spacing:0; }
+  .btns { display:flex; flex-wrap:wrap; gap:6px; }
+  button { background:#0c110e; color:#cfe9da; border:1px solid #26312a; border-radius:6px; font:inherit; font-size:11px; padding:7px 10px; cursor:pointer; box-shadow:0 2px 0 #050806; }
+  button.on { color:var(--phosphor); border-color:var(--phosphor); box-shadow:0 0 10px rgba(93,255,157,.35), 0 2px 0 #050806; }
+  button:active { transform:translateY(1px); box-shadow:none; }
+  input[type=range] { width:100%; accent-color:#39ff88; }
+  .note { color:var(--dim); font-size:12px; line-height:1.65; margin-top:16px; }
+  .note b { color:#d8f5e3; font-weight:600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>SIGNAL PATH · PHOSPHOR SHADER</h1>
+  <p class="sub">Demo: WebGL post-processing that imitates a real phosphor tube. Not wired into the project.</p>
+
+  <div class="scope">
+    <div class="tube">
+      <canvas id="gl"></canvas>
+      <div class="fallback" id="fallback">This demo needs WebGL2, which this browser doesn't provide.</div>
+    </div>
+
+    <div class="controls">
+      <div>
+        <div class="label">Signal</div>
+        <div class="btns" id="waves">
+          <button data-w="sine" class="on">Sine</button>
+          <button data-w="square">Square</button>
+          <button data-w="rc">RC filter</button>
+          <button data-w="lissajous">Lissajous</button>
+        </div>
+      </div>
+      <div>
+        <div class="label">Shader layer</div>
+        <div class="btns">
+          <button id="fx" class="on">On</button>
+          <button id="compare">Split compare</button>
+        </div>
+      </div>
+      <div><div class="label">Softness <output id="softV"></output></div><input id="soft" type="range" min="0" max="1.6" step="0.01" value="0.9" /></div>
+      <div><div class="label">Afterglow <output id="glowV"></output></div><input id="glow" type="range" min="0.03" max="1.2" step="0.01" value="0.6" /></div>
+      <div><div class="label">Curvature <output id="curvV"></output></div><input id="curv" type="range" min="0" max="0.25" step="0.005" value="0.11" /></div>
+      <div><div class="label">Noise</div><div class="btns"><button id="noise">Off</button></div></div>
+    </div>
+  </div>
+
+  <p class="note">
+    <b>What the shader layer does, pass by pass:</b>
+    <br />1. <b>Persistence:</b> each frame's new beam trace is merged into a buffer that fades exponentially, like phosphor that keeps glowing after the beam passes. The fade drifts slightly warmer, as P31 phosphor does.
+    <br />2. <b>Beam physics:</b> the beam's brightness depends on how long it lingers, so the fast vertical edges of a square wave draw faint, just like on a real scope.
+    <br />3. <b>Bloom and halation:</b> two blur levels (tight glow plus a wide haze) scatter light through the "glass".
+    <br />4. <b>Tube:</b> curved screen (barrel distortion), a tone curve that turns bright cores almost white-mint, a graticule on the glass that catches nearby glow, fine scanlines, vignette and a little film grain.
+    <br />Try <b>Split compare</b> to see the raw render against the shaded one.
+  </p>
+</div>
+
+<script>
+(() => {
+  const glCanvas = document.getElementById('gl');
+  const gl = glCanvas.getContext('webgl2', { antialias: false, premultipliedAlpha: false });
+  if (!gl) { document.getElementById('fallback').style.display = 'grid'; return; }
+  const floatOK = !!gl.getExtension('EXT_color_buffer_float');
+
+  // ---------- offscreen 2D canvases: the beam trace and the etched graticule ----------
+  const src = document.createElement('canvas'), sctx = src.getContext('2d');
+  const grat = document.createElement('canvas'), gctx = grat.getContext('2d');
+
+  // ---------- state ----------
+  const st = { wave: 'sine', fx: true, split: 0, soft: 0.9, glow: 0.6, curv: 0.11, noise: false };
+  const AMP = 3, FREQ = 250, VDIV = 2, TDIV = 1e-3, TAU = 0.6e-3;
+
+  function signal(t) {
+    const ph = (t * FREQ) % 1; let v;
+    if (st.wave === 'sine') v = AMP * Math.sin(2 * Math.PI * FREQ * t);
+    else if (st.wave === 'square') v = ph < 0.5 ? AMP : -AMP;
+    else { // rc
+      const half = 0.5 / FREQ, k = Math.exp(-half / TAU), vmax = AMP * (1 - k) / (1 + k);
+      const tt = (ph % 0.5) / FREQ, up = ph < 0.5, s0 = up ? -vmax : vmax, tg = up ? AMP : -AMP;
+      v = tg + (s0 - tg) * Math.exp(-tt / TAU);
+    }
+    if (st.noise) v += (Math.random() - 0.5) * 0.3 + 0.1 * Math.sin(2 * Math.PI * 11000 * t);
+    return v;
+  }
+
+  // ---------- GL helpers ----------
+  const VS = `#version 300 es
+  out vec2 uv;
+  void main(){ vec2 p = vec2(float((gl_VertexID<<1)&2), float(gl_VertexID&2)); uv = p; gl_Position = vec4(p*2.0-1.0, 0.0, 1.0); }`;
+
+  function program(fs) {
+    const p = gl.createProgram();
+    for (const [type, code] of [[gl.VERTEX_SHADER, VS], [gl.FRAGMENT_SHADER, fs]]) {
+      const s = gl.createShader(type); gl.shaderSource(s, code); gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+      gl.attachShader(p, s);
+    }
+    gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+    const u = {}; const n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+    for (let i = 0; i < n; i++) { const name = gl.getActiveUniform(p, i).name; u[name] = gl.getUniformLocation(p, name); }
+    return { p, u };
+  }
+
+  function makeTex(w, h, float) {
+    const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+    if (float && floatOK) gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, w, h, 0, gl.RGBA, gl.HALF_FLOAT, null);
+    else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    return t;
+  }
+  function target(w, h) {
+    const tex = makeTex(w, h, true), fb = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+    return { tex, fb, w, h };
+  }
+
+  // ---------- shaders ----------
+  // 1) persistence: new trace merged into a decaying buffer; decayed light drifts slightly warmer (P31-ish)
+  const persistP = program(`#version 300 es
+  precision highp float; in vec2 uv; out vec4 o;
+  uniform sampler2D src, prev; uniform float decay;
+  void main(){
+    float s = texture(src, uv).r;
+    vec3 p = texture(prev, uv).rgb * vec3(decay * 1.004, decay, decay * 0.985);
+    o = vec4(max(vec3(s), p), 1.0);
+  }`);
+
+  // plain copy (used to downsample)
+  const copyP = program(`#version 300 es
+  precision highp float; in vec2 uv; out vec4 o; uniform sampler2D t;
+  void main(){ o = texture(t, uv); }`);
+
+  // separable 9-tap gaussian
+  const blurP = program(`#version 300 es
+  precision highp float; in vec2 uv; out vec4 o; uniform sampler2D t; uniform vec2 dir;
+  void main(){
+    vec3 c = texture(t, uv).rgb * 0.2270270270;
+    c += texture(t, uv + dir * 1.3846153846).rgb * 0.3162162162;
+    c += texture(t, uv - dir * 1.3846153846).rgb * 0.3162162162;
+    c += texture(t, uv + dir * 3.2307692308).rgb * 0.0702702703;
+    c += texture(t, uv - dir * 3.2307692308).rgb * 0.0702702703;
+    o = vec4(c, 1.0);
+  }`);
+
+  // 4) final tube composite
+  const finalP = program(`#version 300 es
+  precision highp float; in vec2 uv; out vec4 o;
+  uniform sampler2D persist, bloomA, bloomB, grat;
+  uniform vec2 res; uniform float time, soft, curv, split, fxOn;
+
+  float hash(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+
+  vec2 barrel(vec2 u, float k){
+    vec2 c = u * 2.0 - 1.0;
+    c *= 1.0 + k * dot(c, c) * 0.85;
+    c /= 1.0 + k * 0.9;            // pull back so the corners stay on screen
+    return c * 0.5 + 0.5;
+  }
+
+  vec3 phosphor(vec3 e){
+    // e = excitation (r slightly warmer after decay). Tone-map: green body, mint-white hot core.
+    float I = e.g;
+    vec3 body = vec3(0.20, 1.00, 0.52) * (1.0 - exp(-2.4 * I));
+    vec3 warm = vec3(0.10, 0.05, -0.06) * clamp(e.r - e.g, 0.0, 1.0) * 6.0;  // aged glow tint
+    vec3 hot  = vec3(0.80, 1.00, 0.90) * smoothstep(0.55, 1.4, I) * 0.55;
+    return body + hot + warm * I;
+  }
+
+  void main(){
+    vec2 fc = gl_FragCoord.xy;
+    bool left = uv.x < split;
+
+    if (fxOn < 0.5 || left) {
+      // "no shader" reference: flat green trace + flat graticule
+      float I = texture(persist, uv).g;
+      float g = texture(grat, uv).r;
+      vec3 col = vec3(0.36, 1.0, 0.62) * clamp(I, 0.0, 1.0) + vec3(0.36, 1.0, 0.62) * g * 0.25;
+      if (abs(uv.x - split) < 1.5 / res.x && fxOn > 0.5) col = vec3(1.0, 0.69, 0.0);
+      o = vec4(col, 1.0); return;
+    }
+
+    vec2 u = barrel(uv, curv);
+    // soft rounded edge of the tube face
+    vec2 edge = smoothstep(vec2(0.0), vec2(0.012), u) * smoothstep(vec2(0.0), vec2(0.012), 1.0 - u);
+    float inside = edge.x * edge.y;
+
+    // slightly softened core: 5 taps (the beam spot isn't a hard pixel)
+    vec2 px = 1.0 / res;
+    vec3 core = texture(persist, u).rgb * 0.5
+      + (texture(persist, u + vec2(px.x, 0.0)).rgb + texture(persist, u - vec2(px.x, 0.0)).rgb
+      +  texture(persist, u + vec2(0.0, px.y)).rgb + texture(persist, u - vec2(0.0, px.y)).rgb) * 0.125;
+
+    vec3 bA = texture(bloomA, u).rgb;
+    vec3 bB = texture(bloomB, u).rgb;
+
+    vec3 col = phosphor(core);
+    vec3 glow = vec3(0.10, 1.00, 0.45) * (bA.g * 3.2 * soft + bB.g * 4.5 * soft);
+    col += glow;
+
+    // graticule etched on the glass: dim, and edge-lit by nearby glow
+    float g = texture(grat, u).r;
+    col += vec3(0.30, 0.85, 0.55) * g * (0.14 + (bA.g + bB.g) * 5.0);
+
+    // phosphor floor + faint internal reflection
+    col += vec3(0.010, 0.030, 0.018);
+    col += vec3(0.02, 0.06, 0.035) * bB.g * 3.0;
+
+    // fine scanlines and aperture softness
+    float scan = 0.94 + 0.06 * sin(fc.y * 3.14159 * 0.66);
+    col *= scan;
+
+    // vignette + glass reflection + grain
+    vec2 q = u * (1.0 - u.yx);
+    float vig = pow(clamp(q.x * q.y * 18.0, 0.0, 1.0), 0.22);
+    col *= mix(0.55, 1.0, vig);
+    col += vec3(1.0) * 0.035 * smoothstep(0.9, 0.0, length(uv - vec2(0.18, 0.86))) ;
+    col += (hash(fc + fract(time) * 100.0) - 0.5) * 0.035;
+
+    o = vec4(col * inside, 1.0);
+  }`);
+
+  const vao = gl.createVertexArray();
+  gl.bindVertexArray(vao);
+
+  // ---------- resources (rebuilt on resize) ----------
+  let W = 0, H = 0, dpr = 1, persistA, persistB, d2, d8, half, tmpA, bloomA, quarter, tmpB, bloomB, srcTex, gratTex;
+
+  function drawGraticule() {
+    gctx.fillStyle = '#000'; gctx.fillRect(0, 0, W, H);
+    gctx.strokeStyle = '#fff';
+    const dx = W / 10, dy = H / 8;
+    gctx.lineWidth = Math.max(1, dpr * 0.9);
+    for (let i = 1; i < 10; i++) {
+      gctx.globalAlpha = i === 5 ? 0.75 : 0.35;
+      gctx.setLineDash(i === 5 ? [] : [2 * dpr, 6 * dpr]);
+      gctx.beginPath(); gctx.moveTo(i * dx, 0); gctx.lineTo(i * dx, H); gctx.stroke();
+    }
+    for (let j = 1; j < 8; j++) {
+      gctx.globalAlpha = j === 4 ? 0.75 : 0.35;
+      gctx.setLineDash(j === 4 ? [] : [2 * dpr, 6 * dpr]);
+      gctx.beginPath(); gctx.moveTo(0, j * dy); gctx.lineTo(W, j * dy); gctx.stroke();
+    }
+    gctx.setLineDash([]); gctx.globalAlpha = 0.8;
+    for (let k = 0; k <= 50; k++) { const x = k * dx / 5; gctx.beginPath(); gctx.moveTo(x, H / 2 - 6 * dpr); gctx.lineTo(x, H / 2 + 6 * dpr); gctx.stroke(); }
+    for (let k = 0; k <= 40; k++) { const y = k * dy / 5; gctx.beginPath(); gctx.moveTo(W / 2 - 6 * dpr, y); gctx.lineTo(W / 2 + 6 * dpr, y); gctx.stroke(); }
+    gctx.globalAlpha = 0.6; gctx.strokeRect(dpr, dpr, W - 2 * dpr, H - 2 * dpr);
+    gctx.globalAlpha = 1;
+  }
+
+  function upload(tex, canvas) {
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
+  }
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const r = glCanvas.getBoundingClientRect();
+    W = glCanvas.width = src.width = grat.width = Math.max(2, Math.round(r.width * dpr));
+    H = glCanvas.height = src.height = grat.height = Math.max(2, Math.round(r.height * dpr));
+    persistA = target(W, H); persistB = target(W, H);
+    d2 = target(Math.max(1, W >> 1), Math.max(1, H >> 1));
+    half = [Math.max(1, W >> 2), Math.max(1, H >> 2)];
+    tmpA = target(...half); bloomA = target(...half);
+    d8 = target(Math.max(1, W >> 3), Math.max(1, H >> 3));
+    quarter = [Math.max(1, W >> 4), Math.max(1, H >> 4)];
+    tmpB = target(...quarter); bloomB = target(...quarter);
+    srcTex = makeTex(W, H, false); gratTex = makeTex(W, H, false);
+    drawGraticule(); upload(gratTex, grat);
+    for (const t of [persistA, persistB]) { gl.bindFramebuffer(gl.FRAMEBUFFER, t.fb); gl.clearColor(0, 0, 0, 1); gl.clear(gl.COLOR_BUFFER_BIT); }
+    sweepX = 0; prev = null;
+  }
+
+  function pass(prog, out, setup) {
+    gl.useProgram(prog.p);
+    if (out) { gl.bindFramebuffer(gl.FRAMEBUFFER, out.fb); gl.viewport(0, 0, out.w, out.h); }
+    else { gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, W, H); }
+    let unit = 0;
+    const bind = (name, tex) => { gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, tex); gl.uniform1i(prog.u[name], unit++); };
+    setup(bind, prog.u);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+
+  // ---------- beam drawing into the 2D source ----------
+  let sweepX = 0, prev = null, last = performance.now(), liss = 0;
+  const SWEEP_MS = 900;
+  const yOf = (v) => H / 2 - (v / VDIV) * (H / 8);
+
+  function drawBeam(dt) {
+    sctx.globalCompositeOperation = 'source-over';
+    sctx.fillStyle = '#000'; sctx.fillRect(0, 0, W, H);
+    sctx.globalCompositeOperation = 'lighter';
+    sctx.strokeStyle = '#fff'; sctx.fillStyle = '#fff';
+    sctx.lineCap = 'butt'; sctx.lineWidth = 1.6 * dpr;
+
+    if (st.wave === 'lissajous') {
+      // X/Y mode: 3:2 Lissajous figure slowly precessing
+      const steps = 600, span = dt / 1000 * 1.6;
+      for (let i = 0; i < steps; i++) {
+        const a = liss + (i / steps) * span * 40, b = liss + ((i + 1) / steps) * span * 40;
+        const p = (s) => [W / 2 + Math.sin(3 * s + liss * 0.05) * W * 0.36, H / 2 + Math.sin(2 * s) * H * 0.36];
+        const [x1, y1] = p(a), [x2, y2] = p(b);
+        const len = Math.hypot(x2 - x1, y2 - y1);
+        sctx.globalAlpha = Math.min(1, 1.6 * dpr / Math.max(len, 0.01)) * 0.9 + 0.08;
+        sctx.beginPath(); sctx.moveTo(x1, y1); sctx.lineTo(x2, y2); sctx.stroke();
+      }
+      liss += span * 40;
+    } else {
+      const windowS = TDIV * 10;
+      const steps = Math.max(2, Math.round((dt / SWEEP_MS) * W));
+      for (let i = 0; i < steps; i++) {
+        const x = sweepX, y = yOf(signal((x / W) * windowS));
+        if (prev) {
+          // brightness ~ dwell time: long vertical jumps get less charge, like a real beam
+          const len = Math.hypot(x - prev[0], y - prev[1]);
+          sctx.globalAlpha = Math.min(1, 1.4 * dpr / len) * 0.92 + 0.06;
+          sctx.beginPath(); sctx.moveTo(prev[0], prev[1]); sctx.lineTo(x, y); sctx.stroke();
+        }
+        prev = [x, y];
+        sweepX += 1;
+        if (sweepX >= W) { sweepX = 0; prev = null; }
+      }
+    }
+
+    // on-screen readouts are phosphor too, so they glow and persist
+    sctx.globalAlpha = 0.62;
+    sctx.font = `${Math.round(11 * dpr)}px 'JetBrains Mono', monospace`;
+    sctx.textBaseline = 'top';
+    const pad = 0.045;
+    sctx.textAlign = 'left';
+    sctx.fillText(st.wave === 'lissajous' ? 'X-Y  3:2' : 'CH1  2.00 V/div', W * pad, H * pad);
+    sctx.fillText(st.wave === 'lissajous' ? 'X 1.00 V  Y 1.00 V' : '1.00 ms/div', W * pad, H * (1 - pad) - 12 * dpr);
+    sctx.textAlign = 'right';
+    sctx.fillText('TRIG ↑ 0.00 V', W * (1 - pad), H * pad);
+    sctx.fillText(st.wave === 'lissajous' ? '750 : 500 Hz' : 'f 250 Hz', W * (1 - pad), H * (1 - pad) - 12 * dpr);
+    sctx.globalAlpha = 1;
+  }
+
+  // ---------- frame ----------
+  function frame(now) {
+    const dt = Math.min(64, now - last); last = now;
+    drawBeam(dt);
+    upload(srcTex, src);
+
+    const decay = Math.exp(-(dt / 1000) / st.glow);
+    pass(persistP, persistB, (bind, u) => { bind('src', srcTex); bind('prev', persistA.tex); gl.uniform1f(u.decay, decay); });
+    [persistA, persistB] = [persistB, persistA];
+
+    pass(copyP, d2, (bind) => bind('t', persistA.tex));
+    pass(copyP, bloomA, (bind) => bind('t', d2.tex));
+    pass(blurP, tmpA, (bind, u) => { bind('t', bloomA.tex); gl.uniform2f(u.dir, 1.6 / half[0], 0); });
+    pass(blurP, bloomA, (bind, u) => { bind('t', tmpA.tex); gl.uniform2f(u.dir, 0, 1.6 / half[1]); });
+    pass(copyP, d8, (bind) => bind('t', bloomA.tex));
+    pass(copyP, bloomB, (bind) => bind('t', d8.tex));
+    pass(blurP, tmpB, (bind, u) => { bind('t', bloomB.tex); gl.uniform2f(u.dir, 1.4 / quarter[0], 0); });
+    pass(blurP, bloomB, (bind, u) => { bind('t', tmpB.tex); gl.uniform2f(u.dir, 0, 1.4 / quarter[1]); });
+
+    pass(finalP, null, (bind, u) => {
+      bind('persist', persistA.tex); bind('bloomA', bloomA.tex); bind('bloomB', bloomB.tex); bind('grat', gratTex);
+      gl.uniform2f(u.res, W, H); gl.uniform1f(u.time, now / 1000);
+      gl.uniform1f(u.soft, st.soft); gl.uniform1f(u.curv, st.curv);
+      gl.uniform1f(u.split, st.fx ? st.split : 0); gl.uniform1f(u.fxOn, st.fx ? 1 : 0);
+    });
+    requestAnimationFrame(frame);
+  }
+
+  new ResizeObserver(resize).observe(glCanvas);
+  resize();
+  requestAnimationFrame(frame);
+
+  // ---------- controls ----------
+  const $ = (id) => document.getElementById(id);
+  document.querySelectorAll('#waves button').forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll('#waves button').forEach((x) => x.classList.toggle('on', x === b));
+    st.wave = b.dataset.w; sweepX = 0; prev = null;
+  }));
+  $('fx').addEventListener('click', (e) => { st.fx = !st.fx; e.currentTarget.classList.toggle('on', st.fx); e.currentTarget.textContent = st.fx ? 'On' : 'Off'; });
+  $('compare').addEventListener('click', (e) => { st.split = st.split > 0 ? 0 : 0.5; e.currentTarget.classList.toggle('on', st.split > 0); });
+  $('noise').addEventListener('click', (e) => { st.noise = !st.noise; e.currentTarget.classList.toggle('on', st.noise); e.currentTarget.textContent = st.noise ? 'On' : 'Off'; });
+  const bindRange = (id, key, fmt) => {
+    const el = $(id), out = $(id + 'V');
+    const upd = () => { st[key] = Number(el.value); out.textContent = fmt(st[key]); };
+    el.addEventListener('input', upd); upd();
+  };
+  bindRange('soft', 'soft', (v) => `${Math.round(v / 1.6 * 100)}%`);
+  bindRange('glow', 'glow', (v) => `${Math.round(v * 1000)} ms`);
+  bindRange('curv', 'curv', (v) => `${Math.round(v / 0.25 * 100)}%`);
+})();
+</script>
+</body>
+</html>

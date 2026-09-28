@@ -9,7 +9,10 @@ import * as THREE from 'three';
 import { colorBands } from './colorCode';
 import { BOARD, HOLES, hole, type HoleId } from './layout';
 import { LED_MAX_AMPS, type BoardAnalysis, type BoardPart } from './model';
+import { buildFlow, sourceColors } from './flow';
+import { FlowParticles, RideElectron } from './FlowScene';
 import { translateParts } from './move';
+import { ledMid, supplyLeadCurve, wireCurve, SUPPLY_BOX, SUPPLY_HOLES } from './paths';
 import { useBench } from './store';
 
 const LED_HEX = { red: '#ff3b30', yellow: '#ffd60a', green: '#39ff88', blue: '#3a8bff', white: '#f5f5ff' } as const;
@@ -234,17 +237,7 @@ function Led({ part, mark, amps }: { part: BoardPart; mark?: string; amps: numbe
 
 function Wire({ part, mark }: { part: BoardPart; mark?: string }) {
   const handlers = usePartHandlers(part);
-  const geom = useMemo(() => {
-    const a = new THREE.Vector3(...at(part.h1, -0.2)), b = new THREE.Vector3(...at(part.h2, -0.2));
-    const lift = 0.5 + a.distanceTo(b) * 0.18;
-    const a2 = a.clone().setY(0.35), b2 = b.clone().setY(0.35);
-    const c = a2.clone().add(b2).multiplyScalar(0.5).setY(lift);
-    const curve = new THREE.CurvePath<THREE.Vector3>();
-    curve.add(new THREE.LineCurve3(a, a2));
-    curve.add(new THREE.QuadraticBezierCurve3(a2, c, b2));
-    curve.add(new THREE.LineCurve3(b2, b));
-    return new THREE.TubeGeometry(curve, 48, 0.07, 8, false);
-  }, [part.h1, part.h2]);
+  const geom = useMemo(() => new THREE.TubeGeometry(wireCurve(part.h1, part.h2), 48, 0.07, 8, false), [part.h1, part.h2]);
   return (
     <mesh geometry={geom} {...handlers}>
       <meshStandardMaterial color={part.wireColor ?? '#e8413c'} roughness={0.5} emissive={mark ?? '#000'} emissiveIntensity={mark ? 0.6 : 0} />
@@ -283,16 +276,39 @@ function Button({ part, mark }: { part: BoardPart; mark?: string }) {
   );
 }
 
+function Battery({ part, mark, color }: { part: BoardPart; mark?: string; color: string }) {
+  const handlers = usePartHandlers(part);
+  const a = at(part.h1), b = at(part.h2);
+  const m = ledMid(part);
+  const y = 0.9;
+  return (
+    <group {...handlers}>
+      <Segment from={a} to={[a[0], 0.5, a[2]]} color="#e8413c" />
+      <Segment from={[a[0], 0.5, a[2]]} to={[m[0] - 0.5, y, m[2]]} color="#e8413c" />
+      <Segment from={b} to={[b[0], 0.5, b[2]]} color="#222" />
+      <Segment from={[b[0], 0.5, b[2]]} to={[m[0] + 0.5, y, m[2]]} color="#222" />
+      <mesh position={[m[0], y, m[2]]}>
+        <boxGeometry args={[1.5, 0.8, 0.8]} />
+        <meshStandardMaterial color="#15191a" roughness={0.5} emissive={mark ?? '#000'} emissiveIntensity={mark ? 0.4 : 0} />
+      </mesh>
+      <mesh position={[m[0], y + 0.41, m[2]]}>
+        <boxGeometry args={[1.2, 0.02, 0.5]} />
+        <meshBasicMaterial color={color} toneMapped={false} />
+      </mesh>
+      <mesh position={[m[0] - 0.62, y, m[2]]}>
+        <boxGeometry args={[0.2, 0.84, 0.84]} />
+        <meshStandardMaterial color="#c87533" metalness={0.7} roughness={0.3} />
+      </mesh>
+    </group>
+  );
+}
+
 function Supply({ analysis }: { analysis: BoardAnalysis }) {
   const supply = useBench((s) => s.supply);
   const shorted = analysis.result.faults.some((f) => f.kind === 'short-circuit');
-  const plus = at('T+:1', -0.2), minus = at('T-:1', -0.2);
-  const box: V3 = [-13.2, 0.5, -11.8];
-  const lead = (to: V3, color: string, dx: number) => {
-    const from = new THREE.Vector3(box[0] + dx, 0.6, box[2] + 0.9);
-    const end = new THREE.Vector3(...to);
-    const c = from.clone().add(end).multiplyScalar(0.5).setY(1.6);
-    const g = new THREE.TubeGeometry(new THREE.CatmullRomCurve3([from, c, end.clone().setY(0.4), end]), 40, 0.08, 8, false);
+  const box = SUPPLY_BOX;
+  const lead = (to: string, color: string, dx: number) => {
+    const g = new THREE.TubeGeometry(supplyLeadCurve(to, dx), 40, 0.08, 8, false);
     return <mesh geometry={g}><meshStandardMaterial color={color} roughness={0.5} /></mesh>;
   };
   const glow = shorted ? FAULT : supply.on ? '#39ff88' : '#1a2a20';
@@ -306,8 +322,8 @@ function Supply({ analysis }: { analysis: BoardAnalysis }) {
         <boxGeometry args={[2.4, 0.02, 0.8]} />
         <meshBasicMaterial color={glow} toneMapped={false} />
       </mesh>
-      {lead(plus, '#e8413c', 0.7)}
-      {lead(minus, '#1b1b1b', -0.7)}
+      {lead(SUPPLY_HOLES.plus, '#e8413c', 0.7)}
+      {lead(SUPPLY_HOLES.minus, '#1b1b1b', -0.7)}
     </group>
   );
 }
@@ -336,7 +352,13 @@ export function BreadboardScene({ analysis }: { analysis: BoardAnalysis }) {
   const probes = useBench((s) => s.probes);
   const moving = useBench((s) => s.moving);
   const hover = useBench((s) => s.hover);
+  const view = useBench((s) => s.view);
+  const supply = useBench((s) => s.supply);
   const currents = analysis.result.currents;
+  const board = useMemo(() => ({ supply, parts }), [supply, parts]);
+  const edges = useMemo(() => (view === 'build' ? [] : buildFlow(board, analysis)), [view, board, analysis]);
+  const colors = useMemo(() => sourceColors(board), [board]);
+  const dim = view !== 'build';
 
   // While moving, draw the parts where they'd land, tinted green (ok) or magenta (blocked).
   const preview = useMemo(() => {
@@ -351,9 +373,9 @@ export function BreadboardScene({ analysis }: { analysis: BoardAnalysis }) {
     <Canvas camera={{ position: [0, 27, 21], fov: 40 }} dpr={[1, 2]} shadows={false}>
       <color attach="background" args={['#030604']} />
       <fog attach="fog" args={['#030604', 70, 130]} />
-      <ambientLight intensity={0.9} />
-      <hemisphereLight args={['#c8ffe0', '#0a140e', 0.6]} />
-      <directionalLight position={[8, 20, 10]} intensity={1.6} />
+      <ambientLight intensity={dim ? 0.35 : 0.9} />
+      <hemisphereLight args={['#c8ffe0', '#0a140e', dim ? 0.25 : 0.6]} />
+      <directionalLight position={[8, 20, 10]} intensity={dim ? 0.6 : 1.6} />
       <directionalLight position={[-10, 8, -6]} intensity={0.35} color="#7fffc4" />
       <gridHelper args={[80, 40, '#123824', '#0c2418']} position={[0, -BOARD.thickness - 0.01, 0]} />
       <Board analysis={analysis} />
@@ -365,11 +387,19 @@ export function BreadboardScene({ analysis }: { analysis: BoardAnalysis }) {
           case 'led': return <Led key={p.id} part={p} mark={mark} amps={movingIds.has(p.id) ? 0 : currents[p.id] ?? 0} />;
           case 'wire': return <Wire key={p.id} part={p} mark={mark} />;
           case 'button': return <Button key={p.id} part={p} mark={mark} />;
+          case 'battery': return <Battery key={p.id} part={p} mark={mark} color={colors[p.id] ?? '#3ad7ff'} />;
         }
       })}
+      {view === 'flow' && <FlowParticles edges={edges} colors={colors} />}
+      {view === 'ride' && (
+        <>
+          <FlowParticles edges={edges} colors={colors} size={0.045} />
+          <RideElectron edges={edges} analysis={analysis} colors={colors} />
+        </>
+      )}
       {probes.red && <Probe h={probes.red} color="#e8413c" />}
       {probes.black && <Probe h={probes.black} color="#222" />}
-      <OrbitControls makeDefault enablePan target={[0, 0, 0]} maxPolarAngle={Math.PI / 2.3} minDistance={8} maxDistance={45} />
+      <OrbitControls makeDefault enabled={view !== 'ride'} enablePan target={[0, 0, 0]} maxPolarAngle={Math.PI / 2.3} minDistance={8} maxDistance={45} />
     </Canvas>
   );
 }

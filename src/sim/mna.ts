@@ -39,6 +39,12 @@ export interface SolveOptions {
   /** Diode states to start from (warm start from the previous step). */
   diodeGuess?: Record<string, DiodeState>;
   time?: number;
+  /** Superposition: these sources are switched off (V sources shorted, I sources opened). */
+  zeroSources?: ReadonlySet<string>;
+  /** Use exactly these diode states (no iteration), e.g. frozen from a full solve. */
+  fixedDiodeStates?: Record<string, DiodeState>;
+  /** Superposition: drop the diodes' forward-voltage offsets (keep their on-resistance). */
+  zeroDiodeOffsets?: boolean;
 }
 
 const isGround = (n: NodeId) => GROUND_NAMES.has(n);
@@ -168,13 +174,13 @@ function build(
         if (c.closed) conductance(a, b, 1 / R_WIRE);
         break;
       case 'isource':
-        currentAB(a, b, c.amps);
+        if (!opts.zeroSources?.has(c.id)) currentAB(a, b, c.amps);
         break;
       case 'vsource': {
         const k = vsrcCol.get(c.id)!;
         addA(a, k, 1); addA(b, k, -1);
         addA(k, a, 1); addA(k, b, -1);
-        rhs[k] = c.volts;
+        rhs[k] = opts.zeroSources?.has(c.id) ? 0 : c.volts;
         break;
       }
       case 'diode':
@@ -182,7 +188,7 @@ function build(
           // i = (Vd - vf) / R_ON  ->  conductance G plus a current source -vf*G from a to b.
           const g = 1 / R_DIODE_ON;
           conductance(a, b, g);
-          currentAB(a, b, -c.vf * g);
+          if (!opts.zeroDiodeOffsets) currentAB(a, b, -c.vf * g);
         }
         break;
       case 'capacitor':
@@ -212,9 +218,9 @@ function componentCurrent(
     case 'resistor': return vd / c.ohms;
     case 'wire': return vd / R_WIRE;
     case 'switch': return c.closed ? vd / R_WIRE : 0;
-    case 'isource': return c.amps;
+    case 'isource': return opts.zeroSources?.has(c.id) ? 0 : c.amps;
     case 'vsource': return x[built.vsrcCol.get(c.id)!]!;
-    case 'diode': return diodeStates[c.id] === 'on' ? (vd - c.vf) / R_DIODE_ON : 0;
+    case 'diode': return diodeStates[c.id] === 'on' ? (vd - (opts.zeroDiodeOffsets ? 0 : c.vf)) / R_DIODE_ON : 0;
     case 'capacitor': {
       if (opts.dt === undefined) return 0;
       const vPrev = opts.capVoltages?.[c.id] ?? c.initialVolts ?? 0;
@@ -236,9 +242,9 @@ export function solve(circuit: Circuit, opts: SolveOptions = {}): SolveResult {
   const { nodes, index } = indexNodes(components);
   const diodes = components.filter((c): c is Diode => c.kind === 'diode');
   const states: Record<string, DiodeState> = {};
-  for (const d of diodes) states[d.id] = opts.diodeGuess?.[d.id] ?? 'off';
+  for (const d of diodes) states[d.id] = opts.fixedDiodeStates?.[d.id] ?? opts.diodeGuess?.[d.id] ?? 'off';
 
-  const maxIter = 4 * diodes.length + 10;
+  const maxIter = opts.fixedDiodeStates ? 1 : 4 * diodes.length + 10;
   let x: Float64Array | null = null;
   let built: Built | null = null;
 
@@ -266,7 +272,7 @@ export function solve(circuit: Circuit, opts: SolveOptions = {}): SolveResult {
       const violation = states[d.id] === 'on' ? -(vd - d.vf) / R_DIODE_ON : vd - d.vf;
       if (violation > worstBy) { worstBy = violation; worst = d; }
     }
-    if (!worst) break;
+    if (!worst || opts.fixedDiodeStates) break;
     states[worst.id] = states[worst.id] === 'on' ? 'off' : 'on';
     if (iter === maxIter - 1) {
       faults.push({

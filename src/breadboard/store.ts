@@ -5,6 +5,7 @@ import type { BoardPart, BoardPartKind, BoardState } from './model';
 import { connectedGroup, occupiedHoles, translateParts, type MoveMode } from './move';
 
 export type Tool = 'select' | BoardPartKind | 'probe';
+export type View = 'build' | 'flow' | 'ride';
 
 const WIRE_COLORS = ['#e8413c', '#2f6fe0', '#f2c230', '#39c46a', '#e8e8e8', '#ff8a2a'];
 
@@ -12,6 +13,13 @@ interface BenchStore extends BoardState {
   tool: Tool;
   ohms: number;
   ledColor: LedColor;
+  batteryVolts: number;
+  /** Build = normal bench; flow = electrons shown on every path; ride = camera follows one electron. */
+  view: View;
+  /** Show conventional current (+ to -) instead of electron flow (- to +). */
+  conventional: boolean;
+  /** Live caption while riding. */
+  rideInfo: { title: string; detail: string } | null;
   /** First hole clicked while placing a two-legged part. */
   pending: HoleId | null;
   hover: HoleId | null;
@@ -28,6 +36,10 @@ interface BenchStore extends BoardState {
   setTool: (t: Tool) => void;
   setOhms: (o: number) => void;
   setLedColor: (c: LedColor) => void;
+  setBatteryVolts: (v: number) => void;
+  setView: (v: View) => void;
+  toggleConventional: () => void;
+  setRideInfo: (i: { title: string; detail: string } | null) => void;
   setVolts: (v: number) => void;
   toggleSupply: () => void;
   setHover: (h: HoleId | null) => void;
@@ -51,7 +63,7 @@ interface BenchStore extends BoardState {
 
 let counters: Record<string, number> = {};
 const nextId = (kind: BoardPartKind, parts: BoardPart[]) => {
-  const prefix = { resistor: 'R', led: 'LED', wire: 'W', button: 'SW' }[kind];
+  const prefix = { resistor: 'R', led: 'LED', wire: 'W', button: 'SW', battery: 'B' }[kind];
   let n = counters[prefix] ?? 0;
   do { n++; } while (parts.some((p) => p.id === `${prefix}${n}`));
   counters[prefix] = n;
@@ -64,6 +76,10 @@ export const useBench = create<BenchStore>((set, get) => ({
   tool: 'select',
   ohms: 330,
   ledColor: 'red',
+  batteryVolts: 6,
+  view: 'build',
+  conventional: false,
+  rideInfo: null,
   pending: null,
   hover: null,
   selected: null,
@@ -76,12 +92,17 @@ export const useBench = create<BenchStore>((set, get) => ({
   setTool: (tool) => set({ tool, pending: null, notice: null, moving: null }),
   setOhms: (ohms) => set({ ohms }),
   setLedColor: (ledColor) => set({ ledColor }),
+  setBatteryVolts: (batteryVolts) => set({ batteryVolts }),
+  setView: (view) => set({ view, rideInfo: null, pending: null, moving: null, menu: null, tool: 'select' }),
+  toggleConventional: () => set((s) => ({ conventional: !s.conventional })),
+  setRideInfo: (rideInfo) => set({ rideInfo }),
   setVolts: (volts) => set((s) => ({ supply: { ...s.supply, volts } })),
   toggleSupply: () => set((s) => ({ supply: { ...s.supply, on: !s.supply.on } })),
   setHover: (hover) => set({ hover }),
 
   clickHole: (h) => {
     const s = get();
+    if (s.view === 'ride') return;
     if (s.moving) {
       const r = translateParts(s.parts, s.moving.ids, s.moving.anchor, h, s.moving.mode);
       if (!r.valid) return set({ notice: r.reason ?? "Can't drop there." });
@@ -102,6 +123,7 @@ export const useBench = create<BenchStore>((set, get) => ({
     const part: BoardPart = { id, kind, h1: s.pending, h2: h };
     if (kind === 'resistor') part.ohms = s.ohms;
     if (kind === 'led') part.color = s.ledColor;
+    if (kind === 'battery') part.volts = s.batteryVolts;
     if (kind === 'wire') part.wireColor = WIRE_COLORS[s.parts.filter((p) => p.kind === 'wire').length % WIRE_COLORS.length];
     set({ parts: [...s.parts, part], pending: null, selected: id });
   },
@@ -147,6 +169,17 @@ export const BENCH_PRESETS: Record<string, BoardState> = {
       { id: 'LED1', kind: 'led', h1: 'b13', h2: 'b15', color: 'green' },
       { id: 'W2', kind: 'wire', h1: 'a15', h2: 'B-:13', wireColor: '#2f6fe0' },
       { id: 'W4', kind: 'wire', h1: 'T-:24', h2: 'B-:24', wireColor: '#2f6fe0' },
+    ],
+  },
+  'Two sources': {
+    supply: { volts: 9, on: true },
+    parts: [
+      { id: 'W1', kind: 'wire', h1: 'T+:3', h2: 'j3', wireColor: '#e8413c' },
+      { id: 'R1', kind: 'resistor', h1: 'g3', h2: 'g12', ohms: 470 },
+      { id: 'LED1', kind: 'led', h1: 'h12', h2: 'h14', color: 'yellow' },
+      { id: 'W2', kind: 'wire', h1: 'j14', h2: 'T-:12', wireColor: '#2f6fe0' },
+      { id: 'B1', kind: 'battery', h1: 'i24', h2: 'T-:20', volts: 6 },
+      { id: 'R2', kind: 'resistor', h1: 'f24', h2: 'f12', ohms: 680 },
     ],
   },
   'Find the fault': {

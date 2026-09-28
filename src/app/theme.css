@@ -168,3 +168,15 @@ button.primary { border-color: var(--signal); color: var(--signal); }
 .swatches { display: inline-flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
 .swatch { width: 20px; height: 20px; padding: 0; border-radius: 50%; border: 2px solid var(--line); }
 .swatch.active { border-color: var(--signal); box-shadow: 0 0 8px rgba(57, 255, 136, 0.6); }
+.presets kbd, .tools kbd { font-family: var(--mono); font-size: 10px; color: var(--text-dim); border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; margin-left: 4px; }
+.legend { position: absolute; top: 12px; left: 12px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; background: rgba(3, 6, 4, 0.8); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; font-size: 12px; pointer-events: none; }
+.legend-title { color: var(--text-dim); }
+.legend i, .breakdown-row i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; box-shadow: 0 0 6px currentColor; }
+.ride-hud { position: absolute; top: 56px; left: 50%; transform: translateX(-50%); text-align: center; background: rgba(3, 6, 4, 0.82); border: 1px solid var(--signal-dim); border-radius: 8px; padding: 10px 18px; pointer-events: none; min-width: 280px; }
+.ride-title { font-family: var(--display); font-size: 20px; color: var(--signal); text-shadow: 0 0 12px rgba(57, 255, 136, 0.5); }
+.ride-detail { color: var(--text); font-size: 13px; margin-top: 2px; }
+.breakdown { margin: 10px 0 4px; font-size: 12px; }
+.breakdown-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 8px; background: var(--bg); }
+.breakdown-bar span { height: 100%; }
+.breakdown-row { display: flex; justify-content: space-between; padding: 2px 0; color: var(--text-dim); }
+.breakdown-row span:last-child { color: var(--text); font-variant-numeric: tabular-nums; }

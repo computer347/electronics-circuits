@@ -17,6 +17,10 @@ Design phase. The full spec lives in [`docs/SPEC.md`](docs/SPEC.md):
 - Visual direction (black and phosphor green, Three.js + GSAP)
 - Architecture and phased roadmap
 
+## Style demos
+
+[`docs/demos/`](docs/demos/) holds two standalone CRT oscilloscope demos (open in a browser): a CSS version and a WebGL phosphor shader version.
+
 ## Planned stack
 
 Vite · React · TypeScript · React Three Fiber · GSAP · Web Workers running a real-time MNA solver, ngspice (WASM), avr8js / rp2040js and Yosys (YoWASP).
@@ -53,10 +57,12 @@ npm run build    # typecheck + production build
 
 **Exam drills** (`src/drills/`): nine question generators (Ohm's law, series and parallel, dividers, LED resistor sizing, RC charging, Wheatstone bridges, current sources) with random standard values, prefix-aware answer checking (`21.2m`, `4.7k`) and worked solutions. Tests check that the solver and each worked-solution formula agree on 60 random circuits per generator.
 
-**Breadboard bench** (`src/breadboard/`): a 3D half-size breadboard in React Three Fiber. Place jumper wires, resistors (with correct colour bands), LEDs and push buttons hole by hole, probe with a multimeter, and watch strips glow with their voltage. Breadboard wiring is modelled the real way (a–e / f–j strips, separate top and bottom rails), so classic mistakes like a resistor with both legs in one column show up. Overloaded LEDs burn out and stay dead until replaced. Click a part to change its value or colour; right-click to move it on its own or together with everything connected to it (wires stay plugged into the rails).
+**Breadboard bench** (`src/breadboard/`): a 3D half-size breadboard in React Three Fiber. Place jumper wires, resistors (with correct colour bands), LEDs, push buttons and batteries hole by hole, probe with a multimeter, and watch strips glow with their voltage. Breadboard wiring is modelled the real way (a–e / f–j strips, separate top and bottom rails), so classic mistakes like a resistor with both legs in one column show up. Overloaded LEDs burn out and stay dead until replaced. Click a part to change its value or colour; right-click to move it on its own or together with everything connected to it (wires stay plugged into the rails).
+
+**Electron flow and ride** (Breadboard tab, **F** / **R**): every current path fills with moving charge, coloured by the source driving it and moving at a speed that follows the current. Where two sources share a wire, the colours mix in proportion to each one's share (superposition, `src/sim/superposition.ts`). Ride mode puts the camera on a single electron that picks its way through junctions weighted by current, slowing in resistors and LEDs, with a caption telling you where the energy goes. Click any part (or place the multimeter probes) to see its current or voltage broken down by source. Toggle conventional current to see + → − instead of electron flow.
 
 **Solver bench** (`src/app/`): edit a netlist, see node voltages, currents and faults live, with a placeholder electron-flow strip in Three.js.
 
 ## Next up (Phase 0)
 
-More drill types and theory classes → Electron Run → five World 0 levels → landing page.
+Oscilloscope with the phosphor shader → five World 0 levels → theory classes → landing page.

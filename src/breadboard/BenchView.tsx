@@ -1,9 +1,10 @@
 import { useEffect, useMemo } from 'react';
 import { formatSI } from '../lib/units';
-import { LED_VF, type LedColor } from '../sim';
+import { DIODE_KEY, LED_VF, type LedColor } from '../sim';
 import { colorBands } from './colorCode';
 import { hole } from './layout';
-import { analyzeBoard, SUPPLY_ID } from './model';
+import { sourceColors } from './flow';
+import { analyzeBoard, SUPPLY_ID, type BoardAnalysis } from './model';
 import { connectedGroup } from './move';
 import { BreadboardScene } from './Scene';
 import { BENCH_PRESETS, useBench, type Tool } from './store';
@@ -20,13 +21,47 @@ const TOOLS: { id: Tool; label: string; key: string }[] = [
   { id: 'resistor', label: 'Resistor', key: '3' },
   { id: 'led', label: 'LED', key: '4' },
   { id: 'button', label: 'Push button', key: '5' },
-  { id: 'probe', label: 'Multimeter probes', key: '6' },
+  { id: 'battery', label: 'Battery', key: '6' },
+  { id: 'probe', label: 'Multimeter probes', key: '7' },
 ];
+const BATTERY_VOLTS = [1.5, 3, 4.5, 6, 9];
+
+const keyLabel = (k: string) => (k === SUPPLY_ID ? 'Bench supply' : k === DIODE_KEY ? 'LED/diode drops' : k);
+
+/** Stacked breakdown of a value by source (superposition). */
+function Breakdown({ parts, unit, colors }: { parts: Record<string, number>; unit: string; colors: Record<string, string> }) {
+  const entries = Object.entries(parts).filter(([, v]) => Math.abs(v) > 1e-9);
+  if (!entries.length) return null;
+  const total = entries.reduce((s, [, v]) => s + Math.abs(v), 0);
+  return (
+    <div className="breakdown">
+      <div className="breakdown-bar">
+        {entries.map(([k, v]) => (
+          <span key={k} style={{ width: `${(Math.abs(v) / total) * 100}%`, background: colors[k] ?? '#7fa892', opacity: v < 0 ? 0.45 : 1 }} />
+        ))}
+      </div>
+      {entries.map(([k, v]) => (
+        <div key={k} className="breakdown-row">
+          <span><i style={{ background: colors[k] ?? '#7fa892' }} />{keyLabel(k)}</span>
+          <span>{v > 0 ? '+' : '−'}{formatSI(Math.abs(v), unit)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function voltageParts(a: BoardAnalysis, h1: string, h2: string): Record<string, number> {
+  const c = a.contributions;
+  if (!c) return {};
+  const v1 = c.voltages[a.nodeOf(h1)] ?? {}, v2 = c.voltages[a.nodeOf(h2)] ?? {};
+  return Object.fromEntries(c.keys.map((k) => [k, (v1[k] ?? 0) - (v2[k] ?? 0)]));
+}
 
 function instruction(tool: Tool, pending: boolean): string {
   switch (tool) {
     case 'select': return 'Click a part to edit it, right-click to move it. Hold a push button to press it. Drag to orbit.';
     case 'probe': return 'Click a hole for the red probe, then another for the black probe.';
+    case 'battery': return pending ? 'Now click the hole for the − terminal.' : 'Click the hole for the + terminal.';
     case 'led': return pending ? 'Now click the hole for the cathode (short leg, flat side).' : 'Click the hole for the anode (long leg, +).';
     default: return pending ? 'Click the second hole.' : 'Click the first hole.';
   }
@@ -53,6 +88,10 @@ export function BenchView() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'SELECT') return;
+      if (e.key === 'f' || e.key === 'F') return s.setView(s.view === 'flow' ? 'build' : 'flow');
+      if (e.key === 'r' || e.key === 'R') return s.setView(s.view === 'ride' ? 'build' : 'ride');
+      if (e.key === 'Escape' && s.view === 'ride') return s.setView('flow');
+      if (s.view === 'ride') return;
       const t = TOOLS.find((x) => x.key === e.key);
       if (t) s.setTool(t.id);
       if ((e.key === 'Delete' || e.key === 'Backspace') && s.selected) s.removeSelected();
@@ -90,6 +129,8 @@ export function BenchView() {
     return { text: (vr - vb).toFixed(3), note: `${hole(red).label} → ${hole(black).label}` };
   })();
 
+  const colors = sourceColors(board);
+  const sourceKeys = analysis.contributions?.keys.filter((k) => k !== DIODE_KEY) ?? [];
   const faults = [
     ...r.faults.filter((f) => f.kind !== 'floating-node'),
     ...analysis.shortedParts.map((id) => ({ kind: 'same-strip', severity: 'warning' as const, message: `${id} has both legs on the same strip, so it's bypassed.` })),
@@ -112,12 +153,29 @@ export function BenchView() {
             </select>
           </label>
         )}
+        {s.tool === 'battery' && (
+          <label className="field">Voltage
+            <select value={s.batteryVolts} onChange={(e) => s.setBatteryVolts(Number(e.target.value))}>
+              {BATTERY_VOLTS.map((v) => <option key={v} value={v}>{v} V</option>)}
+            </select>
+          </label>
+        )}
         {s.tool === 'led' && (
           <label className="field">Colour
             <select value={s.ledColor} onChange={(e) => s.setLedColor(e.target.value as LedColor)}>
               {(Object.keys(LED_VF) as LedColor[]).map((c) => <option key={c} value={c}>{c} ({LED_VF[c]} V)</option>)}
             </select>
           </label>
+        )}
+
+        <h2>View</h2>
+        <div className="presets">
+          <button className={s.view === 'build' ? 'active' : ''} onClick={() => s.setView('build')}>Build</button>
+          <button className={s.view === 'flow' ? 'active' : ''} onClick={() => s.setView('flow')}>Flow <kbd>F</kbd></button>
+          <button className={s.view === 'ride' ? 'active' : ''} onClick={() => s.setView('ride')}>Ride <kbd>R</kbd></button>
+        </div>
+        {s.view !== 'build' && (
+          <label className="check"><input type="checkbox" checked={s.conventional} onChange={s.toggleConventional} /> Conventional current (+ → −)</label>
         )}
 
         <h2>Bench supply</h2>
@@ -141,8 +199,22 @@ export function BenchView() {
 
       <section className="stage" onContextMenu={(e) => e.preventDefault()}>
         <BreadboardScene analysis={analysis} />
+        {s.view !== 'build' && sourceKeys.length > 0 && (
+          <div className="legend">
+            <span className="legend-title">{s.conventional ? 'Conventional current' : 'Electron flow'} by source</span>
+            {sourceKeys.map((k) => <span key={k}><i style={{ background: colors[k] }} />{keyLabel(k)}</span>)}
+          </div>
+        )}
+        {s.view === 'ride' && s.rideInfo && (
+          <div className="ride-hud">
+            <div className="ride-title">{s.rideInfo.title}</div>
+            <div className="ride-detail">{s.rideInfo.detail}</div>
+          </div>
+        )}
         <div className="stage-hud">
-          <span className={s.notice ? 'notice' : ''}>{s.notice ?? instruction(s.tool, !!s.pending)}</span>
+          <span className={s.notice ? 'notice' : ''}>
+            {s.view === 'ride' ? 'You are the electron. Esc or R to stop riding.' : s.view === 'flow' ? 'Each dot is charge moving, coloured by the source pushing it. Speed follows the current.' : s.notice ?? instruction(s.tool, !!s.pending)}
+          </span>
           {s.hover && (
             <span className="hover-info">
               {hole(s.hover).label} · {describeStrip(s.hover)}
@@ -176,6 +248,9 @@ export function BenchView() {
           <div className="dmm-screen">{meter.text}<span>V</span></div>
           <div className="dmm-note">{meter.note}</div>
         </div>
+        {s.probes.red && s.probes.black && r.ok && sourceKeys.length > 0 && (
+          <Breakdown parts={voltageParts(analysis, s.probes.red, s.probes.black)} unit="V" colors={colors} />
+        )}
 
         <h2>Status</h2>
         {faults.length === 0 && burnt.length === 0 ? <p className="ok">● No faults</p> : (
@@ -192,6 +267,13 @@ export function BenchView() {
             <table>
               <tbody>
                 <tr><th>Type</th><td className="num">{sel.kind === 'led' ? 'LED' : sel.kind}</td></tr>
+                {sel.kind === 'battery' && (
+                  <tr><th>Voltage</th><td className="num">
+                    <select value={sel.volts} onChange={(e) => s.updatePart(sel.id, { volts: Number(e.target.value) })} aria-label="Battery voltage">
+                      {BATTERY_VOLTS.map((v) => <option key={v} value={v}>{v} V</option>)}
+                    </select>
+                  </td></tr>
+                )}
                 {sel.kind === 'resistor' && (
                   <tr><th>Value</th><td className="num">
                     <select value={sel.ohms} onChange={(e) => s.updatePart(sel.id, { ohms: Number(e.target.value) })} aria-label="Resistance">
@@ -226,6 +308,12 @@ export function BenchView() {
                 )}
               </tbody>
             </table>
+            {r.ok && analysis.contributions?.currents[sel.id] && sel.kind !== 'wire' && (
+              <>
+                <h2>Current by source</h2>
+                <Breakdown parts={analysis.contributions.currents[sel.id]!} unit="A" colors={colors} />
+              </>
+            )}
             <div className="presets" style={{ marginTop: 12 }}>
               {sel.burnt && <button onClick={() => s.replaceLed(sel.id)}>Replace LED</button>}
               <button onClick={() => s.startMove(sel.id, sel.h1, 'single')}>Move (M)</button>
