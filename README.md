@@ -21,6 +21,36 @@ Design phase. The full spec lives in [`docs/SPEC.md`](docs/SPEC.md):
 
 Vite · React · TypeScript · React Three Fiber · GSAP · Web Workers running a real-time MNA solver, ngspice (WASM), avr8js / rp2040js and Yosys (YoWASP).
 
-## Next up: Phase 0 vertical slice
+## Run it
 
-World 0 (five levels), the real-time solver, Breadboard Bench, Electron Run and the scroll-driven landing page.
+Needs Node 20+.
+
+```bash
+npm install
+npm run dev      # test bench at http://localhost:5173
+npm test         # solver test suite
+npm run build    # typecheck + production build
+```
+
+## What's built
+
+**Circuit solver** (`src/sim/`): modified nodal analysis in TypeScript with ideal parts.
+
+- Parts: resistors, voltage and current sources, wires, switches, diodes, LEDs (by colour), capacitors
+- DC operating point and transient steps (backward Euler) via `Simulator.step(dt)`, fast enough to run every frame
+- Fault detection: short circuits, source conflicts, LED overcurrent and reverse overvoltage, floating nodes
+- SPICE-like netlist format, e.g.
+
+  ```
+  V1 vcc 0 9
+  R1 vcc a 330
+  LED1 a 0 red
+  ```
+
+- `tests/`: textbook circuits checked against hand-calculated answers (dividers, bridges, LEDs, RC charge/discharge, energy conservation)
+
+**Test bench** (`src/app/`): edit a netlist, see node voltages, currents and faults live, with a placeholder electron-flow strip in Three.js.
+
+## Next up (Phase 0)
+
+2D schematics and exam drills → Breadboard Bench → Electron Run → five World 0 levels → landing page.
