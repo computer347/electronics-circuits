@@ -18,6 +18,7 @@ import { PartsBox, type BoxItem } from './assets/PartsBox';
 import { PowerUnit } from './assets/PowerUnit';
 import { Corkboard, Desk, DESK, Mug, Poster, Wall } from './assets/Room';
 import { useHover } from './hover';
+import type { Reading } from './meter';
 import type { DeskObject } from './steps';
 import { useDesk, type DeskPhase } from './store';
 
@@ -196,7 +197,8 @@ function NotebookOnDesk({ goal, level, glow }: { goal: string; level: string; gl
   );
 }
 
-function MeterOnDesk({ reading, glow }: { reading: number | null; glow: boolean }) {
+function MeterOnDesk({ reading, glow }: { reading: Reading; glow: boolean }) {
+  const mode = useDesk((s) => s.meterMode);
   const focused = useDesk((s) => s.focus === 'meter');
   const g = useRef<THREE.Group>(null);
   const k = useEased(focused ? 1 : 0);
@@ -223,7 +225,7 @@ function MeterOnDesk({ reading, glow }: { reading: number | null; glow: boolean 
       <group ref={g}>
         <Interactive id="meter">
           <Glow w={METER.w} d={METER.d} on={glow} />
-          <Multimeter reading={reading} />
+          <Multimeter reading={reading} mode={mode} onMode={(m) => useDesk.getState().setMeterMode(m)} interactive={focused} />
         </Interactive>
       </group>
       <Lead from={jack(JACKS.com)} to={tip(probes.black, 0)} color="#1b1b1b" resting={!probes.black} />
@@ -263,7 +265,7 @@ function BreadboardOnDesk({ analysis, glow, flipped }: { analysis: BoardAnalysis
 
 export interface DeskSceneProps {
   analysis: BoardAnalysis;
-  reading: number | null;
+  reading: Reading;
   glow: DeskObject | null;
   goal: string;
   levelLabel: string;

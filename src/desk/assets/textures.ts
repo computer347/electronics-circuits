@@ -203,10 +203,12 @@ function wrap(g: CanvasRenderingContext2D, text: string, x: number, y: number, w
 /** Draw the meter's LCD into an existing canvas (it changes with every reading). */
 export function drawLcd(g: CanvasRenderingContext2D, text: string, unit: string, active: boolean) {
   const w = g.canvas.width, h = g.canvas.height;
-  g.fillStyle = active ? '#b9c7a3' : '#8f9a80'; g.fillRect(0, 0, w, h);
-  g.fillStyle = 'rgba(40,50,30,0.12)'; g.font = `bold ${h * 0.62}px ${FONT_MONO}`; g.textBaseline = 'middle'; g.textAlign = 'right';
-  g.fillText('8.888', w - 90, h * 0.55);
-  g.fillStyle = '#1d2418'; g.fillText(text, w - 90, h * 0.55);
-  g.font = `bold ${h * 0.26}px ${FONT_MONO}`; g.fillText(unit, w - 14, h * 0.62);
-  g.textAlign = 'left'; g.font = `bold ${h * 0.16}px ${FONT_MONO}`; g.fillText('DC', 14, h * 0.2);
+  g.fillStyle = active ? '#b9c7a3' : '#737c68'; g.fillRect(0, 0, w, h);
+  if (!active) return;
+  const right = w - 120;
+  g.fillStyle = 'rgba(40,50,30,0.12)'; g.font = `bold ${h * 0.6}px ${FONT_MONO}`; g.textBaseline = 'middle'; g.textAlign = 'right';
+  g.fillText('8.888', right, h * 0.55);
+  g.fillStyle = '#1d2418'; g.fillText(text, right, h * 0.55);
+  g.textAlign = 'left'; g.font = `bold ${h * 0.26}px ${FONT_MONO}`; g.fillText(unit, right + 10, h * 0.62);
+  g.font = `bold ${h * 0.16}px ${FONT_MONO}`; g.fillText(/[VA]$/.test(unit) ? 'DC' : '', 14, h * 0.2);
 }

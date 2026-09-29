@@ -4,7 +4,7 @@
  */
 import { OrbitControls } from '@react-three/drei';
 import { Canvas, useThree, type ThreeEvent } from '@react-three/fiber';
-import { createContext, useContext, useEffect, useMemo } from 'react';
+import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react';
 import * as THREE from 'three';
 import { colorBands } from './colorCode';
 import { BOARD, HOLES, hole, type HoleId } from './layout';
@@ -13,6 +13,7 @@ import { isElectrolytic, LED_MAX_AMPS, type BoardAnalysis, type BoardPart, type 
 import { buildFlow, sourceColors } from './flow';
 import { FlowParticles, RideElectron } from './FlowScene';
 import { translateParts } from './move';
+import { PartMotion } from './PartMotion';
 import { CAP_Y, ledMid, supplyLeadCurve, wireCurve, SUPPLY_BOX, SUPPLY_HOLES } from './paths';
 import { useBench } from './store';
 
@@ -58,6 +59,13 @@ function Segment({ from, to, r = 0.045, color = '#b9c2bd', emissive }: { from: V
 
 // ---------------------------------------------------------------- board
 
+/** Board group: everything below is in board units, whatever the board's scale and place in the scene. */
+let boardRoot: THREE.Object3D | null = null;
+/** An event's hit point in board units. */
+function boardPoint(e: ThreeEvent<PointerEvent | MouseEvent>): THREE.Vector3 {
+  return boardRoot ? boardRoot.worldToLocal(e.point.clone()) : e.point.clone();
+}
+
 /** Largest source voltage on the board, for scaling the strip glow. */
 function boardVref(b: BoardState): number {
   let v = b.supply.on ? b.supply.volts : 0;
@@ -97,10 +105,12 @@ function Board({ analysis, dynamic }: { analysis: BoardAnalysis; dynamic: boolea
   }, []);
 
   const pick = (e: ThreeEvent<PointerEvent | MouseEvent>) => {
+    // Holes are in board units: bring the hit point into the board's own frame (the desk scales and moves the board).
+    const p = boardPoint(e);
     let best: HoleId | null = null;
     let bestD = 0.75;
     for (const h of HOLES) {
-      const d = Math.hypot(h.x - e.point.x, h.z - e.point.z);
+      const d = Math.hypot(h.x - p.x, h.z - p.z);
       if (d < bestD) { bestD = d; best = h.id; }
     }
     return best;
@@ -184,7 +194,8 @@ function usePartHandlers(part: BoardPart) {
       if (st.moving) return;
       e.stopPropagation();
       e.nativeEvent.preventDefault();
-      const d = (h: HoleId) => { const i = hole(h); return Math.hypot(i.x - e.point.x, i.z - e.point.z); };
+      const p = boardPoint(e);
+      const d = (h: HoleId) => { const i = hole(h); return Math.hypot(i.x - p.x, i.z - p.z); };
       const anchor = d(part.h1) <= d(part.h2) ? part.h1 : part.h2;
       st.openMenu(part.id, e.nativeEvent.clientX, e.nativeEvent.clientY, anchor);
     },
@@ -548,19 +559,23 @@ export function BreadboardContents({ analysis, dynamic, look = 'phosphor', suppl
     movingIds.has(id) ? (preview && !preview.valid ? FAULT : '#39ff88') : id === selected ? (look === 'desk' ? '#ff48b0' : AMBER) : undefined;
   return (
     <LookContext.Provider value={look}>
+      <group ref={(g) => { if (g) boardRoot = g; }} />
       <Board analysis={analysis} dynamic={dynamic} />
       {supplyBox && <Supply analysis={analysis} />}
       {shown.map((p) => {
         const mark = markOf(p.id);
+        let el: ReactNode = null;
         switch (p.kind) {
-          case 'resistor': return <Resistor key={p.id} part={p} mark={mark} />;
-          case 'led': return <Led key={p.id} part={p} mark={mark} amps={movingIds.has(p.id) ? 0 : currents[p.id] ?? 0} dynamic={dynamic && !movingIds.has(p.id)} />;
-          case 'wire': return <Wire key={p.id} part={p} mark={mark} />;
-          case 'button': return <Button key={p.id} part={p} mark={mark} />;
-          case 'battery': return <Battery key={p.id} part={p} mark={mark} color={colors[p.id] ?? '#3ad7ff'} />;
-          case 'capacitor': return <Capacitor key={p.id} part={p} mark={mark} />;
-          case 'generator': return <Generator key={p.id} part={p} mark={mark} color={colors[p.id] ?? '#ffb000'} />;
+          case 'resistor': el = <Resistor part={p} mark={mark} />; break;
+          case 'led': el = <Led part={p} mark={mark} amps={movingIds.has(p.id) ? 0 : currents[p.id] ?? 0} dynamic={dynamic && !movingIds.has(p.id)} />; break;
+          case 'wire': el = <Wire part={p} mark={mark} />; break;
+          case 'button': el = <Button part={p} mark={mark} />; break;
+          case 'battery': el = <Battery part={p} mark={mark} color={colors[p.id] ?? '#3ad7ff'} />; break;
+          case 'capacitor': el = <Capacitor part={p} mark={mark} />; break;
+          case 'generator': el = <Generator part={p} mark={mark} color={colors[p.id] ?? '#ffb000'} />; break;
         }
+        // Parts being dragged follow the pointer as they are; everything else animates its moves.
+        return <PartMotion key={p.id} part={p} still={movingIds.has(p.id)}>{el}</PartMotion>;
       })}
       {view === 'flow' && <FlowParticles edges={edges} colors={colors} />}
       {view === 'ride' && (

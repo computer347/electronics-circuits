@@ -6,6 +6,7 @@
 import { create } from 'zustand';
 import { useBench } from '../breadboard/store';
 import { useSession, type Attempt } from '../levels/session';
+import { DIAL, type MeterMode } from './meter';
 import { canSubmit, FRESH, type DeskObject, type LoopProgress } from './steps';
 
 /** Desk = at the bench; power = switch flipped, LED fading; dive = shrinking into the hole; clear = inside. */
@@ -18,6 +19,11 @@ interface DeskStore {
   flags: Omit<LoopProgress, 'measurements'>;
   /** The checked result once the circuit is cleared. */
   result: Attempt | null;
+  /** Where the multimeter's dial points. */
+  meterMode: MeterMode;
+  setMeterMode: (m: MeterMode) => void;
+  /** Turn the dial one click (+1 clockwise, −1 back). */
+  turnDial: (dir: 1 | -1) => void;
   enter: (levelId: string) => void;
   focusOn: (o: DeskObject | null) => void;
   closeNotebook: () => void;
@@ -42,11 +48,17 @@ export const useDesk = create<DeskStore>((set, get) => ({
   phase: 'desk',
   flags: FRESH_FLAGS,
   result: null,
+  meterMode: 'V',
+  setMeterMode: (meterMode) => set({ meterMode }),
+  turnDial: (dir) => {
+    const i = DIAL.indexOf(get().meterMode);
+    set({ meterMode: DIAL[Math.max(0, Math.min(DIAL.length - 1, i + dir))]! });
+  },
 
   enter: (levelId) => {
     useSession.getState().start(levelId);
     useBench.getState().setTool('select');
-    set({ levelId, focus: null, phase: 'desk', flags: FRESH_FLAGS, result: null });
+    set({ levelId, focus: null, phase: 'desk', flags: FRESH_FLAGS, result: null, meterMode: 'V' });
   },
   focusOn: (focus) => {
     const bench = useBench.getState();

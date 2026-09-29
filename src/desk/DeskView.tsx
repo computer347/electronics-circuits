@@ -13,6 +13,7 @@ import { levelById, startingBoard } from '../levels';
 import { useProgress } from '../levels/progress';
 import { useSession } from '../levels/session';
 import { reducedMotion } from './anim';
+import { meteredBoard, readMeter } from './meter';
 import type { BoxItem } from './assets/PartsBox';
 import { DeskScene } from './DeskScene';
 import { TAGS, useHover } from './hover';
@@ -75,7 +76,9 @@ export function DeskView({ onMenu, onLearn }: { onMenu: () => void; onLearn: (cl
   const notice = useBench((s) => s.notice);
   const records = useProgress((s) => s.levels);
   const board = useMemo(() => ({ supply, parts }), [supply, parts]);
-  const analysis = useMemo(() => analyzeBoard(board), [board]);
+  const meterMode = useDesk((s) => s.meterMode);
+  // With the dial on A the meter is part of the circuit (a wire between the probes), so solve it in.
+  const analysis = useMemo(() => analyzeBoard(meteredBoard(board, meterMode, probes)), [board, meterMode, probes]);
   const [fonts, setFonts] = useState(false);
   const [printed, setPrinted] = useState(false);
 
@@ -109,15 +112,17 @@ export function DeskView({ onMenu, onLearn }: { onMenu: () => void; onLearn: (cl
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && desk.phase === 'desk') { if (desk.focus) desk.focusOn(null); }
+      if ((e.key === 'm' || e.key === 'M') && desk.focus === 'meter') desk.turnDial(desk.meterMode === 'A' ? -1 : 1);
       if (e.key === 'Enter' && desk.phase === 'desk' && (e.target as HTMLElement).tagName !== 'BUTTON') { e.preventDefault(); runMain(); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   });
 
-  const reading = probes.red && probes.black && analysis.result.ok
-    ? (analysis.voltageAt(probes.red) ?? 0) - (analysis.voltageAt(probes.black) ?? 0)
-    : null;
+  const reading = useMemo(
+    () => readMeter(board, meterMode, probes, { ok: analysis.result.ok, voltageAt: analysis.voltageAt, currents: analysis.result.currents }),
+    [board, meterMode, probes, analysis],
+  );
 
   const main = mainAction(loop, desk.focus);
   function runMain() {
@@ -209,10 +214,12 @@ export function DeskView({ onMenu, onLearn }: { onMenu: () => void; onLearn: (cl
       {desk.phase === 'desk' && desk.focus === 'meter' && (
         <div className="desk-hint">
           <span className="desk-pict"><span className="dot red" /> a leg <span className="dot black" /> − rail</span>
-          <span className="desk-reading">{reading === null ? '— V' : `${reading.toFixed(2)} V`}</span>
+          <span className="desk-reading">{meterMode === 'off' ? 'OFF' : `${reading.text} ${reading.unit}`}</span>
+          <span className="desk-pict">turn the dial <kbd>M</kbd></span>
         </div>
       )}
       {desk.phase === 'desk' && notice && desk.focus === 'breadboard' && <p className="desk-notice">{notice}</p>}
+      {desk.phase === 'desk' && desk.focus === 'meter' && reading.note && <p className="desk-notice">{reading.note}</p>}
       {desk.phase === 'desk' && step === 'done' && desk.focus === null && <div className="desk-done"><Stars n={records[level.id]?.stars ?? 0} /></div>}
 
       {desk.phase === 'desk' && (

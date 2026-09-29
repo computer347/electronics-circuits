@@ -7,14 +7,49 @@ import { RoundedBox } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { reducedMotion } from '../anim';
+import { reducedMotion, useEased } from '../anim';
+import { DIAL, type MeterMode, type Reading } from '../meter';
 import { drawLcd } from './textures';
 
 export const METER = { w: 0.09, d: 0.17, h: 0.032 } as const;
 /** Jack positions in the meter's own frame: COM (black) and V (red). */
 export const JACKS = { com: new THREE.Vector3(-0.018, METER.h + 0.004, 0.066), v: new THREE.Vector3(0.018, METER.h + 0.004, 0.066) };
 
-export function Multimeter({ reading }: { reading: number | null }) {
+/** Dial angle (radians, clockwise from pointing at the display) for each mode. */
+const DIAL_ANGLE: Record<MeterMode, number> = { off: -1.05, V: -0.35, 'Ω': 0.35, A: 1.05 };
+const DIAL_R = 0.022;
+const LABEL_R = 0.034;
+const DIAL_Z = 0.016;
+
+/** The printed ring round the dial: OFF, V⎓, Ω, A, with a tick at each. */
+let dialFace: THREE.CanvasTexture | null = null;
+function dialFaceTexture() {
+  if (dialFace) return dialFace;
+  const c = document.createElement('canvas');
+  c.width = c.height = 512;
+  const g = c.getContext('2d')!;
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  for (const m of DIAL) {
+    const a = DIAL_ANGLE[m];
+    const x = 256 + Math.sin(a) * 180, y = 256 - Math.cos(a) * 180;
+    g.fillStyle = m === 'off' ? '#bdbdbd' : m === 'V' ? '#ffe800' : m === 'Ω' ? '#9fd0f2' : '#ff48b0';
+    g.font = `bold ${m === 'off' ? 46 : 70}px 'Space Mono', monospace`;
+    g.fillText(m === 'off' ? 'OFF' : m, x, y);
+    g.strokeStyle = '#d8d8d8'; g.lineWidth = 8;
+    g.beginPath(); g.moveTo(256 + Math.sin(a) * 118, 256 - Math.cos(a) * 118); g.lineTo(256 + Math.sin(a) * 138, 256 - Math.cos(a) * 138); g.stroke();
+  }
+  dialFace = new THREE.CanvasTexture(c);
+  dialFace.colorSpace = THREE.SRGBColorSpace;
+  return dialFace;
+}
+
+/**
+ * The meter. `interactive` lets you twist the dial: click the knob (or drag it sideways) to
+ * turn it a click, or click a label to jump there.
+ */
+export function Multimeter({ reading, mode, onMode, interactive }: {
+  reading: Reading; mode: MeterMode; onMode: (m: MeterMode) => void; interactive: boolean;
+}) {
   const lcd = useMemo(() => {
     const c = document.createElement('canvas');
     c.width = 512; c.height = 200;
@@ -22,22 +57,38 @@ export function Multimeter({ reading }: { reading: number | null }) {
     t.colorSpace = THREE.SRGBColorSpace;
     return { c, t, g: c.getContext('2d')! };
   }, []);
-  const roll = useRef({ from: 0, to: 0, t0: 0, shown: '' });
+  const roll = useRef({ from: 0, to: 0, unit: '', t0: 0, shown: '' });
+  const knob = useRef<THREE.Group>(null);
+  const angle = useEased(DIAL_ANGLE[mode], 0.22);
+  const drag = useRef<{ x: number; moved: boolean } | null>(null);
 
   useFrame(() => {
+    if (knob.current) knob.current.rotation.y = -angle.value;
     const r = roll.current;
-    const target = reading ?? NaN;
-    if (!Number.isNaN(target) && target !== r.to) { r.from = Number.isNaN(r.to) ? 0 : r.to; r.to = target; r.t0 = performance.now(); }
-    if (Number.isNaN(target)) r.to = NaN;
-    const k = reducedMotion() ? 1 : Math.min(1, (performance.now() - r.t0) / 350);
-    const v = Number.isNaN(r.to) ? NaN : r.from + (r.to - r.from) * (1 - (1 - k) ** 3);
-    const text = Number.isNaN(v) ? '- - - -' : (Math.abs(v) < 0.0005 ? 0 : v).toFixed(v <= -10 || v >= 10 ? 2 : 3);
-    if (text !== r.shown) {
-      r.shown = text;
-      drawLcd(lcd.g, text, 'V', !Number.isNaN(v));
+    let text = reading.text;
+    if (reading.value !== undefined) {
+      // Digits roll to a new number in the same unit; a unit change just cuts.
+      const target = Number(reading.text);
+      if (reading.unit !== r.unit) { r.from = target; r.to = target; r.unit = reading.unit; }
+      else if (target !== r.to) { r.from = r.to; r.to = target; r.t0 = performance.now(); }
+      const k = reducedMotion() ? 1 : Math.min(1, (performance.now() - r.t0) / 350);
+      const decimals = (reading.text.split('.')[1] ?? '').length;
+      text = (r.from + (r.to - r.from) * (1 - (1 - k) ** 3)).toFixed(decimals);
+    } else r.unit = '';
+    const key = `${mode}|${text}|${reading.unit}`;
+    if (key !== r.shown) {
+      r.shown = key;
+      drawLcd(lcd.g, text, reading.unit, mode !== 'off');
       lcd.t.needsUpdate = true;
     }
   });
+
+  const turn = (dir: 1 | -1) => {
+    const i = DIAL.indexOf(mode);
+    const next = DIAL[Math.max(0, Math.min(DIAL.length - 1, i + dir))]!;
+    if (next !== mode) onMode(next);
+  };
+  const cursor = (c: string) => () => { if (interactive) document.body.style.cursor = c; };
 
   return (
     <group>
@@ -52,22 +103,50 @@ export function Multimeter({ reading }: { reading: number | null }) {
         <planeGeometry args={[0.068, 0.028]} />
         <meshBasicMaterial map={lcd.t} toneMapped={false} />
       </mesh>
-      {/* dial with a pointer on V DC */}
-      <mesh position={[0, METER.h + 0.006, 0.012]} castShadow>
-        <cylinderGeometry args={[0.024, 0.026, 0.008, 40]} />
-        <meshStandardMaterial color="#1a1a1c" roughness={0.4} />
+      {/* the printed ring of modes, and a click target on each label */}
+      <mesh position={[0, METER.h + 0.0031, DIAL_Z]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[0.095, 0.095]} />
+        <meshBasicMaterial map={dialFaceTexture()} transparent toneMapped={false} depthWrite={false} />
       </mesh>
-      <mesh position={[0, METER.h + 0.011, 0.003]}>
-        <boxGeometry args={[0.005, 0.003, 0.02]} />
-        <meshStandardMaterial color="#ff48b0" roughness={0.4} />
-      </mesh>
-      {[-0.035, -0.02, 0.02, 0.035].map((x, i) => (
-        <mesh key={x} position={[x, METER.h + 0.0035, 0.012 - (i === 0 || i === 3 ? 0 : 0.028)]}>
-          <boxGeometry args={[0.006, 0.001, 0.002]} />
-          <meshBasicMaterial color="#d8d8d8" />
+      {interactive && DIAL.map((m) => (
+        <mesh key={m} position={[Math.sin(DIAL_ANGLE[m]) * LABEL_R, METER.h + 0.004, DIAL_Z - Math.cos(DIAL_ANGLE[m]) * LABEL_R]} rotation={[-Math.PI / 2, 0, 0]}
+          onClick={(e) => { e.stopPropagation(); onMode(m); }} onPointerOver={cursor('pointer')} onPointerOut={cursor('')}>
+          <circleGeometry args={[0.009, 16]} />
+          <meshBasicMaterial visible={false} />
         </mesh>
       ))}
-      {/* jacks: COM, V, 10 A */}
+      {/* the knob: a grip with a pink pointer */}
+      <group ref={knob} position={[0, METER.h + 0.006, DIAL_Z]}
+        onPointerDown={(e) => { if (!interactive) return; e.stopPropagation(); drag.current = { x: e.nativeEvent.clientX, moved: false }; }}
+        onPointerMove={(e) => {
+          const d = drag.current;
+          if (!d) return;
+          const dx = e.nativeEvent.clientX - d.x;
+          if (Math.abs(dx) > 28) { turn(dx > 0 ? 1 : -1); d.x = e.nativeEvent.clientX; d.moved = true; }
+        }}
+        onPointerLeave={() => { drag.current = null; }}
+        onClick={(e) => {
+          if (!interactive) return;
+          e.stopPropagation();
+          const d = drag.current; drag.current = null;
+          // A plain click turns it one click on (and back from the last stop).
+          if (!d?.moved) turn(DIAL.indexOf(mode) === DIAL.length - 1 ? -1 : 1);
+        }}
+        onPointerOver={cursor('grab')} onPointerOut={cursor('')}>
+        <mesh castShadow>
+          <cylinderGeometry args={[DIAL_R, DIAL_R + 0.002, 0.008, 40]} />
+          <meshStandardMaterial color="#1a1a1c" roughness={0.4} />
+        </mesh>
+        <mesh position={[0, 0.006, 0]} castShadow>
+          <boxGeometry args={[0.012, 0.006, DIAL_R * 1.9]} />
+          <meshStandardMaterial color="#26262a" roughness={0.45} />
+        </mesh>
+        <mesh position={[0, 0.0095, -DIAL_R * 0.62]}>
+          <boxGeometry args={[0.004, 0.001, 0.012]} />
+          <meshBasicMaterial color="#ff48b0" toneMapped={false} />
+        </mesh>
+      </group>
+      {/* jacks: COM, V/Ω, mA */}
       {[[JACKS.com, '#111'], [JACKS.v, '#c0392b'], [new THREE.Vector3(0, METER.h + 0.004, 0.066), '#333']].map(([p, c], i) => (
         <mesh key={i} position={p as THREE.Vector3}>
           <cylinderGeometry args={[0.0055, 0.0055, 0.004, 20]} />

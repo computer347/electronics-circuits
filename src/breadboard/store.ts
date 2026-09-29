@@ -90,6 +90,8 @@ interface BenchStore extends BoardState {
   measurements: number;
   /** LEDs burnt out since the page loaded (levels diff this to count burns). */
   burnEvents: number;
+  /** Bumped whenever a whole board is loaded or cleared (parts then appear without animating in). */
+  generation: number;
   setRules: (rules: { locked?: string[]; pinned?: string[]; spares?: number | null }) => void;
   isLocked: (id: string) => boolean;
   clear: () => void;
@@ -143,6 +145,7 @@ export const useBench = create<BenchStore>((set, get) => ({
   spares: null,
   measurements: 0,
   burnEvents: 0,
+  generation: 0,
 
   setTool: (tool) => set({ tool, pending: null, notice: null, moving: null }),
   setOhms: (ohms) => set({ ohms }),
@@ -244,16 +247,17 @@ export const useBench = create<BenchStore>((set, get) => ({
   setNotice: (notice) => set({ notice }),
   load: ({ scope, scopeSetup: _setup, ...b }) => {
     counters = {};
-    set({
+    set((s) => ({
+      generation: s.generation + 1,
       locked: [], pinned: [], spares: null,
       ...b, pending: null, selected: null, moving: null, menu: null, notice: null, probes: { red: null, black: null },
       scopeProbes: { ch1: scope?.ch1 ?? null, ch2: scope?.ch2 ?? null }, scopeNext: 'ch1',
       ...(scope ? { scopeOpen: true } : {}),
-    });
+    }));
   },
   setRules: ({ locked, pinned, spares }) => set((s) => ({ locked: locked ?? s.locked, pinned: pinned ?? s.pinned, spares: spares === undefined ? s.spares : spares })),
   isLocked: (id) => get().locked.includes(id),
-  clear: () => { counters = {}; set({ locked: [], pinned: [], spares: null, parts: [], pending: null, selected: null, moving: null, menu: null, notice: null, probes: { red: null, black: null }, scopeProbes: { ch1: null, ch2: null }, scopeNext: 'ch1' }); },
+  clear: () => { counters = {}; set((s) => ({ generation: s.generation + 1, locked: [], pinned: [], spares: null, parts: [], pending: null, selected: null, moving: null, menu: null, notice: null, probes: { red: null, black: null }, scopeProbes: { ch1: null, ch2: null }, scopeNext: 'ch1' })); },
 }));
 
 export const BENCH_PRESETS: Record<string, BoardState & BenchExtras> = {

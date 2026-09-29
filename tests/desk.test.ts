@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { analyzeBoard, type BoardState } from '../src/breadboard/model';
 import { useBench } from '../src/breadboard/store';
 import { buildMap } from '../src/circuitworld/map';
+import { meteredBoard, readMeter, type MeterMode } from '../src/desk/meter';
 import { measurementsNow, useDesk } from '../src/desk/store';
 import { canSubmit, currentStep, FRESH, glowing, mainAction, railStates } from '../src/desk/steps';
 import { startingBoard, WORLD0 } from '../src/levels';
@@ -113,5 +114,46 @@ describe('playing level 0–2 on the desk', () => {
     expect(useProgress.getState().levels[L2.id]).toBeTruthy();
     desk().leave();
     expect(useSession.getState().levelId).toBeNull();
+  });
+});
+
+describe('multimeter modes', () => {
+  const fixedL2 = () => {
+    const b = startingBoard(L2);
+    b.parts = b.parts.map((p) => (p.id === 'LED1' ? { ...p, h1: p.h2, h2: p.h1 } : p));
+    return b;
+  };
+  const read = (b: BoardState, mode: MeterMode, red: string, black: string) => {
+    const probes = { red, black };
+    const a = analyzeBoard(meteredBoard(b, mode, probes));
+    return readMeter(b, mode, probes, { ok: a.result.ok, voltageAt: a.voltageAt, currents: a.result.currents });
+  };
+
+  it('reads volts between the probes', () => {
+    const r = read(startingBoard(L2), 'V', 'h12', 'T-:5');
+    expect(r.value).toBeCloseTo(5, 2);
+    expect(r.unit).toBe('V');
+  });
+
+  it('reads a resistor in ohms with the power taken out', () => {
+    const r = read(fixedL2(), 'Ω', 'g3', 'g12');
+    expect(r.value).toBeCloseTo(150, 0);
+    expect(r.text).toBe('150.0');
+  });
+
+  it('reads OL where there is no path, and through a diode', () => {
+    expect(read(fixedL2(), 'Ω', 'a1', 'a5').text).toBe('OL');
+    expect(read(fixedL2(), 'Ω', 'h12', 'h14').text).toBe('OL');
+  });
+
+  it('is a wire on A: across the LED it carries the loop current, across the supply it blows the fuse', () => {
+    const r = read(fixedL2(), 'A', 'h12', 'h14');
+    expect(r.unit).toBe('mA');
+    expect(r.value! * 1000).toBeCloseTo(5 / 150 * 1000, 0);
+    expect(read(fixedL2(), 'A', 'T+:2', 'T-:2').text).toBe('FUSE');
+  });
+
+  it('shows nothing when switched off', () => {
+    expect(read(fixedL2(), 'off', 'h12', 'h14').text).toBe('');
   });
 });
