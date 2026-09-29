@@ -5,7 +5,7 @@
  */
 import { Html } from '@react-three/drei';
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
-import { useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, type ReactNode, type RefObject } from 'react';
 import * as THREE from 'three';
 import { BOARD, hole } from '../breadboard/layout';
 import { SUPPLY_ID, type BoardAnalysis } from '../breadboard/model';
@@ -305,6 +305,7 @@ function BreadboardOnDesk({ analysis, glow }: { analysis: BoardAnalysis; glow: b
  * stays sharp and readable at any zoom; it never takes clicks away from the board.
  */
 function PartLabels({ analysis }: { analysis: BoardAnalysis }) {
+  const layer = useContext(LabelLayer);
   const parts = useBench((s) => s.parts);
   const selected = useBench((s) => s.selected);
   return (
@@ -314,7 +315,7 @@ function PartLabels({ analysis }: { analysis: BoardAnalysis }) {
         const info = partInfo(p, analysis);
         const open = p.id === selected;
         return (
-          <Html key={p.id} position={[(a.x + b.x) / 2, open ? 2.6 : 1.9, (a.z + b.z) / 2]} center zIndexRange={[9, 0]} style={{ pointerEvents: 'none' }}>
+          <Html key={p.id} position={[(a.x + b.x) / 2, open ? 2.6 : 1.9, (a.z + b.z) / 2]} center zIndexRange={[9, 0]} style={{ pointerEvents: 'none' }} portal={(layer ?? undefined) as RefObject<HTMLElement> | undefined}>
             {open ? (
               <div className="part-card">
                 <b>{p.id}</b>
@@ -332,6 +333,9 @@ function PartLabels({ analysis }: { analysis: BoardAnalysis }) {
 }
 
 // ---------------------------------------------------------------- scene
+
+/** The HTML layer the part labels go into (owned by the desk view, outside React's canvas wrapper). */
+export const LabelLayer = createContext<RefObject<HTMLDivElement | null> | null>(null);
 
 export interface DeskSceneProps {
   analysis: BoardAnalysis;

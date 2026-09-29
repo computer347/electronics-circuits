@@ -5,7 +5,7 @@
  */
 import { Html } from '@react-three/drei';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { useMemo, useRef, type ReactNode } from 'react';
+import { createContext, useContext, useMemo, useRef, type ReactNode, type RefObject } from 'react';
 import * as THREE from 'three';
 import { colorBands } from '../breadboard/colorCode';
 import { reducedMotion } from './anim';
@@ -14,9 +14,13 @@ import type { PartId } from './notebook';
 
 const METAL = { color: '#c9ccd2', metalness: 0.85, roughness: 0.3 } as const;
 
+/** Callouts go into their own layer beside the canvas (not a node React also manages). */
+const CalloutLayer = createContext<RefObject<HTMLDivElement | null> | null>(null);
+
 function Callout({ n, at, label }: { n: number; at: [number, number, number]; label: string }) {
+  const layer = useContext(CalloutLayer);
   return (
-    <Html position={at} center zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
+    <Html position={at} center zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }} portal={(layer ?? undefined) as RefObject<HTMLElement> | undefined}>
       <span className="callout"><i>{n}</i>{label}</span>
     </Html>
   );
@@ -39,14 +43,14 @@ function Led({ labels }: { labels: string[] }) {
     return g;
   }, []);
   return (
-    <group position={[0, 0.3, 0]}>
+    <group position={[0, 0.9, 0]}>
       <mesh position={[0, 0.55, 0]}><cylinderGeometry args={[0.5, 0.5, 1.1, 40]} /><meshPhysicalMaterial color="#ff3b30" transparent opacity={0.8} roughness={0.15} transmission={0.2} /></mesh>
       <mesh position={[0, 1.1, 0]}><sphereGeometry args={[0.5, 40, 20, 0, Math.PI * 2, 0, Math.PI / 2]} /><meshPhysicalMaterial color="#ff3b30" transparent opacity={0.8} roughness={0.15} /></mesh>
       <mesh geometry={rim}><meshPhysicalMaterial color="#ff3b30" transparent opacity={0.85} roughness={0.2} /></mesh>
       <Leg x={-0.2} len={2.8} />
       <Leg x={0.2} len={2.2} />
-      <Callout n={1} at={[-0.2, -2.9, 0]} label={labels[0]!} />
-      <Callout n={2} at={[0.2, -2.3, 0]} label={labels[1]!} />
+      <Callout n={1} at={[-0.85, -1.6, 0]} label={labels[0]!} />
+      <Callout n={2} at={[0.85, -1.2, 0]} label={labels[1]!} />
       <Callout n={3} at={[0.75, 0.1, 0]} label={labels[2]!} />
       <Callout n={4} at={[0, 1.9, 0]} label={labels[3]!} />
     </group>
@@ -91,7 +95,7 @@ function BoardPatch({ labels }: { labels: string[] }) {
 
 function Capacitor({ labels }: { labels: string[] }) {
   return (
-    <group position={[0, 0.2, 0]}>
+    <group position={[0, 0.8, 0]}>
       <mesh position={[0, 0.8, 0]}><cylinderGeometry args={[0.6, 0.6, 1.6, 40]} /><meshStandardMaterial color="#2f6fc0" roughness={0.45} /></mesh>
       {/* the stripe on the − side */}
       <mesh position={[0, 0.8, 0]}><cylinderGeometry args={[0.605, 0.605, 1.58, 40, 1, true, Math.PI * 0.35, Math.PI * 0.4]} /><meshStandardMaterial color="#d6dde6" roughness={0.5} side={THREE.DoubleSide} /></mesh>
@@ -99,7 +103,7 @@ function Capacitor({ labels }: { labels: string[] }) {
       <Leg x={-0.2} len={2.4} />
       <Leg x={0.2} len={1.9} />
       <Callout n={1} at={[0.75, 1.0, 0.3]} label={labels[0]!} />
-      <Callout n={2} at={[-0.2, -2.5, 0]} label={labels[1]!} />
+      <Callout n={2} at={[-0.85, -1.4, 0]} label={labels[1]!} />
       <Callout n={3} at={[0, 2.0, 0]} label={labels[2]!} />
     </group>
   );
@@ -146,12 +150,16 @@ export function PartModel({ part, labels }: { part: PartId; labels: string[] }) 
     led: <Led labels={labels} />, resistor: <Resistor labels={labels} />, breadboard: <BoardPatch labels={labels} />,
     capacitor: <Capacitor labels={labels} />, button: <Button labels={labels} />, multimeter: <Meter labels={labels} />,
   }[part];
+  const layer = useRef<HTMLDivElement>(null);
   return (
-    <Canvas className="part-model" camera={{ position: [0, 0.6, 7], fov: 38 }} dpr={[1, 2]} gl={{ alpha: true }}>
-      <ambientLight intensity={0.9} color="#fff4e6" />
-      <directionalLight position={[3, 5, 6]} intensity={1.6} />
-      <directionalLight position={[-4, 2, -3]} intensity={0.5} color="#bcd8ff" />
-      <Turntable>{model}</Turntable>
-    </Canvas>
+    <div className="part-model">
+      <Canvas camera={{ position: [0, -0.2, 11], fov: 38 }} dpr={[1, 2]} gl={{ alpha: true }}>
+        <ambientLight intensity={0.9} color="#fff4e6" />
+        <directionalLight position={[3, 5, 6]} intensity={1.6} />
+        <directionalLight position={[-4, 2, -3]} intensity={0.5} color="#bcd8ff" />
+        <CalloutLayer.Provider value={layer}><Turntable>{model}</Turntable></CalloutLayer.Provider>
+      </Canvas>
+      <div ref={layer} className="callout-layer" />
+    </div>
   );
 }

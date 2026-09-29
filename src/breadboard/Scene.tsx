@@ -3,8 +3,8 @@
  * and reports hole hovers/clicks and part clicks back to the store.
  */
 import { OrbitControls } from '@react-three/drei';
-import { Canvas, useThree, type ThreeEvent } from '@react-three/fiber';
-import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react';
+import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
+import { createContext, useContext, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import * as THREE from 'three';
 import { colorBands } from './colorCode';
 import { BOARD, HOLES, hole, type HoleId } from './layout';
@@ -271,9 +271,27 @@ function Led({ part, mark, amps: dcAmps, dynamic }: { part: BoardPart; mark?: st
           <meshBasicMaterial color={color} transparent opacity={0.12 + level * 0.18} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} />
         </mesh>
       )}
-      {level > 0.02 && <pointLight position={[mid[0], 1.6, mid[2]]} color={color} intensity={level * 6} distance={6} decay={2} />}
+      {level > 0.02 && <LedLight position={[mid[0], 1.6, mid[2]]} color={color} intensity={level * 6} />}
     </group>
   );
+}
+
+/**
+ * A lit LED's glow on its surroundings. Lights aren't scaled with their group, so on a board
+ * shrunk onto the desk the range and strength are scaled to match (it would light the whole
+ * room otherwise): range × s, and intensity × s² for the inverse-square falloff.
+ */
+function LedLight({ position, color, intensity }: { position: V3; color: string; intensity: number }) {
+  const ref = useRef<THREE.PointLight>(null);
+  const tmp = useMemo(() => new THREE.Vector3(), []);
+  useFrame(() => {
+    const l = ref.current;
+    if (!l?.parent) return;
+    const s = l.parent.getWorldScale(tmp).x;
+    l.distance = 6 * s;
+    l.intensity = intensity * s * s;
+  });
+  return <pointLight ref={ref} position={position} color={color} intensity={0} distance={6} decay={2} />;
 }
 
 function Wire({ part, mark }: { part: BoardPart; mark?: string }) {

@@ -200,9 +200,13 @@
   scrollbar-width: thin;
 }
 .nb-page.left { box-shadow: inset -2.2em 0 2em -2em rgba(60, 40, 20, 0.35); }
-.nb-page.right { box-shadow: inset 2.2em 0 2em -2em rgba(60, 40, 20, 0.35); transform-origin: left center; animation: nb-turn 0.55s cubic-bezier(0.3, 0.7, 0.3, 1); }
+.nb-page.right { box-shadow: inset 2.2em 0 2em -2em rgba(60, 40, 20, 0.35); animation: nb-turn 0.55s cubic-bezier(0.3, 0.7, 0.3, 1); }
+/* The turning page's shadow sweeps across as the new page is revealed from the spine. */
+.nb-page.right::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to right, rgba(60, 40, 20, 0.28), transparent 30%); animation: nb-sweep 0.55s ease-out forwards; }
 .nb-page.left { animation: nb-fade 0.4s ease-out; }
-@keyframes nb-turn { from { transform: rotateY(-75deg); opacity: 0.4; } to { transform: none; opacity: 1; } }
+/* clip-path, never transform: the 3D part model on the page must measure its real size (see Crt.tsx). */
+@keyframes nb-turn { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes nb-sweep { from { opacity: 1; } to { opacity: 0; } }
 @keyframes nb-fade { from { opacity: 0; } to { opacity: 1; } }
 .nb-page h2 { margin: 0.2em 0 0.5em; font-family: var(--r-display); font-weight: 400; font-size: 2.1em; line-height: 1.05; color: var(--r-blue); letter-spacing: 0.02em; }
 .nb-page p { margin: 0 0 0.7em; }
@@ -213,7 +217,8 @@
 .nb-facts li::marker { font-family: var(--r-display); color: var(--r-pink); }
 .nb-facts b { display: block; }
 .nb-model { padding: 0; }
-.nb-model .part-model { position: absolute !important; inset: 0; }
+.nb-model .part-model { position: absolute; inset: 0; }
+.part-model .callout-layer, .desk-label-layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
 .callout { display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px 2px 2px; background: var(--r-paper); color: var(--r-ink); font-family: var(--r-mono); font-size: 12px; font-weight: 700; white-space: nowrap; box-shadow: 2px 2px 0 var(--r-blue); }
 .callout i { font-style: normal; display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--r-pink); color: var(--r-paper); font-family: var(--r-display); font-size: 12px; }
 .nb-lab, .nb-schematic { margin: 0.5em 0; padding: 0.6em; background: #07100a; border-radius: 4px; color: #d8f5e3; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; box-shadow: 3px 3px 0 var(--r-blue); }
@@ -260,7 +265,7 @@
 .nb-tab.task { background: #f7f3e8; } .nb-tab.theory { background: #ffd0ea; } .nb-tab.math { background: #cfe3f2; }
 .nb-tab.on { transform: translateX(0.4em); box-shadow: 3px 3px 0 var(--r-pink); }
 .nb-tab:hover { color: var(--r-ink); border: 0; transform: translateX(0.3em); }
-@media (prefers-reduced-motion: reduce) { .nb-page.right, .nb-page.left { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .nb-page.right, .nb-page.left, .nb-page.right::after { animation: none; } .nb-page.right::after { opacity: 0; } }
 
 /* ------------------------------------------------------------ bench tour */
 .desk-tour-btn { margin-left: 10px; border: 0; border-radius: 0; padding: 3px 10px; background: rgba(241, 236, 225, 0.15); color: var(--r-paper); font-family: var(--r-mono); font-size: 12px; font-weight: 700; vertical-align: middle; }
@@ -283,6 +288,7 @@
 .spares { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; background: rgba(241, 236, 225, 0.15); color: var(--r-paper); font-family: var(--r-mono); font-size: 12px; font-weight: 700; }
 .spares i { width: 9px; height: 12px; border-radius: 5px 5px 2px 2px; background: #ff3b30; }
 .star-rules { list-style: none; margin: 12px 0; padding: 0; font-size: 13px; }
+.star-rules li, .star-rules li b, .star-rules li small { color: var(--r-ink); }
 .star-rules li { display: grid; grid-template-columns: 3.4em 1fr; column-gap: 8px; padding: 5px 0; border-bottom: 1px solid rgba(28, 10, 58, 0.12); opacity: 0.55; }
 .star-rules li.met { opacity: 1; }
 .star-rules li small { grid-column: 2; }

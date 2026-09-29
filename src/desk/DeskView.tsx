@@ -4,7 +4,7 @@
  * at. After a submit it dives into the board and hands over to Clear the circuit.
  */
 import { Canvas } from '@react-three/fiber';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { analyzeBoard } from '../breadboard/model';
 import { useBench } from '../breadboard/store';
 import { CircuitWorld } from '../circuitworld/CircuitWorld';
@@ -23,7 +23,7 @@ import { HintNote, SpareLeds } from './HintNote';
 import { starRules } from './starRules';
 import { markTourSeen, TOUR, tourSeen } from './tour';
 import type { BoxItem } from './assets/PartsBox';
-import { DeskScene } from './DeskScene';
+import { DeskScene, LabelLayer } from './DeskScene';
 import { TAGS, useHover } from './hover';
 import { currentStep, mainAction, railStates, STEP_OBJECT, STEPS, glowing, type StepId } from './steps';
 import { useDesk, useLoop } from './store';
@@ -101,6 +101,7 @@ export function DeskView({ onMenu }: { onMenu: () => void }) {
   // With the dial on A the meter is part of the circuit (a wire between the probes), so solve it in.
   const analysis = useMemo(() => analyzeBoard(meteredBoard(board, meterMode, probes)), [board, meterMode, probes]);
   const [fonts, setFonts] = useState(false);
+  const labelLayer = useRef<HTMLDivElement>(null);
   const [printed, setPrinted] = useState(false);
 
   useEffect(() => {
@@ -212,7 +213,7 @@ export function DeskView({ onMenu }: { onMenu: () => void }) {
               <>
                 <h2>Circuit clear</h2>
                 <Stars n={r.stars ?? 1} />
-                <p className="desk-result-sub">{r.stats.measurements} measurements · {r.stats.checks} {r.stats.checks === 1 ? 'try' : 'tries'} · {r.stats.seconds} s{r.improved ? ' · new best' : ''}</p>
+                <p className="desk-result-sub">{r.stats.measurements} {r.stats.measurements === 1 ? 'measurement' : 'measurements'} · {r.stats.checks} {r.stats.checks === 1 ? 'try' : 'tries'} · {r.stats.seconds} s{r.improved ? ' · new best' : ''}</p>
                 <StarList level={level} r={r} />
                 <p>{level.debrief}</p>
               </>
@@ -241,6 +242,7 @@ export function DeskView({ onMenu }: { onMenu: () => void }) {
       {fonts && (
         <Canvas className="desk-canvas" shadows camera={{ fov: 42, near: 0.005, far: 20, position: [0, 0.7, 0.4] }} dpr={[1, 2]}
           onPointerMissed={() => useHover.getState().set(null)}>
+          <LabelLayer.Provider value={labelLayer}>
           <DeskScene
             analysis={analysis}
             reading={reading}
@@ -253,8 +255,10 @@ export function DeskView({ onMenu }: { onMenu: () => void }) {
             boxItems={boxItems}
             diveHole={diveHole}
           />
+          </LabelLayer.Provider>
         </Canvas>
       )}
+      <div ref={labelLayer} className="desk-label-layer" />
       <div className="desk-vignette" aria-hidden />
       {!printed && <div className="desk-print" aria-hidden><i /><i /><i /></div>}
       {desk.phase === 'dive' && <div className="desk-dive" aria-hidden><i /><i /><i /><i /><span>1 : 1 000 000 000</span></div>}

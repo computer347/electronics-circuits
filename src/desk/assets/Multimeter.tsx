@@ -164,13 +164,15 @@ export function Lead({ from, to, color, resting }: { from: () => THREE.Vector3; 
     const key = `${a.toArray().map((x) => x.toFixed(4))}${b.toArray().map((x) => x.toFixed(4))}`;
     if (key === last.current || !mesh.current) return;
     last.current = key;
-    const top = b.clone().add(new THREE.Vector3(0, resting ? 0.004 : 0.03, 0));
-    const mid = a.clone().lerp(top, 0.5);
-    mid.y = Math.min(a.y, top.y) - 0.01 + (resting ? 0.01 : 0.02);
-    const sag = a.clone().lerp(top, 0.3); sag.y = Math.max(0.004, sag.y - 0.02);
-    const curve = new THREE.CatmullRomCurve3([a, a.clone().add(new THREE.Vector3(0, 0.02, 0.02)), sag, mid, top]);
+    // A real lead has slack: out of the jack, down onto the desk, along it, then up to the probe.
+    const top = resting ? b.clone().add(new THREE.Vector3(0, 0.004, 0)) : b.clone();
+    const out = a.clone().add(new THREE.Vector3(0, 0.015, 0.025));
+    const pts = resting
+      ? [a, out, a.clone().lerp(top, 0.5).setY(0.004), top]
+      : [a, out, new THREE.Vector3(a.x - 0.01, 0.004, a.z + 0.07), new THREE.Vector3(top.x + 0.015, 0.004, top.z + 0.06), top.clone().add(new THREE.Vector3(0, 0.012, 0.012)), top];
+    const curve = new THREE.CatmullRomCurve3(pts);
     mesh.current.geometry.dispose();
-    mesh.current.geometry = new THREE.TubeGeometry(curve, 48, 0.0022, 8, false);
+    mesh.current.geometry = new THREE.TubeGeometry(curve, 96, 0.0022, 8, false);
     if (handle.current) {
       handle.current.position.copy(top);
       handle.current.rotation.set(resting ? Math.PI / 2 : 0, 0, 0);
