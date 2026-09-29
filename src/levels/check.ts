@@ -56,6 +56,110 @@ function neighbours(board: BoardState, h: HoleId, self: string): BoardPart[] {
   return out;
 }
 
+/**
+ * Nets: strips joined by jumper wires (and closed buttons) are one electrical point. The
+ * bench supply's + is the T+ rail, ground the T- rail.
+ */
+function nets(board: BoardState) {
+  const parent = new Map<string, string>();
+  const find = (x: string): string => { const p = parent.get(x) ?? x; if (p === x) return x; const r = find(p); parent.set(x, r); return r; };
+  for (const p of board.parts) {
+    if (p.kind === 'wire' || (p.kind === 'button' && p.pressed)) parent.set(find(hole(p.h1).strip), find(hole(p.h2).strip));
+  }
+  return (h: HoleId) => find(hole(h).strip);
+}
+
+/** Jumper wires on a path between two strips (to name the one that shorts something out). */
+function wirePath(board: BoardState, from: string, to: string): string[] {
+  const wires = board.parts.filter((p) => p.kind === 'wire');
+  const prev = new Map<string, { strip: string; wire: string } | null>([[from, null]]);
+  const queue = [from];
+  while (queue.length) {
+    const cur = queue.shift()!;
+    if (cur === to) break;
+    for (const w of wires) {
+      const a = hole(w.h1).strip, b = hole(w.h2).strip;
+      const next = a === cur ? b : b === cur ? a : null;
+      if (next && !prev.has(next)) { prev.set(next, { strip: cur, wire: w.id }); queue.push(next); }
+    }
+  }
+  const out: string[] = [];
+  for (let at = to; prev.get(at); at = prev.get(at)!.strip) out.unshift(prev.get(at)!.wire);
+  return prev.has(to) ? out : [];
+}
+
+/**
+ * Why a voltage divider isn't dividing: the shapes players actually build by mistake
+ * (the test point wired straight to the supply, both resistors side by side, one missing,
+ * or the right shape with the resistors the wrong way round).
+ */
+export function explainDivider(board: BoardState, a: BoardAnalysis, tp: HoleId, label: string, fixed: ReadonlySet<string> = new Set()): Diagnosis | null {
+  if (!a.result.ok) return null;
+  const netOf = nets(board);
+  const TP = netOf(tp), PLUS = netOf('T+:1'), GND = netOf('T-:1');
+  const vs = board.supply.volts;
+  const v = a.voltageAt(tp) ?? 0;
+  const rs = board.parts.filter((p) => p.kind === 'resistor');
+  const ends = (p: BoardPart) => [netOf(p.h1), netOf(p.h2)];
+  const pair = (p: BoardPart) => ends(p).sort().join('|');
+  const onTp = rs.filter((p) => ends(p).includes(TP));
+  const where = (n: string) => (n === PLUS ? `${vs} V` : n === GND ? 'ground' : n === TP ? label : 'the same point');
+
+  // the player's own jumpers on the path, not the level's fixed wiring
+  const culprits = (to: string) => wirePath(board, hole(tp).strip, to).filter((w) => !fixed.has(w));
+  const named = (ws: string[]) => (ws.length ? `jumper ${ws.join(' and ')}` : 'a jumper');
+  if (TP === PLUS) {
+    const w = culprits('T+');
+    return { part: w[0], message: `${label} is wired straight to the ${vs} V supply by ${named(w)}, so it sits at the full ${vs} V and no resistor gets a chance to drop any of it. The top resistor should be the only thing between ${vs} V and ${label}: remove ${w.length > 1 ? 'those jumpers' : 'that jumper'}.` };
+  }
+  if (TP === GND) {
+    const w = culprits('T-');
+    return { part: w[0], message: `${label} is wired straight to ground by ${named(w)}, so it reads 0 V whatever the resistors do. The bottom resistor should be the only thing between ${label} and ground.` };
+  }
+  // two or more resistors across the same two points: parallel, not a chain
+  const groups = new Map<string, BoardPart[]>();
+  for (const p of rs) { const k = pair(p); groups.set(k, [...(groups.get(k) ?? []), p]); }
+  for (const [k, g] of groups) {
+    if (g.length < 2) continue;
+    // name the ends in reading order: supply first, ground last
+    const rank = (n: string) => (n === PLUS ? 0 : n === GND ? 2 : 1);
+    const [n1, n2] = (k.split('|') as [string, string]).sort((x, y) => rank(x) - rank(y));
+    const names = g.map((p) => p.id).join(' and ');
+    const nv = (n: string) => a.result.nodeVoltages[n === PLUS ? 'T+' : n === GND ? '0' : n] ?? 0;
+    const volts = Math.abs(nv(n1) - nv(n2));
+    const effect = volts > 0.05
+      ? `so each gets the same ${formatSI(volts, 'V')} and their currents add`
+      : 'so together they act like one smaller resistor, and nothing else completes the chain';
+    const tpNote = n1 === TP || n2 === TP ? '' : ` (${label} isn't between them at all)`;
+    return {
+      part: g[0]!.id,
+      message: `${names} are in parallel: both sit between ${where(n1)} and ${where(n2)}${tpNote}, ${effect}. A divider needs them in a chain: ${vs} V → top resistor → ${label} → bottom resistor → ground.`,
+    };
+  }
+  const across = rs.find((p) => ends(p).includes(PLUS) && ends(p).includes(GND));
+  if (across) {
+    return { part: across.id, message: `${across.id} runs from ${vs} V straight to ground, past ${label}, so it only wastes current and doesn't set ${label} at all. Move its lower leg to ${label} (column ${hole(tp).strip.slice(1)}) so it becomes the top half of the divider.` };
+  }
+  const top = onTp.filter((p) => ends(p).includes(PLUS));
+  const bottom = onTp.filter((p) => ends(p).includes(GND));
+  if (!onTp.length) {
+    return { message: `No resistor touches ${label}, so nothing sets its voltage (it reads ${formatSI(v, 'V')}). Put the top resistor from ${vs} V to ${label} and the bottom one from ${label} to ground.` };
+  }
+  if (!top.length) {
+    return { part: onTp[0]!.id, message: `Nothing connects ${label} up to ${vs} V through a resistor: ${onTp.map((p) => p.id).join(', ')} ${onTp.length > 1 ? 'go' : 'goes'} elsewhere. Add the top resistor from the supply column to ${label}.` };
+  }
+  if (!bottom.length) {
+    return { part: onTp[0]!.id, message: `Nothing connects ${label} down to ground through a resistor, so no current flows and ${label} floats up to ${formatSI(v, 'V')}. Add the bottom resistor from ${label} to ground (column 25 is already wired to it).` };
+  }
+  if (top.length === 1 && bottom.length === 1) {
+    const rt = top[0]!.ohms ?? 0, rb = bottom[0]!.ohms ?? 0;
+    const vout = (vs * rb) / (rt + rb);
+    const fix = vout > 3.2 ? `The bottom resistor should be the smaller one, about half the top one${rb > rt ? ': try swapping them' : ''}.` : 'The bottom resistor is too small next to the top one: aim for about half the top one.';
+    return { part: bottom[0]!.id, message: `The shape is right, the values aren't: ${vs} V × ${formatSI(rb, 'Ω')} / (${formatSI(rt, 'Ω')} + ${formatSI(rb, 'Ω')}) = ${formatSI(vout, 'V')} at ${label}. ${fix}` };
+  }
+  return null;
+}
+
 /** Why an LED is dark, dim, or too bright: the explanation a lab assistant would give. */
 export function explainLed(board: BoardState, analysis: BoardAnalysis, id: string, min: number, max: number): Diagnosis | null {
   const p = board.parts.find((x) => x.id === id);
@@ -93,7 +197,7 @@ export function explainLed(board: BoardState, analysis: BoardAnalysis, id: strin
   return null;
 }
 
-function checkOne(c: SpecCheck, board: BoardState, analysis: BoardAnalysis): { line: CheckLine; why?: Diagnosis } {
+function checkOne(c: SpecCheck, board: BoardState, analysis: BoardAnalysis, fixed: ReadonlySet<string> = new Set()): { line: CheckLine; why?: Diagnosis } {
   const r = analysis.result;
   switch (c.kind) {
     case 'led-current': {
@@ -111,7 +215,9 @@ function checkOne(c: SpecCheck, board: BoardState, analysis: BoardAnalysis): { l
       const label = c.label ?? `Voltage at ${hole(c.hole).label}${c.ref ? ` vs ${hole(c.ref).label}` : ''}`;
       return {
         line: { ok, label: `${label} ${range(c.min, c.max, 'V')}`, measured: r.ok ? formatSI(v, 'V') : '—' },
-        why: ok ? undefined : { message: `${label} is ${formatSI(v, 'V')}; it should be ${range(c.min, c.max, 'V')}.` },
+        why: ok ? undefined
+          : (c.divider ? explainDivider(board, analysis, c.hole, label, fixed) : null)
+            ?? { message: `${label} is ${formatSI(v, 'V')}; it should be ${range(c.min, c.max, 'V')}.` },
       };
     }
     case 'supply-current': {
@@ -187,7 +293,7 @@ export function chargeTime(board: BoardState, capId: string, maxSeconds = 20): {
 
 export function checkLevel(level: LevelDef, board: BoardState, analysis: BoardAnalysis): CheckResult {
   const results = level.spec.map((c) => {
-    const x = checkOne(c, board, analysis);
+    const x = checkOne(c, board, analysis, new Set([...(level.locked ?? []), ...(level.pinned ?? [])]));
     if (!x.line.ok && c.explain) x.why = { ...(x.why ?? { message: '' }), message: `${x.why?.message ?? ''} ${c.explain}`.trim() };
     return x;
   });

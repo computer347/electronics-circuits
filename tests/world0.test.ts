@@ -77,8 +77,36 @@ describe('level 4: Split the difference', () => {
   it('equal resistors give 4.5 V and say which way to go', () => {
     const r = check(4, divider(10000, 10000));
     expect(r.lines[0]!.measured).toBe('4.5 V');
-    expect(r.diagnosis?.message).toMatch(/TP1 is 4.5 V; it should be 2.8–3.2 V/);
+    expect(r.diagnosis?.message).toMatch(/9 V × 10 kΩ \/ \(10 kΩ \+ 10 kΩ\) = 4.5 V at TP1. The bottom resistor should be the smaller one/);
   });
+  describe('explains the wrong shapes players build', () => {
+    // Mike's board: R1 from column 3 to 21, R2 from 14 to 21, 21 wired to ground, and a jumper
+    // from c14 back to the 9 V column. Both resistors end up with 9 V across them.
+    const mikes = add(b, R('R1', 'h3', 'h21', 330), R('R2', 'j14', 'i21', 680), W('W4', 'c14', 'f3'), W('W5', 'g21', 'g25'));
+    it('a jumper tying TP1 to the supply', () => {
+      const r = check(4, mikes);
+      expect(r.lines[0]!.measured).toBe('9 V');
+      expect(r.diagnosis?.part).toBe('W4');
+      expect(r.diagnosis?.message).toMatch(/TP1 is wired straight to the 9 V supply by jumper W4.*remove that jumper/);
+    });
+    it('then a resistor that skips TP1 entirely', () => {
+      const noJumper = { ...mikes, parts: mikes.parts.filter((p) => p.id !== 'W4') };
+      expect(check(4, noJumper).diagnosis?.message).toMatch(/R1 runs from 9 V straight to ground, past TP1.*Move its lower leg to TP1 \(column 14\)/);
+    });
+    it('both resistors side by side', () => {
+      const parallel = add(b, R('R1', 'g3', 'g14', 6800), R('R2', 'h3', 'h14', 3300));
+      expect(check(4, parallel).diagnosis?.message).toMatch(/R1 and R2 are in parallel: both sit between 9 V and TP1.*in a chain/);
+    });
+    it('the right shape with the resistors swapped', () => {
+      const swapped = add(b, R('R1', 'g3', 'g14', 3300), R('R2', 'h14', 'h25', 6800));
+      expect(check(4, swapped).diagnosis?.message).toMatch(/The shape is right, the values aren't: 9 V × 6.8 kΩ \/ \(3.3 kΩ \+ 6.8 kΩ\) = 6.06 V.*try swapping them/);
+    });
+    it('no path to ground', () => {
+      const noBottom = add(b, R('R1', 'g3', 'g14', 6800));
+      expect(check(4, noBottom).diagnosis?.message).toMatch(/Nothing connects TP1 down to ground/);
+    });
+  });
+
   it('the yellow TP1 link joins the two halves of column 14', () => {
     // bottom resistor on the a–e side of column 14, down to the ground rail
     const r = check(4, add(b, R('R1', 'g3', 'g14', 6800), R('R2', 'c14', 'T-:20', 3300)));

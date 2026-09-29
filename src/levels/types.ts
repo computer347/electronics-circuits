@@ -25,7 +25,9 @@ export type SpecCheck = (
   /** LED current in a window, in amperes. */
   | { kind: 'led-current'; part: string; min: number; max: number }
   /** Voltage at a hole (relative to ground, or to `ref`) in a window, in volts. */
-  | { kind: 'voltage'; hole: string; ref?: string; min: number; max: number; label?: string }
+  | { kind: 'voltage'; hole: string; ref?: string; min: number; max: number; label?: string;
+      /** The hole is a divider's output: explain wrong divider shapes (shorted, parallel, swapped). */
+      divider?: boolean }
   /** Current the bench supply delivers, in amperes. */
   | { kind: 'supply-current'; min?: number; max: number }
   /**

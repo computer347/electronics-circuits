@@ -35,7 +35,7 @@
   "tools": ["resistor", "wire", "probe"],
   "resistorValues": [100, 220, 330, 470, 680, 1000, 1500, 2200, 3300, 4700, 6800, 10000, 15000, 22000, 33000, 47000, 68000, 100000],
   "spec": [
-    { "kind": "voltage", "hole": "i14", "min": 2.8, "max": 3.2, "label": "TP1", "explain": "V(TP1) = 9 V × R_bottom / (R_top + R_bottom): too high means the top resistor is too small for the bottom one, too low the reverse." },
+    { "kind": "voltage", "hole": "i14", "min": 2.8, "max": 3.2, "label": "TP1", "divider": true },
     { "kind": "supply-current", "max": 0.001, "explain": "A divider's current is 9 V / (R_top + R_bottom). Keep the same ratio with bigger resistors." }
   ],
   "par": { "checks": 1, "partsAdded": 2 },
