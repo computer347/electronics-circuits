@@ -278,7 +278,7 @@ function Led({ part, mark, amps: dcAmps, dynamic }: { part: BoardPart; mark?: st
 
 function Wire({ part, mark }: { part: BoardPart; mark?: string }) {
   const handlers = usePartHandlers(part);
-  const geom = useMemo(() => new THREE.TubeGeometry(wireCurve(part.h1, part.h2), 48, 0.07, 8, false), [part.h1, part.h2]);
+  const geom = useMemo(() => new THREE.TubeGeometry(wireCurve(part.h1, part.h2), 96, 0.07, 10, false), [part.h1, part.h2]);
   return (
     <mesh geometry={geom} {...handlers}>
       <meshStandardMaterial color={part.wireColor ?? '#e8413c'} roughness={0.5} emissive={mark ?? '#000'} emissiveIntensity={mark ? 0.6 : 0} />

@@ -94,6 +94,10 @@
 
 /* Which level is on the desk. */
 .desk-level { position: absolute; top: 24px; right: 22px; margin: 0; z-index: 10; font-family: var(--r-display); font-size: 20px; letter-spacing: 0.03em; color: var(--r-paper); opacity: 0.8; }
+.meter-modes { display: inline-flex; background: var(--r-paper); box-shadow: 3px 3px 0 var(--r-blue); }
+.meter-modes button { border: 0; border-radius: 0; background: none; color: var(--r-ink); font-family: var(--r-mono); font-weight: 700; font-size: 15px; padding: 8px 12px; min-width: 44px; }
+.meter-modes button.on { background: var(--r-yellow); }
+.meter-modes button:hover { color: var(--r-pink); border: 0; }
 .desk-reading.off { background: #737c68; }
 
 /* The breadboard's parts tray: at most three parts plus the hand, then what you can do with the selection. */
@@ -112,6 +116,20 @@
 .tray-bands i { width: 5px; height: 16px; display: block; }
 .tray-remove { border: 0; background: none; color: var(--r-paper); font-family: var(--r-mono); font-weight: 700; font-size: 13px; text-decoration: underline; text-underline-offset: 4px; }
 .tray-remove:hover { color: var(--r-pink); border: 0; }
+
+/* Labels over the parts at the board, and the card for the one you clicked. */
+.part-tag { display: inline-block; padding: 2px 6px; background: rgba(241, 236, 225, 0.92); color: var(--r-ink); font-family: var(--r-mono); font-size: 12px; font-weight: 700; white-space: nowrap; box-shadow: 2px 2px 0 var(--r-blue); }
+.part-tag.bad { box-shadow: 2px 2px 0 var(--r-pink); }
+.part-card { width: 240px; padding: 10px 12px; background: var(--r-paper); color: var(--r-ink); font-family: var(--r-mono); font-size: 12px; box-shadow: 4px 4px 0 var(--r-pink); transform: translateY(-50%); }
+.part-card b { font-family: var(--r-display); font-weight: 400; font-size: 22px; color: var(--r-blue); letter-spacing: 0.02em; }
+.part-card table { margin-top: 6px; }
+.part-card td { padding: 2px 0; border-bottom: 1px solid rgba(28, 10, 58, 0.12); color: var(--r-ink); }
+.part-card td + td { text-align: right; font-weight: 700; }
+.part-state { margin: 4px 0 0; font-weight: 700; }
+.part-state.good { color: #0b7a3b; } .part-state.bad { color: #c2185b; } .part-state.neutral { color: #5b5068; }
+.desk-zoom { position: fixed; left: 20px; top: 50%; transform: translateY(-50%); z-index: 12; display: grid; gap: 6px; }
+.desk-zoom button { width: 40px; height: 40px; border: 0; border-radius: 0; background: rgba(241, 236, 225, 0.9); color: var(--r-ink); font-size: 22px; font-weight: 700; box-shadow: 3px 3px 0 var(--r-blue); }
+.desk-zoom button:disabled { opacity: 0.35; }
 
 /* Front page → desk: the three inks print the desk into place. */
 .desk-print { position: absolute; inset: 0; z-index: 30; pointer-events: none; }

@@ -3,6 +3,7 @@
  * over the desk (about 58°). Whatever is in focus comes to the camera (or the camera leans
  * over it) and the room dims around it. Every move is time-based; reduced motion cuts.
  */
+import { Html } from '@react-three/drei';
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import * as THREE from 'three';
@@ -19,6 +20,7 @@ import { PowerUnit } from './assets/PowerUnit';
 import { Corkboard, Desk, DESK, Mug, Poster, Wall } from './assets/Room';
 import { useHover } from './hover';
 import type { Reading } from './meter';
+import { partInfo } from './partInfo';
 import type { TaskPage } from './taskPages';
 import type { DeskObject } from './steps';
 import { useDesk, type DeskPhase } from './store';
@@ -64,20 +66,31 @@ function CameraRig({ diveAt }: { diveAt: THREE.Vector3 }) {
   const { camera, size } = useThree();
   const focus = useDesk((s) => s.focus);
   const phase = useDesk((s) => s.phase);
+  const zoom = useDesk((s) => s.zoom);
+  const zoomAt = useDesk((s) => s.zoomAt);
   const tw = useRef<{ from: Pose; to: Pose; t0: number; dur: number; key: string } | null>(null);
   const cur = useRef<Pose>({ pos: new THREE.Vector3(), target: new THREE.Vector3() });
 
   useFrame(() => {
     const cam = camera as THREE.PerspectiveCamera;
-    const key = `${focus}|${phase}|${size.width}x${size.height}`;
+    const zooming = (focus === 'breadboard' || focus === 'meter') && phase === 'desk' && zoom > 1;
+    const key = `${focus}|${phase}|${size.width}x${size.height}|${zooming ? `${zoom.toFixed(3)},${zoomAt.join(',')}` : ''}`;
     if (!tw.current || tw.current.key !== key) {
       const to = poseFor(focus, phase, cam, diveAt);
+      if (zooming) {
+        // Lean in toward the point under the pointer, keeping the same viewing angle.
+        const at = new THREE.Vector3(zoomAt[0], 0, zoomAt[1]);
+        const target = to.target.clone().lerp(at, 1 - 1 / zoom);
+        to.pos = target.clone().add(to.pos.clone().sub(to.target).divideScalar(zoom));
+        to.target = target;
+      }
+      const zoomOnly = !!tw.current && tw.current.key.split('|').slice(0, 3).join('|') === key.split('|').slice(0, 3).join('|');
       const first = !tw.current;
       const dive = phase === 'dive';
-      const resize = tw.current && tw.current.key.split('|').slice(0, 2).join('|') === key.split('|').slice(0, 2).join('|');
+      const resize = !zoomOnly && !!tw.current && tw.current.key.split('|').slice(0, 2).join('|') === key.split('|').slice(0, 2).join('|');
       tw.current = {
         from: first ? to : { pos: cur.current.pos.clone(), target: cur.current.target.clone() },
-        to, t0: performance.now(), dur: reducedMotion() || resize ? 0 : dive ? 1400 : 700, key,
+        to, t0: performance.now(), dur: reducedMotion() || resize ? 0 : dive ? 1400 : zoomOnly ? 220 : 700, key,
       };
     }
     const t = tw.current;
@@ -240,11 +253,19 @@ function BreadboardOnDesk({ analysis, glow, flipped }: { analysis: BoardAnalysis
   const phase = useDesk((s) => s.phase);
   const working = (focus === 'breadboard' || focus === 'meter') && phase === 'desk';
   const w = BOARD.width * S, d = BOARD.depth * S;
+  // The wheel zooms in toward the point under the pointer (only while working at the board).
+  const onWheel = (e: ThreeEvent<WheelEvent>) => {
+    if (!working) return;
+    e.stopPropagation();
+    const d = useDesk.getState();
+    d.setZoom(d.zoom * Math.exp(-e.nativeEvent.deltaY * 0.0015), [e.point.x, e.point.z]);
+  };
   return (
-    <group>
+    <group onWheel={onWheel}>
       <group position={BOARD_POS} scale={S}>
         <BreadboardContents analysis={analysis} dynamic={false} look="desk" supplyBox={false} />
         <PowerUnit flipped={flipped} glow={false} />
+        {working && <PartLabels analysis={analysis} />}
       </group>
       <group position={[BOARD_POS.x, 0, BOARD_POS.z]}>
         <Glow w={w} d={d} on={glow} />
@@ -259,6 +280,38 @@ function BreadboardOnDesk({ analysis, glow, flipped }: { analysis: BoardAnalysis
         </Interactive>
       )}
     </group>
+  );
+}
+
+/**
+ * Parts are small on a real board, so at the board each one carries a label, and the one you
+ * click opens a card with what the solver says about it. Drawn as HTML over the 3D board so it
+ * stays sharp and readable at any zoom; it never takes clicks away from the board.
+ */
+function PartLabels({ analysis }: { analysis: BoardAnalysis }) {
+  const parts = useBench((s) => s.parts);
+  const selected = useBench((s) => s.selected);
+  return (
+    <>
+      {parts.filter((p) => p.kind !== 'wire' || p.id === selected).map((p) => {
+        const a = hole(p.h1), b = hole(p.h2);
+        const info = partInfo(p, analysis);
+        const open = p.id === selected;
+        return (
+          <Html key={p.id} position={[(a.x + b.x) / 2, open ? 2.6 : 1.9, (a.z + b.z) / 2]} center zIndexRange={[9, 0]} style={{ pointerEvents: 'none' }}>
+            {open ? (
+              <div className="part-card">
+                <b>{p.id}</b>
+                {info.state && <p className={`part-state ${info.tone}`}>{info.state}</p>}
+                <table><tbody>{info.rows.map(([k, v]) => <tr key={k}><td>{k}</td><td>{v}</td></tr>)}</tbody></table>
+              </div>
+            ) : (
+              <span className={`part-tag ${info.tone === 'bad' ? 'bad' : ''}`}>{info.tag}</span>
+            )}
+          </Html>
+        );
+      })}
+    </>
   );
 }
 

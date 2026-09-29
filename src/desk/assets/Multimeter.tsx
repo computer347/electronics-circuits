@@ -8,7 +8,7 @@ import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { reducedMotion, useEased } from '../anim';
-import { DIAL, type MeterMode, type Reading } from '../meter';
+import { DIAL, nextMode, type MeterMode, type Reading } from '../meter';
 import { drawLcd } from './textures';
 
 export const METER = { w: 0.09, d: 0.17, h: 0.032 } as const;
@@ -83,11 +83,8 @@ export function Multimeter({ reading, mode, onMode, interactive }: {
     }
   });
 
-  const turn = (dir: 1 | -1) => {
-    const i = DIAL.indexOf(mode);
-    const next = DIAL[Math.max(0, Math.min(DIAL.length - 1, i + dir))]!;
-    if (next !== mode) onMode(next);
-  };
+  /** One click round the dial, wrapping from the last stop back to the first. */
+  const turn = (dir: 1 | -1) => onMode(nextMode(mode, dir));
   const cursor = (c: string) => () => { if (interactive) document.body.style.cursor = c; };
 
   return (
@@ -111,7 +108,7 @@ export function Multimeter({ reading, mode, onMode, interactive }: {
       {interactive && DIAL.map((m) => (
         <mesh key={m} position={[Math.sin(DIAL_ANGLE[m]) * LABEL_R, METER.h + 0.004, DIAL_Z - Math.cos(DIAL_ANGLE[m]) * LABEL_R]} rotation={[-Math.PI / 2, 0, 0]}
           onClick={(e) => { e.stopPropagation(); onMode(m); }} onPointerOver={cursor('pointer')} onPointerOut={cursor('')}>
-          <circleGeometry args={[0.009, 16]} />
+          <circleGeometry args={[0.012, 16]} />
           <meshBasicMaterial visible={false} />
         </mesh>
       ))}
@@ -129,8 +126,8 @@ export function Multimeter({ reading, mode, onMode, interactive }: {
           if (!interactive) return;
           e.stopPropagation();
           const d = drag.current; drag.current = null;
-          // A plain click turns it one click on (and back from the last stop).
-          if (!d?.moved) turn(DIAL.indexOf(mode) === DIAL.length - 1 ? -1 : 1);
+          // A plain click turns it one click on; shift-click turns it back.
+          if (!d?.moved) turn(e.nativeEvent.shiftKey ? -1 : 1);
         }}
         onPointerOver={cursor('grab')} onPointerOut={cursor('')}>
         <mesh castShadow>

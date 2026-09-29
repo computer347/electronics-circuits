@@ -3,7 +3,8 @@ import { analyzeBoard, type BoardState } from '../src/breadboard/model';
 import { useBench } from '../src/breadboard/store';
 import { buildMap } from '../src/circuitworld/map';
 import { followingLevel, isUnlocked, nextLevel } from '../src/desk/levelPick';
-import { meteredBoard, readMeter, type MeterMode } from '../src/desk/meter';
+import { meteredBoard, nextMode, readMeter, type MeterMode } from '../src/desk/meter';
+import { partInfo } from '../src/desk/partInfo';
 import { taskPage } from '../src/desk/taskPages';
 import { measurementsNow, useDesk } from '../src/desk/store';
 import { canSubmit, currentStep, FRESH, glowing, mainAction, railStates } from '../src/desk/steps';
@@ -224,5 +225,32 @@ describe('every World 0 level on the desk', () => {
     expect(a?.check.pass).toBe(true);
     expect(nextLevel(useProgress.getState().levels)).toBe(L2.id);
     expect(mainAction({ ...FRESH, readTask: true, built: true, measurements: 1, submitted: true, cleared: true }, 'corkboard').kind).toBe('pick-level');
+  });
+});
+
+describe('meter dial and part cards', () => {
+  it('clicks round every mode on the dial, wrapping', () => {
+    const seen: string[] = [];
+    let m: MeterMode = 'V';
+    for (let i = 0; i < 4; i++) { m = nextMode(m); seen.push(m); }
+    expect(seen).toEqual(['Ω', 'A', 'off', 'V']);
+    expect(nextMode('off', -1)).toBe('A');
+  });
+
+  it('says what an LED is doing in plain words, with the numbers underneath', () => {
+    const b = startingBoard(L2);
+    const a = analyzeBoard(b);
+    const led = b.parts.find((p) => p.id === 'LED1')!;
+    const info = partInfo(led, a);
+    expect(info.tag).toBe('LED1');
+    expect(info.state).toMatch(/backwards/);
+    expect(info.tone).toBe('bad');
+    const r = partInfo(b.parts.find((p) => p.id === 'R1')!, a);
+    expect(r.tag).toBe('R1 · 150 Ω');
+    expect(r.rows).toContainEqual(['Colour code', 'brown · green · brown']);
+    const fixed = { ...b, parts: b.parts.map((p) => (p.id === 'LED1' ? { ...p, h1: p.h2, h2: p.h1 } : p)) };
+    const lit = partInfo(fixed.parts.find((p) => p.id === 'LED1')!, analyzeBoard(fixed));
+    expect(lit.state).toBe('lit');
+    expect(lit.rows.find(([k]) => k === 'Current through')?.[1]).toBe('20 mA');
   });
 });

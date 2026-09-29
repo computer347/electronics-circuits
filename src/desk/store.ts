@@ -6,7 +6,7 @@
 import { create } from 'zustand';
 import { useBench } from '../breadboard/store';
 import { useSession, type Attempt } from '../levels/session';
-import { DIAL, type MeterMode } from './meter';
+import { nextMode, type MeterMode } from './meter';
 import { canSubmit, FRESH, type DeskObject, type LoopProgress } from './steps';
 
 /** Desk = at the bench; power = switch flipped, LED fading; dive = shrinking into the hole; clear = inside. */
@@ -19,6 +19,10 @@ interface DeskStore {
   flags: Omit<LoopProgress, 'measurements'>;
   /** The checked result once the circuit is cleared. */
   result: Attempt | null;
+  /** Zoom on the board (1 = the whole board fills the view), toward `zoomAt` (desk x, z). */
+  zoom: number;
+  zoomAt: [number, number];
+  setZoom: (zoom: number, at?: [number, number]) => void;
   /** Open the desk on the level map (Play on the front page). */
   startOnMap: boolean;
   /** Where the multimeter's dial points. */
@@ -42,6 +46,8 @@ interface DeskStore {
 const { measurements: _m, ...FRESH_FLAGS } = FRESH;
 
 /** Measurements made since the level started. */
+export const MAX_ZOOM = 4;
+
 export const measurementsNow = () => useBench.getState().measurements - useSession.getState().measurementsAtStart;
 
 export const useDesk = create<DeskStore>((set, get) => ({
@@ -52,11 +58,11 @@ export const useDesk = create<DeskStore>((set, get) => ({
   result: null,
   meterMode: 'V',
   startOnMap: false,
+  zoom: 1,
+  zoomAt: [0, 0],
+  setZoom: (zoom, at) => set((s) => ({ zoom: Math.max(1, Math.min(MAX_ZOOM, zoom)), zoomAt: at ?? s.zoomAt })),
   setMeterMode: (meterMode) => set({ meterMode }),
-  turnDial: (dir) => {
-    const i = DIAL.indexOf(get().meterMode);
-    set({ meterMode: DIAL[Math.max(0, Math.min(DIAL.length - 1, i + dir))]! });
-  },
+  turnDial: (dir) => set({ meterMode: nextMode(get().meterMode, dir) }),
 
   enter: (levelId) => {
     useSession.getState().start(levelId);
@@ -68,7 +74,7 @@ export const useDesk = create<DeskStore>((set, get) => ({
     // The meter view is where you probe; everywhere else a click selects.
     bench.setTool(focus === 'meter' ? 'probe' : 'select');
     bench.select(null);
-    set({ focus });
+    set({ focus, zoom: 1 });
   },
   closeNotebook: () => { set({ flags: { ...get().flags, readTask: true } }); get().focusOn(null); },
   doneBuilding: () => { set({ flags: { ...get().flags, built: true } }); get().focusOn(null); },

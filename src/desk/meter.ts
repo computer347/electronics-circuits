@@ -15,6 +15,9 @@ export type MeterMode = 'off' | 'V' | 'Ω' | 'A';
 /** Dial order, clockwise. */
 export const DIAL: MeterMode[] = ['off', 'V', 'Ω', 'A'];
 export const AMMETER_ID = 'METER';
+
+/** The mode one click round the dial (wraps, so every mode is reachable by clicking on). */
+export const nextMode = (m: MeterMode, dir: 1 | -1 = 1): MeterMode => DIAL[(DIAL.indexOf(m) + dir + DIAL.length) % DIAL.length]!;
 /** The mA jack's fuse. */
 export const FUSE_AMPS = 0.4;
 /** The Ω range gives up above this test voltage (a meter's own source is only a couple of volts). */

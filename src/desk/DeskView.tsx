@@ -14,7 +14,7 @@ import { useProgress } from '../levels/progress';
 import { useSession } from '../levels/session';
 import { reducedMotion } from './anim';
 import { isUnlocked, followingLevel, nextLevel } from './levelPick';
-import { meteredBoard, readMeter } from './meter';
+import { DIAL, meteredBoard, readMeter } from './meter';
 import { PartsTray } from './PartsTray';
 import { taskPage } from './taskPages';
 import type { BoxItem } from './assets/PartsBox';
@@ -144,8 +144,10 @@ export function DeskView({ onMenu, onLearn }: { onMenu: () => void; onLearn: (cl
     const onKey = (e: KeyboardEvent) => {
       if (desk.phase !== 'desk') return;
       if (e.key === 'Escape') back();
-      if ((e.key === 'm' || e.key === 'M') && desk.focus === 'meter') desk.turnDial(desk.meterMode === 'A' ? -1 : 1);
+      if ((e.key === 'm' || e.key === 'M') && desk.focus === 'meter') desk.turnDial(e.shiftKey ? -1 : 1);
       if ((e.key === 'Delete' || e.key === 'Backspace') && desk.focus === 'breadboard') useBench.getState().removeSelected();
+      if ((e.key === '+' || e.key === '=') && (desk.focus === 'breadboard' || desk.focus === 'meter')) desk.setZoom(desk.zoom * 1.4);
+      if ((e.key === '-' || e.key === '_') && (desk.focus === 'breadboard' || desk.focus === 'meter')) desk.setZoom(desk.zoom / 1.4);
       if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'BUTTON') { e.preventDefault(); runMain(); }
     };
     window.addEventListener('keydown', onKey);
@@ -230,11 +232,23 @@ export function DeskView({ onMenu, onLearn }: { onMenu: () => void; onLearn: (cl
         </button>
       )}
       {desk.phase === 'desk' && desk.focus === 'breadboard' && <PartsTray level={level} />}
+      {desk.phase === 'desk' && (desk.focus === 'breadboard' || desk.focus === 'meter') && (
+        <div className="desk-zoom" aria-label="Zoom">
+          <button onClick={() => desk.setZoom(desk.zoom * 1.4)} aria-label="Zoom in">+</button>
+          <button onClick={() => desk.setZoom(desk.zoom / 1.4)} disabled={desk.zoom <= 1} aria-label="Zoom out">−</button>
+        </div>
+      )}
       {desk.phase === 'desk' && desk.focus === 'meter' && (
         <div className="desk-hint">
           <span className="desk-pict"><span className="dot red" /> a point <span className="dot black" /> − rail</span>
           <span className={`desk-reading ${meterMode}`}>{meterMode === 'off' ? 'OFF' : `${reading.text} ${reading.unit}`}</span>
-          <span className="desk-pict">twist the dial <kbd>M</kbd></span>
+          <span className="meter-modes" role="radiogroup" aria-label="Meter dial">
+            {DIAL.map((m) => (
+              <button key={m} role="radio" aria-checked={meterMode === m} className={meterMode === m ? 'on' : ''} onClick={() => desk.setMeterMode(m)}>
+                {m === 'off' ? 'OFF' : m}
+              </button>
+            ))}
+          </span>
         </div>
       )}
       {desk.phase === 'desk' && desk.focus === 'corkboard' && (

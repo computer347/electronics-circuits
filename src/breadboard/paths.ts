@@ -14,14 +14,19 @@ export const CAP_Y = 0.75;
 export const SUPPLY_BOX: V3 = [-13.2, 0.5, -11.8];
 export const SUPPLY_HOLES = { plus: 'T+:1', minus: 'T-:1' } as const;
 
+/**
+ * A jumper wire: straight up out of each hole, then one smooth arch over to the other hole.
+ * The arch's control points sit right above the legs, so the tangent is vertical where the legs
+ * meet the bend (no kink), and it rises with the span so long wires clear the parts under them.
+ */
 export function wireCurve(h1: HoleId, h2: HoleId): THREE.CurvePath<THREE.Vector3> {
   const a = new THREE.Vector3(...at(h1, -0.2)), b = new THREE.Vector3(...at(h2, -0.2));
-  const lift = 0.5 + a.distanceTo(b) * 0.18;
-  const a2 = a.clone().setY(0.35), b2 = b.clone().setY(0.35);
-  const c = a2.clone().add(b2).multiplyScalar(0.5).setY(lift);
+  const span = a.distanceTo(b);
+  const lift = Math.min(3.2, 1.1 + span * 0.2);
+  const a2 = a.clone().setY(0.15), b2 = b.clone().setY(0.15);
   const curve = new THREE.CurvePath<THREE.Vector3>();
   curve.add(new THREE.LineCurve3(a, a2));
-  curve.add(new THREE.QuadraticBezierCurve3(a2, c, b2));
+  curve.add(new THREE.CubicBezierCurve3(a2, a2.clone().setY(lift), b2.clone().setY(lift), b2));
   curve.add(new THREE.LineCurve3(b2, b));
   return curve;
 }
