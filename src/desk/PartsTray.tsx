@@ -48,6 +48,7 @@ export function PartsTray({ level }: { level: LevelDef }) {
   const parts = useBench((s) => s.parts);
   const locked = useBench((s) => s.locked);
   const pinned = useBench((s) => s.pinned);
+  const spares = useBench((s) => s.spares);
   const bench = useBench.getState();
   const values = level.resistorValues ?? [100, 220, 330, 470, 1000, 2200, 4700, 10000];
   const box = BOX_TOOLS.filter((t) => level.tools.includes(t)).slice(0, 3);
@@ -73,7 +74,9 @@ export function PartsTray({ level }: { level: LevelDef }) {
           <>
             {part.kind === 'resistor' && !isPinned && <OhmsStepper value={part.ohms ?? 1000} values={values} onChange={(o) => bench.updatePart(part.id, { ohms: o })} />}
             {FLIPPABLE.includes(part.kind) && <button className="desk-chip" onClick={() => bench.flipPart(part.id)}>↻ Turn {part.id} round</button>}
-            {part.kind === 'led' && part.burnt && <button className="desk-chip" onClick={() => bench.replaceLed(part.id)}>Fit a new LED</button>}
+            {part.kind === 'led' && part.burnt && (spares === 0
+              ? <span className="desk-pict">No spare LEDs left: restart the level for a fresh set</span>
+              : <button className="desk-chip" onClick={() => bench.replaceLed(part.id)}>Fit a new LED{spares !== null ? ` (${spares} left)` : ''}</button>)}
             {!isPinned && <button className="tray-remove" onClick={() => bench.removeSelected()}>Take out</button>}
           </>
         )}

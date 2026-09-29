@@ -11,13 +11,16 @@ import { CircuitWorld } from '../circuitworld/CircuitWorld';
 import { WORLD0_CLASSES } from '../learn/classes';
 import { levelById, startingBoard, WORLD0 } from '../levels';
 import { useProgress } from '../levels/progress';
-import { useSession } from '../levels/session';
+import { useSession, type Attempt } from '../levels/session';
+import type { LevelDef } from '../levels/types';
 import { reducedMotion } from './anim';
 import { isUnlocked, followingLevel, nextLevel } from './levelPick';
 import { DIAL, meteredBoard, readMeter } from './meter';
 import { NotebookPages } from './NotebookPages';
 import { PartsTray } from './PartsTray';
 import { taskPage } from './taskPages';
+import { HintNote, SpareLeds } from './HintNote';
+import { starRules } from './starRules';
 import { markTourSeen, TOUR, tourSeen } from './tour';
 import type { BoxItem } from './assets/PartsBox';
 import { DeskScene } from './DeskScene';
@@ -63,6 +66,20 @@ function HoverTag() {
   if (!object) return null;
   const [name, verb] = TAGS[object];
   return <div className="desk-tag" style={{ left: x, top: y - 18 }}><b>{name}</b>{verb}</div>;
+}
+
+/** What each star takes, and which ones this run got. */
+function StarList({ level, r }: { level: LevelDef; r: Attempt }) {
+  return (
+    <ul className="star-rules">
+      {starRules(level, r.stats, r.check.pass).map((x) => (
+        <li key={x.stars} className={x.met ? 'met' : ''}>
+          <span className="star-rule-stars" aria-label={`${x.stars} stars`}>{'★'.repeat(x.stars)}</span>
+          <b>{x.label}</b> <small>{x.detail}</small>
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 function Stars({ n }: { n: number }) {
@@ -177,7 +194,9 @@ export function DeskView({ onMenu }: { onMenu: () => void }) {
   const cls = WORLD0_CLASSES.find((c) => c.levelId === level.id);
   const passed = useMemo(() => new Set(Object.keys(records).map((id) => levelById(id)?.number ?? 0)), [records]);
   const unlocked = useMemo(() => new Set(WORLD0.filter((l) => isUnlocked(l.number, records)).map((l) => l.number)), [records]);
-  const boxItems: BoxItem[] = BOX.filter((k) => level.tools.includes(k));
+  const spares = useBench((s) => s.spares);
+  // The box holds the level's parts, plus one LED per spare.
+  const boxItems: BoxItem[] = [...BOX.filter((k) => level.tools.includes(k)), ...Array.from({ length: spares ?? 0 }, () => 'led' as const)];
   const start = startingBoard(level);
   const diveHole = (start.parts.find((p) => level.pinned?.includes(p.id)) ?? start.parts.find((p) => p.kind === 'led' || p.kind === 'capacitor') ?? start.parts[0])?.h1 ?? 'e15';
   const step = currentStep(loop);
@@ -193,13 +212,15 @@ export function DeskView({ onMenu }: { onMenu: () => void }) {
               <>
                 <h2>Circuit clear</h2>
                 <Stars n={r.stars ?? 1} />
-                <p className="desk-result-sub">{r.stats.measurements} measurements · {r.stats.seconds} s{r.improved ? ' · new best' : ''}</p>
+                <p className="desk-result-sub">{r.stats.measurements} measurements · {r.stats.checks} {r.stats.checks === 1 ? 'try' : 'tries'} · {r.stats.seconds} s{r.improved ? ' · new best' : ''}</p>
+                <StarList level={level} r={r} />
                 <p>{level.debrief}</p>
               </>
             ) : (
               <>
                 <h2>Not yet</h2>
                 <p>{r.check.diagnosis?.message ?? r.check.lines.find((x) => !x.ok)?.label}</p>
+                <StarList level={level} r={r} />
               </>
             )}
             <button className="desk-main" autoFocus onClick={() => {
@@ -242,6 +263,9 @@ export function DeskView({ onMenu }: { onMenu: () => void }) {
       <p className="desk-level">{level.world}–{level.number} {level.title}
         {desk.phase === 'desk' && desk.tour === null && <button className="desk-tour-btn" onClick={() => desk.setTour(0)}>Tour</button>}
       </p>
+      {desk.phase === 'desk' && desk.tour === null && (
+        <div className="desk-extras"><SpareLeds />{step !== 'done' && <HintNote key={level.id} level={level} />}</div>
+      )}
       {stop && (
         <div className="desk-tourcard" role="dialog" aria-label="Bench tour">
           <p className="nb-kicker">Bench tour · {desk.tour! + 1} / {TOUR.length}</p>

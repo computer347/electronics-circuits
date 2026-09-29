@@ -9,6 +9,8 @@ import { partInfo } from '../src/desk/partInfo';
 import { makeDrill } from '../src/drills/generators';
 import { taskPage } from '../src/desk/taskPages';
 import { TOUR } from '../src/desk/tour';
+import { parText, starRules } from '../src/desk/starRules';
+import type { RunStats } from '../src/levels/check';
 import { measurementsNow, useDesk } from '../src/desk/store';
 import { canSubmit, currentStep, FRESH, glowing, mainAction, railStates } from '../src/desk/steps';
 import { startingBoard, WORLD0 } from '../src/levels';
@@ -297,5 +299,35 @@ describe('bench tour', () => {
     useDesk.getState().setTour(2);
     useDesk.getState().focusOn('meter');
     expect(useDesk.getState().tour).toBeNull();
+  });
+});
+
+describe('stars and hints on the desk', () => {
+  const stats = (o: Partial<RunStats> = {}): RunStats => ({ hintsUsed: 0, measurements: 2, burnt: 0, checks: 1, partsAdded: 0, seconds: 40, ...o });
+
+  it('spells out what each star takes and why one was missed', () => {
+    expect(parText(L2)).toBe('1 try · 2 measurements · 0 parts added');
+    expect(starRules(L2, stats(), true).map((r) => r.met)).toEqual([true, true, true]);
+    const hinted = starRules(L2, stats({ hintsUsed: 1 }), true);
+    expect(hinted.map((r) => r.met)).toEqual([true, false, false]);
+    expect(hinted[1]!.detail).toBe('1 hint used');
+    const slow = starRules(L2, stats({ measurements: 5 }), true);
+    expect(slow[2]!.met).toBe(false);
+    expect(slow[2]!.detail).toMatch(/you took 5 measurements/);
+    expect(starRules(L2, stats(), false).every((r) => !r.met)).toBe(true);
+  });
+
+  it('a hint used at the desk costs the second star', () => {
+    useDesk.getState().leave();
+    useProgress.getState().reset();
+    useDesk.getState().enter(L2.id);
+    useSession.getState().showHint();
+    useBench.getState().setTool('probe');
+    useBench.getState().clickHole('h12');
+    useBench.getState().clickHole('T-:5');
+    useDesk.setState((s) => ({ flags: { ...s.flags, readTask: true, built: true } }));
+    expect(useDesk.getState().submit()).toBe(true);
+    useBench.getState().flipPart('LED1');
+    expect(useDesk.getState().finishClear()?.stars).toBe(1);
   });
 });

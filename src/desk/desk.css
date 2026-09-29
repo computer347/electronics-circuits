@@ -272,3 +272,19 @@
 .desk-tourdots i { width: 8px; height: 8px; border-radius: 50%; background: rgba(28, 10, 58, 0.18); }
 .desk-tourdots i.seen { background: var(--r-blue); }
 .desk-tourdots i.on { background: var(--r-pink); }
+
+/* ------------------------------------------------------------ hints, spares, star rules */
+.desk-extras { position: absolute; top: 56px; right: 22px; z-index: 12; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.hint-note-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.hint-note { width: min(320px, calc(100vw - 48px)); padding: 12px 14px; background: #fff27a; color: var(--r-ink); font-family: var(--r-mono); font-size: 13px; line-height: 1.5; box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.35); transform: rotate(-1deg); }
+.hint-note ol { margin: 0; padding-left: 1.2em; }
+.hint-note li { margin-bottom: 6px; }
+.hint-note p { margin: 0 0 8px; }
+.spares { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; background: rgba(241, 236, 225, 0.15); color: var(--r-paper); font-family: var(--r-mono); font-size: 12px; font-weight: 700; }
+.spares i { width: 9px; height: 12px; border-radius: 5px 5px 2px 2px; background: #ff3b30; }
+.star-rules { list-style: none; margin: 12px 0; padding: 0; font-size: 13px; }
+.star-rules li { display: grid; grid-template-columns: 3.4em 1fr; column-gap: 8px; padding: 5px 0; border-bottom: 1px solid rgba(28, 10, 58, 0.12); opacity: 0.55; }
+.star-rules li.met { opacity: 1; }
+.star-rules li small { grid-column: 2; }
+.star-rule-stars { grid-row: span 2; color: rgba(28, 10, 58, 0.3); }
+.star-rules li.met .star-rule-stars { color: var(--r-pink); }
