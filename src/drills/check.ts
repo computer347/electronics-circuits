@@ -18,9 +18,13 @@ export function parseAnswer(input: string): number | null {
 }
 
 export function checkAnswer(drill: Drill, input: string): Verdict {
+  return gradeNumber(drill.answer.value, drill.answer.tolerancePct, input);
+}
+
+/** Grades a typed number against `value` ± `tolerancePct` (also used by Learn class checks). */
+export function gradeNumber(value: number, tolerancePct: number, input: string): Verdict {
   const got = parseAnswer(input);
   if (got === null) return { kind: 'unreadable' };
-  const { value, tolerancePct } = drill.answer;
   const close = (x: number) => Math.abs(x - value) <= Math.abs(value) * (tolerancePct / 100) + 1e-12;
   if (close(got)) return { kind: 'correct' };
   if (close(-got)) return { kind: 'wrong', hint: 'Right size, wrong sign.' };

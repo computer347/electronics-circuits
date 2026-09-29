@@ -3,6 +3,7 @@
  * rules (where Continue goes, what the star count says) can be tested on their own.
  */
 import { GENERATORS, TOPICS } from '../drills/generators';
+import { WORLD0_CLASSES } from '../learn/classes';
 import { WORLD0, WORLD0_PLAN } from '../levels';
 import type { LevelRecord } from '../levels/progress';
 
@@ -19,7 +20,7 @@ export interface MenuItem {
 
 export const MENU: MenuItem[] = [
   { key: '1', tab: 'play', title: 'Play', sub: 'Campaign · World 0 · Foundations' },
-  { key: '2', tab: 'learn', title: 'Learn', sub: 'Theory classes and video clips', soon: true },
+  { key: '2', tab: 'learn', title: 'Learn', sub: `Theory classes · World 0 · ${WORLD0_CLASSES.length} classes with live circuits` },
   { key: '3', tab: 'drills', title: 'Drills', sub: `Exam practice, ${TOPICS.length} topics, ${GENERATORS.length} question types, worked solutions` },
   { key: '4', tab: 'breadboard', title: 'Sandbox', sub: 'Breadboard, multimeter, oscilloscope' },
   { key: '5', tab: 'bench', title: 'Solver bench', sub: 'Type a netlist, read the voltages' },

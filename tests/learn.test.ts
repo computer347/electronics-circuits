@@ -1,0 +1,129 @@
+import { describe, expect, it } from 'vitest';
+import { gradeNumber } from '../src/drills/check';
+import { WORLD0_CLASSES, classForLevel } from '../src/learn/classes';
+import { dividerLab, dividerOut, ledLab, ledResistor, ohmLab, pairLab, rcLab } from '../src/learn/physics';
+import type { LabSpec } from '../src/learn/types';
+import { WORLD0, levelById } from '../src/levels';
+
+const near = (got: number, want: number, pct = 1) => expect(Math.abs(got - want)).toBeLessThanOrEqual(Math.abs(want) * pct / 100);
+const byNumber = (n: number) => WORLD0_CLASSES.find((c) => c.number === n)!;
+
+describe('World 0 classes: structure', () => {
+  it('has one class per World 0 level, numbered like the level it prepares for', () => {
+    expect(WORLD0_CLASSES).toHaveLength(WORLD0.length);
+    for (const c of WORLD0_CLASSES) {
+      const level = levelById(c.levelId);
+      expect(level, c.id).toBeDefined();
+      expect(level!.number).toBe(c.number);
+      expect(classForLevel(c.levelId)).toBe(c);
+    }
+    expect(new Set(WORLD0_CLASSES.map((c) => c.id)).size).toBe(WORLD0_CLASSES.length);
+  });
+
+  it('gives every class steps, goals and a three-question check with valid answers', () => {
+    for (const c of WORLD0_CLASSES) {
+      expect(c.steps.length).toBeGreaterThanOrEqual(3);
+      expect(c.goals.length).toBeGreaterThan(0);
+      expect(c.check).toHaveLength(3);
+      for (const q of c.check) {
+        if (q.kind === 'choice') expect(q.correct).toBeLessThan(q.options.length);
+        else expect(gradeNumber(q.answer, q.tolerancePct, String(q.answer)).kind).toBe('correct');
+      }
+    }
+  });
+
+  it('builds and solves every lab preset', () => {
+    const run = (s: LabSpec) => {
+      switch (s.kind) {
+        case 'ohm': return ohmLab(s.volts ?? 9, s.ohms ?? 1000);
+        case 'led': return ledLab(s.volts ?? 9, s.ohms ?? 330, s.reversed);
+        case 'pair': return pairLab(9, s.ohms ?? 330, s.mode ?? 'series');
+        case 'divider': return dividerLab(9, s.rTop ?? 1000, s.rBottom ?? 1000);
+        case 'rc': return rcLab(9, s.ohms ?? 10000, s.farads ?? 100e-6, s.bleed ? 100000 : undefined);
+      }
+    };
+    for (const c of WORLD0_CLASSES) for (const s of c.steps) if (s.lab) expect(() => run(s.lab!)).not.toThrow();
+  });
+});
+
+describe('World 0 classes: the numbers they teach agree with the solver', () => {
+  it('0–1: Ohm, LED resistor sizing and burning', () => {
+    near(ohmLab(9, 330).amps, 0.0273);
+    near(ohmLab(9, 330).watts, 0.245, 2);
+    near(ohmLab(9, 1000).amps, 0.009);
+    near(ledResistor(9, 0.02), 350);
+    near(ledLab(9, 330).amps, 0.0212);
+    near(ledLab(9, 390).amps, 0.0179);
+    expect(ledLab(9, 330).state).toBe('lit');
+    expect(ledLab(9, 100).state).toBe('burnt');
+    near(ledLab(9, 100).amps, 0.07);
+    const [q1, q2] = byNumber(1).check;
+    if (q1!.kind !== 'number' || q2!.kind !== 'number') throw new Error('expected number questions');
+    near(ledLab(12, q1!.answer).amps, 0.02);
+    near(ledLab(9, 470).amps, q2!.answer);
+  });
+
+  it('0–2: what the meter shows on a lit and a reversed LED', () => {
+    const fwd = ledLab(5, 150);
+    near(fwd.amps, 0.02);
+    near(fwd.vAnodeSide, 2.0);
+    expect(Math.abs(fwd.vGroundSide)).toBeLessThan(1e-3);
+    const rev = ledLab(5, 150, true);
+    expect(rev.amps).toBeLessThan(1e-6);
+    near(rev.vAnodeSide, 5);
+    expect(Math.abs(rev.vGroundSide)).toBeLessThan(1e-3);
+    expect(rev.state).toBe('off');
+    const q = byNumber(2).check[0]!;
+    if (q.kind !== 'choice') throw new Error('expected choice');
+    expect(q.options[q.correct]).toBe('5.0 V');
+  });
+
+  it('0–3: series shares a current, parallel adds currents', () => {
+    const s = pairLab(9, 330, 'series');
+    near(s.led1, 5 / 330, 2);
+    near(s.led2, s.led1, 0.1);
+    near(s.supply, s.led1, 0.1);
+    near(s.vResistor, 5, 2);
+    const p = pairLab(9, 470, 'parallel');
+    near(p.supply, p.led1 + p.led2, 0.5);
+    expect(p.supply).toBeGreaterThan(0.02); // parallel blows the level 0–3 budget
+    const q = byNumber(3).check[0]!;
+    if (q.kind !== 'number') throw new Error('expected number');
+    near(s.led1, q.answer, 2);
+  });
+
+  it('0–4: divider outputs and currents', () => {
+    near(dividerLab(9, 1000, 1000).vOut, 4.5);
+    near(dividerLab(9, 2000, 1000).vOut, 3);
+    near(dividerLab(9, 20000, 10000).vOut, 3);
+    near(dividerLab(9, 2200, 1000).amps, 0.0028, 1);
+    const good = dividerLab(9, 6800, 3300);
+    near(good.vOut, 2.94, 1);
+    near(good.amps, 0.00089, 1);
+    near(dividerLab(9, 3300, 6800).vOut, 6.06, 1); // swapped
+    const [q1, q2] = byNumber(4).check;
+    if (q1!.kind !== 'number' || q2!.kind !== 'number') throw new Error('expected number questions');
+    near(dividerLab(9, 10000, 4700).vOut, q1!.answer);
+    near(dividerOut(9, 10000, 4700), q1!.answer);
+    near(dividerLab(9, 10000, 4700).amps, q2!.answer);
+  });
+
+  it('0–5: the transient run crosses 63 % at τ, with and without the bleed resistor', () => {
+    const plain = rcLab(9, 10000, 100e-6);
+    near(plain.tau, 1);
+    near(plain.t63, 1, 2);
+    const bled = rcLab(9, 10000, 100e-6, 100000);
+    near(bled.vFinal, 8.18, 1);
+    near(bled.tau, 0.909, 1);
+    near(bled.t63, 0.909, 2);
+    expect(bled.t63).toBeGreaterThan(0.8);
+    expect(bled.t63).toBeLessThan(1.2);
+    const [q1, q2] = byNumber(5).check;
+    if (q1!.kind !== 'number' || q2!.kind !== 'number') throw new Error('expected number questions');
+    near(rcLab(9, 47000, 22e-6).t63, q1!.answer, 2);
+    near(rcLab(9, q2!.answer, 100e-6).t63, 0.5, 2);
+    // After 3τ it's about 95 % full.
+    const at3 = plain.curve.find(([t]) => t >= 3 * plain.tau)!;
+    near(at3[1] / 9, 0.95, 1.5);
+  });
+});

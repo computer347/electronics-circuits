@@ -4,6 +4,8 @@
  * Keys: 1–5 open a mode, ↑ ↓ move, Enter opens the highlighted row (Continue to start with).
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { WORLD0_CLASSES } from '../learn/classes';
+import { useLearnProgress } from '../learn/progress';
 import { useProgress } from '../levels/progress';
 import { CrtPowerOn } from './Crt';
 import { MENU, bootLine, continueTarget, worldStars, type ContinueTarget, type MenuItem } from './menu';
@@ -26,6 +28,7 @@ export function TitleScreen({ onOpen, onContinue }: {
 }) {
   const records = useProgress((s) => s.levels);
   const stars = worldStars(records);
+  const learned = useLearnProgress((s) => WORLD0_CLASSES.filter((c) => s.classes[c.id]).length);
   const cont = continueTarget(records);
   const trace = useMemo(rcTrace, []);
   // Power cycling remounts the screen, which replays the whole start-up.
@@ -123,6 +126,7 @@ export function TitleScreen({ onOpen, onContinue }: {
                 <span className="row-sub">{m.sub}</span>
               </span>
               {m.tab === 'play' ? <span className="row-stars">★ {stars.got}/{stars.max}</span>
+                : m.tab === 'learn' ? <span className="row-stars learn">✓ {learned}/{WORLD0_CLASSES.length}</span>
                 : m.soon ? <span className="row-soon">soon</span> : null}
             </button>
           ))}

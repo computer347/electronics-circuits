@@ -3,6 +3,9 @@
  * left and the result card over the board.
  */
 import { useEffect, useState } from 'react';
+import { useNav } from '../app/nav';
+import { classForLevel } from '../learn/classes';
+import { useLearnProgress } from '../learn/progress';
 import { BenchView } from '../breadboard/BenchView';
 import { useBench } from '../breadboard/store';
 import { WORLD0, WORLD0_PLAN } from '.';
@@ -60,10 +63,19 @@ function LevelPanel({ level, onExit }: { level: LevelDef; onExit: () => void }) 
 function LevelBrief({ level }: { level: LevelDef }) {
   const hintsShown = useSession((s) => s.hintsShown);
   const ds = level.brief.datasheet;
+  const cls = classForLevel(level.id);
+  const learned = useLearnProgress((s) => (cls ? !!s.classes[cls.id] : false));
   return (
     <section className="level-brief">
       <h2>Brief</h2>
       <p className="level-story">{level.brief.story}</p>
+      {cls && (
+        <button className={`class-link ${learned ? 'done' : ''}`} onClick={() => useNav.getState().openClass(cls.id)}
+          title="Opens the class. Your stars are kept; the board starts fresh when you come back.">
+          <span>{learned ? '✓ Class' : 'New to this? Class'} {cls.world}–{cls.number}</span>
+          <b>{cls.title} →</b>
+        </button>
+      )}
       {ds && (
         <div className="datasheet">
           <div className="datasheet-title">Datasheet · {ds.title}</div>

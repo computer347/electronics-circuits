@@ -38,7 +38,7 @@ npm run build    # typecheck + production build
 
 ## What's built
 
-**Title screen** (`src/app/TitleScreen.tsx`): the game opens on a boot terminal. The title and a start-up log sit on the left (the log shows your World 0 stars), the modes on the right: Continue, then Play, Learn (coming soon), Drills, Sandbox and Solver bench on keys **1–5**, with **↑ ↓** and **Enter**. Continue picks up at the first level you haven't passed (Start on a fresh save) and goes to the World 0 map once they're all done. The screen powers on like an old CRT: a bright dot, stretched into a line, opened into the picture as a phosphor flash fades (`src/app/Crt.tsx`), and every mode switch replays a quick version. The power button replays the full start-up; **‹ Menu** or the SIGNAL PATH title returns to it. The effect animates `clip-path`, not `transform`, so the 3D bench and the scope's WebGL screen still measure their real size when they mount. It all switches off under the system's reduced-motion setting. An oscilloscope-style title (design option A) is kept for later.
+**Title screen** (`src/app/TitleScreen.tsx`): the game opens on a boot terminal. The title and a start-up log sit on the left (the log shows your World 0 stars), the modes on the right: Continue, then Play, Learn, Drills, Sandbox and Solver bench on keys **1–5**, with **↑ ↓** and **Enter**. Continue picks up at the first level you haven't passed (Start on a fresh save) and goes to the World 0 map once they're all done. The screen powers on like an old CRT: a bright dot, stretched into a line, opened into the picture as a phosphor flash fades (`src/app/Crt.tsx`), and every mode switch replays a quick version. The power button replays the full start-up; **‹ Menu** or the SIGNAL PATH title returns to it. The effect animates `clip-path`, not `transform`, so the 3D bench and the scope's WebGL screen still measure their real size when they mount. It all switches off under the system's reduced-motion setting. An oscilloscope-style title (design option A) is kept for later.
 
 **Circuit solver** (`src/sim/`): modified nodal analysis in TypeScript with ideal parts.
 
@@ -56,6 +56,8 @@ npm run build    # typecheck + production build
 - `tests/`: textbook circuits checked against hand-calculated answers (dividers, bridges, LEDs, RC charge/discharge, energy conservation)
 
 **Schematics** (`src/schematic/`): 2D SVG circuit drawings with IEC symbols. Parts sit between grid points and connect where they meet; the netlist is derived from the drawing, so the picture and the simulation always agree.
+
+**Learn** (`src/learn/`): one short class per World 0 level, teaching exactly what that level needs: 0–1 voltage, current, resistance and sizing an LED resistor · 0–2 diodes and reading a multimeter · 0–3 series and parallel · 0–4 voltage dividers · 0–5 capacitors and τ = R × C. Each class is 3–4 steps of text next to a live lab (a schematic with sliders, solved by the same MNA solver as the bench: an LED that burns at 100 Ω, a meter reading both legs of a reversed LED, a supply budget bar, a divider tap, a transient RC curve with the 63 % point marked), then a three-question check and **Try it: level 0–N**. Each level's brief links back to its class. Nothing is locked. Every number a class states is checked against the solver in `tests/learn.test.ts`. Finished classes are saved in the browser.
 
 **Exam drills** (`src/drills/`): nine question generators (Ohm's law, series and parallel, dividers, LED resistor sizing, RC charging, Wheatstone bridges, current sources) with random standard values, prefix-aware answer checking (`21.2m`, `4.7k`) and worked solutions. Tests check that the solver and each worked-solution formula agree on 60 random circuits per generator.
 
@@ -81,4 +83,4 @@ Levels are plain JSON (`src/levels/world0/`): a starting board, faults injected 
 
 ## Next up (Phase 0)
 
-Theory classes (the Learn tab: a class per World 0 topic) → superposition/Thevenin drills → settings (CRT effects, volume) → ride extras (pick the branch at junctions, diode walls).
+Superposition/Thevenin drills and their classes → settings (CRT effects, volume) → ride extras (pick the branch at junctions, diode walls).

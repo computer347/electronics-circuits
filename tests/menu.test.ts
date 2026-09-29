@@ -8,10 +8,10 @@ const rec = (stars: 1 | 2 | 3): LevelRecord => ({ stars, seconds: 60, firstPasse
 const byNumber = (n: number) => WORLD0.find((l) => l.number === n)!;
 
 describe('title screen menu', () => {
-  it('lists the five modes on keys 1–5, with Learn marked as coming soon', () => {
+  it('lists the five modes on keys 1–5, all of them open now that Learn exists', () => {
     expect(MENU.map((m) => m.key)).toEqual(['1', '2', '3', '4', '5']);
     expect(MENU.map((m) => m.title)).toEqual(['Play', 'Learn', 'Drills', 'Sandbox', 'Solver bench']);
-    expect(MENU.filter((m) => m.soon).map((m) => m.tab)).toEqual(['learn']);
+    expect(MENU.filter((m) => m.soon)).toEqual([]);
   });
 
   it('counts drill topics from the generators rather than a hard-coded number', () => {

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { BenchView } from '../breadboard/BenchView';
 import { DrillView } from '../drills/DrillView';
+import { LearnView } from '../learn/LearnView';
 import { levelById } from '../levels';
 import { LevelSelect } from '../levels/LevelSelect';
 import { LevelView } from '../levels/LevelView';
@@ -8,7 +9,8 @@ import { useSession } from '../levels/session';
 import { parseNetlist, solve, type SolveResult } from '../sim';
 import { CrtPowerOn } from './Crt';
 import { CurrentStrip } from './CurrentStrip';
-import type { ContinueTarget, MenuItem, Tab } from './menu';
+import type { ContinueTarget, MenuItem } from './menu';
+import { useNav } from './nav';
 import { PRESETS } from './presets';
 import { TitleScreen } from './TitleScreen';
 
@@ -33,14 +35,13 @@ function Play() {
 }
 
 export function App() {
-  // The game opens on the title screen.
-  const [tab, setTabRaw] = useState<Tab>('home');
-  // Leaving the campaign puts the sandbox bench back the way it was.
-  const setTab = (t: Tab) => { if (t !== 'play') useSession.getState().exit(); setTabRaw(t); };
-  const openFromMenu = (m: MenuItem) => { if (!m.soon) setTab(m.tab); };
+  // The game opens on the title screen (nav.ts starts on 'home').
+  const tab = useNav((s) => s.tab);
+  const setTab = useNav((s) => s.go);
+  const openFromMenu = (m: MenuItem) => { if (m.soon) return; if (m.tab === 'learn') useNav.getState().openClass(null); else setTab(m.tab); };
   const continueFrom = (c: ContinueTarget) => {
-    setTab('play');
-    if (c.kind === 'level') useSession.getState().start(c.levelId);
+    if (c.kind === 'level') useNav.getState().playLevel(c.levelId);
+    else setTab('play');
   };
   const [text, setText] = useState(PRESETS['LED + resistor']!);
 
@@ -67,6 +68,7 @@ export function App() {
         <nav className="tabs">
           <button onClick={() => setTab('home')} title="Title screen">‹ Menu</button>
           <button className={tab === 'play' ? 'active' : ''} onClick={() => setTab('play')}>Play</button>
+          <button className={tab === 'learn' ? 'active' : ''} onClick={() => useNav.getState().openClass(null)}>Learn</button>
           <button className={tab === 'drills' ? 'active' : ''} onClick={() => setTab('drills')}>Exam drills</button>
           <button className={tab === 'breadboard' ? 'active' : ''} onClick={() => setTab('breadboard')}>Sandbox</button>
           <button className={tab === 'bench' ? 'active' : ''} onClick={() => setTab('bench')}>Solver bench</button>
@@ -75,7 +77,7 @@ export function App() {
 
       {/* Each mode switch warms the tube up again, quickly. */}
       <CrtPowerOn key={tab} variant="quick" className="mode-crt">
-      {tab === 'play' ? <Play /> : tab === 'drills' ? <DrillView /> : tab === 'breadboard' ? <BenchView /> : (
+      {tab === 'play' ? <Play /> : tab === 'learn' ? <LearnView /> : tab === 'drills' ? <DrillView /> : tab === 'breadboard' ? <BenchView /> : (
       <main className="bench">
         <section className="panel">
           <h2>Netlist</h2>
