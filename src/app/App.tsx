@@ -40,11 +40,11 @@ export function App() {
   const tab = useNav((s) => s.tab);
   const setTab = useNav((s) => s.go);
   const choose = (c: FrontChoice) => {
-    if (c === 'continue') setTab('desk');
-    // Play opens the desk on its level map (the corkboard).
-    else if (c === 'play') { useDesk.setState({ startOnMap: true }); setTab('desk'); }
-    else if (c === 'learn') useNav.getState().openClass(null);
-    else setTab('drills');
+    // Everything opens at the desk: Play on the level map, Learn in the notebook's Theory,
+    // Practice on its practice page.
+    const startOn = c === 'play' ? 'map' : c === 'learn' ? 'theory' : c === 'practice' ? 'practice' : null;
+    useDesk.setState({ startOn });
+    setTab('desk');
   };
   const leaveDesk = () => { useDesk.getState().leave(); };
   const [text, setText] = useState(PRESETS['LED + resistor']!);

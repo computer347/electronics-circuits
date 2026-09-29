@@ -5,7 +5,7 @@
  */
 import { useMemo, useState } from 'react';
 import { checkAnswer, type Verdict } from '../drills/check';
-import { makeDrill } from '../drills/generators';
+import { makeDrill, randomDrill, TOPICS } from '../drills/generators';
 import { formatSI } from '../lib/units';
 import { Lab } from '../learn/Labs';
 import { Feedback, grade, Rich, type Answer } from '../learn/LearnView';
@@ -165,7 +165,9 @@ function WorkedSpread({ generator, seed }: { generator: string; seed: number }) 
 
 function PracticeSpread({ generator }: { generator: string }) {
   const [seed, setSeed] = useState(() => Math.floor(Math.random() * 2 ** 31));
-  const d = useMemo(() => makeDrill(generator, seed), [generator, seed]);
+  // This level's kind of question by default; any exam topic on request.
+  const [topic, setTopic] = useState<string>('');
+  const d = useMemo(() => (topic ? randomDrill(topic, seed) : makeDrill(generator, seed)), [generator, topic, seed]);
   const [input, setInput] = useState('');
   const [verdict, setVerdict] = useState<Verdict | null>(null);
   const [shown, setShown] = useState(false);
@@ -174,6 +176,12 @@ function PracticeSpread({ generator }: { generator: string }) {
     <>
       <div className="nb-page left">
         <p className="nb-kicker">Your turn · {d.topic}</p>
+        <label className="nb-topic">Practise
+          <select value={topic} onChange={(e) => { setTopic(e.target.value); setSeed(Math.floor(Math.random() * 2 ** 31)); setInput(''); setVerdict(null); setShown(false); }}>
+            <option value="">this level’s questions</option>
+            {TOPICS.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </label>
         <h2>{d.title}</h2>
         <p>{d.prompt}</p>
         <div className="nb-schematic"><SchematicView schematic={d.schematic} highlight={d.highlight} /></div>

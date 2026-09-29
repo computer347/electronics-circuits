@@ -32,8 +32,11 @@ interface DeskStore {
   /** The guided tour's current stop, or null when it isn't running. */
   tour: number | null;
   setTour: (i: number | null) => void;
-  /** Open the desk on the level map (Play on the front page). */
-  startOnMap: boolean;
+  /**
+   * Where the desk opens: the level map (Play on the front page), the notebook's Theory (Learn)
+   * or its practice page (Practice). Null opens on the desk itself.
+   */
+  startOn: 'map' | 'theory' | 'practice' | null;
   /** Where the multimeter's dial points. */
   meterMode: MeterMode;
   setMeterMode: (m: MeterMode) => void;
@@ -66,7 +69,7 @@ export const useDesk = create<DeskStore>((set, get) => ({
   flags: FRESH_FLAGS,
   result: null,
   meterMode: 'V',
-  startOnMap: false,
+  startOn: null,
   tour: null,
   setTour: (tour) => { if (tour !== null) get().focusOn(null); set({ tour }); },
   nbSection: 'task',

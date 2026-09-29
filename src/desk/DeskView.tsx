@@ -16,6 +16,7 @@ import type { LevelDef } from '../levels/types';
 import { reducedMotion } from './anim';
 import { isUnlocked, followingLevel, nextLevel } from './levelPick';
 import { DIAL, meteredBoard, readMeter } from './meter';
+import { spreads } from './notebook';
 import { NotebookPages } from './NotebookPages';
 import { PartsTray } from './PartsTray';
 import { taskPage } from './taskPages';
@@ -106,12 +107,16 @@ export function DeskView({ onMenu }: { onMenu: () => void }) {
 
   useEffect(() => {
     // A fresh visit starts a level: the one you were on, else the next one not passed yet.
-    // Play on the front page (or a finished World 0) opens on the level map instead.
+    // Play (or a finished World 0) opens on the level map; Learn and Practice open the notebook.
     const d = useDesk.getState();
     const recs = useProgress.getState().levels;
     const id = d.levelId ?? nextLevel(recs) ?? WORLD0[0]!.id;
+    const startOn = d.startOn;
     if (useSession.getState().levelId !== id) d.enter(id);
-    if (d.startOnMap || !nextLevel(recs)) { useDesk.setState({ startOnMap: false }); useDesk.getState().focusOn('corkboard'); }
+    useDesk.setState({ startOn: null });
+    if (startOn === 'theory') useDesk.getState().openNotebook('theory');
+    else if (startOn === 'practice') useDesk.getState().openNotebook('math', spreads(levelById(id)!, 'math').length - 1);
+    else if (startOn === 'map' || !nextLevel(recs)) useDesk.getState().focusOn('corkboard');
     // Canvas textures draw text, so wait for the riso fonts (but never for long).
     const t = setTimeout(() => setFonts(true), 1500);
     void Promise.all([document.fonts.load("64px 'Anton'"), document.fonts.load("bold 20px 'Space Mono'"), document.fonts.load("20px 'Space Mono'"), document.fonts.load("italic 20px 'Space Mono'")]).finally(() => setFonts(true));
