@@ -14,7 +14,7 @@ import type { RunStats } from '../src/levels/check';
 import { measurementsNow, useDesk } from '../src/desk/store';
 import { canSubmit, currentStep, FRESH, glowing, mainAction, railStates } from '../src/desk/steps';
 import { startingBoard, WORLD0 } from '../src/levels';
-import { useProgress } from '../src/levels/progress';
+import { useProgress, worldStars } from '../src/levels/progress';
 import { useSession } from '../src/levels/session';
 
 const L2 = WORLD0[1]!;
@@ -354,5 +354,13 @@ describe('free bench', () => {
     expect(useBench.getState().tool).toBe('scope');
     expect(mainAction(FRESH, 'scope').kind).toBe('back');
     useDesk.getState().focusOn(null);
+  });
+});
+
+describe('front page star count', () => {
+  it('adds up World 0 stars out of 15', () => {
+    expect(worldStars({})).toEqual({ got: 0, max: 15 });
+    const rec = { [WORLD0[0]!.id]: { stars: 3 as const, seconds: 20, firstPassed: '2026-09-29' }, [L2.id]: { stars: 1 as const, seconds: 50, firstPassed: '2026-09-29' } };
+    expect(worldStars(rec)).toEqual({ got: 4, max: 15 });
   });
 });

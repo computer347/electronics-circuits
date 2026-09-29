@@ -8,7 +8,7 @@ import { checkAnswer, type Verdict } from '../drills/check';
 import { makeDrill, randomDrill, TOPICS } from '../drills/generators';
 import { formatSI } from '../lib/units';
 import { Lab } from '../learn/Labs';
-import { Feedback, grade, Rich, type Answer } from '../learn/LearnView';
+import { Feedback, grade, Rich, type Answer } from '../learn/check';
 import { useLearnProgress } from '../learn/progress';
 import type { LearnClass } from '../learn/types';
 import type { LevelDef } from '../levels/types';

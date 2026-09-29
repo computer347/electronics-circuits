@@ -1,41 +1,29 @@
 /**
- * 3D breadboard scene. Pure view: reads the bench store and the latest analysis,
+ * The 3D breadboard. Pure view: reads the bench store and the latest analysis,
  * and reports hole hovers/clicks and part clicks back to the store.
  */
-import { OrbitControls } from '@react-three/drei';
-import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
-import { createContext, useContext, useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { useFrame, type ThreeEvent } from '@react-three/fiber';
+import { useMemo, useRef, type ReactNode } from 'react';
 import * as THREE from 'three';
 import { colorBands } from './colorCode';
 import { BOARD, HOLES, hole, type HoleId } from './layout';
 import { useLive } from './live';
 import { isElectrolytic, LED_MAX_AMPS, type BoardAnalysis, type BoardPart, type BoardState } from './model';
-import { buildFlow, sourceColors } from './flow';
-import { FlowParticles, RideElectron } from './FlowScene';
 import { translateParts } from './move';
 import { PartMotion } from './PartMotion';
-import { CAP_Y, ledMid, supplyLeadCurve, wireCurve, SUPPLY_BOX, SUPPLY_HOLES } from './paths';
+import { CAP_Y, ledMid, wireCurve } from './paths';
 import { useBench } from './store';
 
 const LED_HEX = { red: '#ff3b30', yellow: '#ffd60a', green: '#39ff88', blue: '#3a8bff', white: '#f5f5ff' } as const;
-const SIGNAL = new THREE.Color('#39ff88');
 const AMBER = '#ffb000';
 const FAULT = '#ff2e88';
 const Y_AXIS = new THREE.Vector3(0, 1, 0);
 
 type V3 = [number, number, number];
 
-/**
- * Two looks for the same board: the phosphor bench (dark green, glowing strips) and the desk
- * (a real white breadboard under a warm lamp, strips tinted riso blue).
- */
-export type BoardLook = 'phosphor' | 'desk';
-const LOOKS = {
-  phosphor: { body: '#1b2d23', channel: '#0b140f', hole: '#010302', strip: '#2a6b4a', hot: SIGNAL, mark: '#39ff88' },
-  desk: { body: '#ebe6da', channel: '#d3ccbd', hole: '#3b3530', strip: '#c9c2b3', hot: new THREE.Color('#0078bf'), mark: '#ff48b0' },
-} as const;
-const LookContext = createContext<BoardLook>('phosphor');
-const useLook = () => LOOKS[useContext(LookContext)];
+/** A real white breadboard under a warm lamp; strips that carry a voltage tint riso blue. */
+const LOOK = { body: '#ebe6da', channel: '#d3ccbd', hole: '#3b3530', strip: '#c9c2b3', hot: new THREE.Color('#0078bf'), mark: '#ff48b0' } as const;
+const useLook = () => LOOK;
 const at = (id: HoleId, y = 0): V3 => { const h = hole(id); return [h.x, y, h.z]; };
 
 /** A cylinder stretched between two points. */
@@ -470,31 +458,6 @@ function ScopeProbe({ h, color, label }: { h: HoleId; color: string; label: stri
   );
 }
 
-function Supply({ analysis }: { analysis: BoardAnalysis }) {
-  const supply = useBench((s) => s.supply);
-  const shorted = analysis.result.faults.some((f) => f.kind === 'short-circuit');
-  const box = SUPPLY_BOX;
-  const lead = (to: string, color: string, dx: number) => {
-    const g = new THREE.TubeGeometry(supplyLeadCurve(to, dx), 40, 0.08, 8, false);
-    return <mesh geometry={g}><meshStandardMaterial color={color} roughness={0.5} /></mesh>;
-  };
-  const glow = shorted ? FAULT : supply.on ? '#39ff88' : '#1a2a20';
-  return (
-    <group>
-      <mesh position={box}>
-        <boxGeometry args={[3.2, 1.2, 1.8]} />
-        <meshStandardMaterial color="#111814" roughness={0.6} />
-      </mesh>
-      <mesh position={[box[0], box[1] + 0.61, box[2]]}>
-        <boxGeometry args={[2.4, 0.02, 0.8]} />
-        <meshBasicMaterial color={glow} toneMapped={false} />
-      </mesh>
-      {lead(SUPPLY_HOLES.plus, '#e8413c', 0.7)}
-      {lead(SUPPLY_HOLES.minus, '#1b1b1b', -0.7)}
-    </group>
-  );
-}
-
 function Probe({ h, color }: { h: HoleId; color: string }) {
   const p = at(h);
   return (
@@ -511,62 +474,19 @@ function Probe({ h, color }: { h: HoleId; color: string }) {
   );
 }
 
-// ---------------------------------------------------------------- scene
+// ---------------------------------------------------------------- the board and everything on it
 
-/** Dev only: lets browser tests find a hole's position on screen, to click it like a player. */
-function DevProject() {
-  const { camera, size, gl } = useThree();
-  useEffect(() => {
-    const w = window as unknown as { __signalPathProject?: (id: HoleId) => [number, number] };
-    w.__signalPathProject = (id) => {
-      const h = hole(id);
-      const v = new THREE.Vector3(h.x, 0.02, h.z).project(camera);
-      const r = gl.domElement.getBoundingClientRect();
-      return [r.left + ((v.x + 1) / 2) * size.width, r.top + ((1 - v.y) / 2) * size.height];
-    };
-  }, [camera, size, gl]);
-  return null;
-}
-
-/** Camera looks at the board from above and in front, along this direction. */
-const VIEW_DIR = new THREE.Vector3(0, 22, 17).normalize();
-
-/**
- * Frame the whole board (and the bench supply) whatever shape the stage has: a wide, short
- * stage with the scope open needs a different distance from a tall one without it.
- */
-function FitCamera() {
-  const { camera, size } = useThree();
-  const view = useBench((s) => s.view);
-  useEffect(() => {
-    if (view === 'ride' || !(camera instanceof THREE.PerspectiveCamera)) return;
-    const v = THREE.MathUtils.degToRad(camera.fov) / 2;
-    const h = Math.atan(Math.tan(v) * (size.width / Math.max(1, size.height)));
-    const dist = Math.max(18.5 / Math.tan(h), 12.5 / Math.tan(v));
-    camera.position.copy(VIEW_DIR).multiplyScalar(dist);
-    camera.lookAt(0, 0, 0);
-  }, [camera, size.width, size.height, view]);
-  return null;
-}
-
-/** Everything on the board (board, supply, parts, probes, flow), without a canvas, camera or lights. */
-export function BreadboardContents({ analysis, dynamic, look = 'phosphor', supplyBox = true }: {
-  analysis: BoardAnalysis; dynamic: boolean; look?: BoardLook; supplyBox?: boolean;
-}) {
+/** Everything on the board (board, parts, probes), without a canvas, camera or lights: the desk mounts it. */
+export function BreadboardContents({ analysis, dynamic }: { analysis: BoardAnalysis; dynamic: boolean }) {
   const parts = useBench((s) => s.parts);
   const selected = useBench((s) => s.selected);
   const probes = useBench((s) => s.probes);
   const scopeProbes = useBench((s) => s.scopeProbes);
   const moving = useBench((s) => s.moving);
   const hover = useBench((s) => s.hover);
-  const view = useBench((s) => s.view);
-  const supply = useBench((s) => s.supply);
   const currents = analysis.result.currents;
-  const board = useMemo(() => ({ supply, parts }), [supply, parts]);
-  const edges = useMemo(() => (view === 'build' ? [] : buildFlow(board, analysis)), [view, board, analysis]);
-  const colors = useMemo(() => sourceColors(board), [board]);
 
-  // While moving, draw the parts where they'd land, tinted green (ok) or magenta (blocked).
+  // While moving, draw the parts where they'd land, tinted blue (ok) or pink (blocked).
   const preview = useMemo(() => {
     if (!moving || !hover) return null;
     return translateParts(parts, moving.ids, moving.anchor, hover, moving.mode);
@@ -574,12 +494,11 @@ export function BreadboardContents({ analysis, dynamic, look = 'phosphor', suppl
   const shown = preview?.parts ?? parts;
   const movingIds = new Set(moving?.ids ?? []);
   const markOf = (id: string) =>
-    movingIds.has(id) ? (preview && !preview.valid ? FAULT : '#39ff88') : id === selected ? (look === 'desk' ? '#ff48b0' : AMBER) : undefined;
+    movingIds.has(id) ? (preview && !preview.valid ? FAULT : '#0078bf') : id === selected ? LOOK.mark : undefined;
   return (
-    <LookContext.Provider value={look}>
+    <>
       <group ref={(g) => { if (g) boardRoot = g; }} />
       <Board analysis={analysis} dynamic={dynamic} />
-      {supplyBox && <Supply analysis={analysis} />}
       {shown.map((p) => {
         const mark = markOf(p.id);
         let el: ReactNode = null;
@@ -588,45 +507,18 @@ export function BreadboardContents({ analysis, dynamic, look = 'phosphor', suppl
           case 'led': el = <Led part={p} mark={mark} amps={movingIds.has(p.id) ? 0 : currents[p.id] ?? 0} dynamic={dynamic && !movingIds.has(p.id)} />; break;
           case 'wire': el = <Wire part={p} mark={mark} />; break;
           case 'button': el = <Button part={p} mark={mark} />; break;
-          case 'battery': el = <Battery part={p} mark={mark} color={colors[p.id] ?? '#3ad7ff'} />; break;
+          case 'battery': el = <Battery part={p} mark={mark} color="#ff48b0" />; break;
           case 'capacitor': el = <Capacitor part={p} mark={mark} />; break;
-          case 'generator': el = <Generator part={p} mark={mark} color={colors[p.id] ?? '#ffb000'} />; break;
+          case 'generator': el = <Generator part={p} mark={mark} color="#ffd21f" />; break;
         }
         // Parts being dragged follow the pointer as they are; everything else animates its moves.
         return <PartMotion key={p.id} part={p} still={movingIds.has(p.id)}>{el}</PartMotion>;
       })}
-      {view === 'flow' && <FlowParticles edges={edges} colors={colors} />}
-      {view === 'ride' && (
-        <>
-          <FlowParticles edges={edges} colors={colors} size={0.045} />
-          <RideElectron edges={edges} analysis={analysis} colors={colors} parts={parts} />
-        </>
-      )}
       {probes.red && <Probe h={probes.red} color="#e8413c" />}
       {probes.black && <Probe h={probes.black} color="#222" />}
-      {/* Scope probes in their trace colours: phosphor green on the old bench, yellow like a real scope on the desk. */}
-      {scopeProbes.ch1 && <ScopeProbe h={scopeProbes.ch1} color={look === 'desk' ? '#ffd21f' : '#39ff88'} label="CH1" />}
+      {/* Scope probes in their trace colours, yellow and cyan like a real scope. */}
+      {scopeProbes.ch1 && <ScopeProbe h={scopeProbes.ch1} color="#ffd21f" label="CH1" />}
       {scopeProbes.ch2 && <ScopeProbe h={scopeProbes.ch2} color="#3ad7ff" label="CH2" />}
-    </LookContext.Provider>
-  );
-}
-
-export function BreadboardScene({ analysis, dynamic }: { analysis: BoardAnalysis; dynamic: boolean }) {
-  const view = useBench((s) => s.view);
-  const dim = view !== 'build';
-  return (
-    <Canvas camera={{ position: [0, 22, 17], fov: 40 }} dpr={[1, 2]} shadows={false}>
-      <color attach="background" args={['#030604']} />
-      <fog attach="fog" args={['#030604', 70, 130]} />
-      <ambientLight intensity={dim ? 0.35 : 0.9} />
-      <hemisphereLight args={['#c8ffe0', '#0a140e', dim ? 0.25 : 0.6]} />
-      <directionalLight position={[8, 20, 10]} intensity={dim ? 0.6 : 1.6} />
-      <directionalLight position={[-10, 8, -6]} intensity={0.35} color="#7fffc4" />
-      <gridHelper args={[80, 40, '#123824', '#0c2418']} position={[0, -BOARD.thickness - 0.01, 0]} />
-      <BreadboardContents analysis={analysis} dynamic={dynamic} />
-      <FitCamera />
-      {import.meta.env.DEV && <DevProject />}
-      <OrbitControls makeDefault enabled={view !== 'ride'} enablePan target={[0, 0, 0]} maxPolarAngle={Math.PI / 2.3} minDistance={8} maxDistance={60} />
-    </Canvas>
+    </>
   );
 }

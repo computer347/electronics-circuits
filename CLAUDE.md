@@ -1,7 +1,7 @@
 # SIGNAL PATH — notes for Claude
 
-A browser game for learning electronics: the player is an electron. Black and phosphor-green look.
-Read `README.md` (what's built) and `docs/SPEC.md` (the full design) before starting.
+A browser game for learning electronics: the player is an electron. A riso-poster front page, then a 3D lab bench where every level is played.
+Read `README.md` (what's built), `docs/SPEC.md` (the full design) and `docs/design/desk-3d-brief.md` + `desk-3d-plan.md` (the desk) before starting.
 
 ## Stack and commands
 
@@ -16,14 +16,18 @@ npm run build    # typecheck + production build
 
 ## Where things are
 
+- `src/app/` the two screens: `FrontPage.tsx` (riso poster: Continue, Play, Learn, Practice) and `App.tsx`; `nav.ts` (home / desk); `base.css` (reset + the ink-on-paper styles of labs and schematics).
+- `src/desk/` the lab bench, where everything is played: `DeskView.tsx` (HUD: step rail, one main button, hints, trays), `DeskScene.tsx` (camera rig, focus, lights, the objects), `assets/` (one file per object: desk, lamp, notebook, meter, bench supply, scope, mat, soldering, clutter), `layout.ts` (where everything sits), `steps.ts` (the four-step loop rules), `store.ts` (focus, phase, mode level/sandbox, meter dial, notebook section, tour, zoom), `meter.ts` (V / Ω / A readings), `notebook.ts` + `NotebookPages.tsx` (Task, Theory, Math), `PartModel.tsx` (part close-ups), `tour.ts`, `starRules.ts`, `desk.css`.
+- `src/circuitworld/` Clear the circuit: `map.ts` (the loop from the solved board, faults), `CircuitWorld.tsx` (first person).
+- `src/breadboard/` the board: layout, model (board → circuit), store (tools, parts, probes), `Scene.tsx` (`BreadboardContents`, mounted by the desk), `PartMotion.tsx` (part animations), `live.ts` (live transient bench), `paths.ts`, `move.ts`.
 - `src/sim/` MNA circuit solver (DC + backward-Euler transient). R_WIRE = 1e-3, GMIN = 1e-11: don't lower them, series-LED islands go singular.
-- `src/breadboard/` 3D breadboard sandbox, flow and ride modes (`rideStops.ts`), live transient bench (`live.ts`).
-- `src/instruments/` oscilloscope (WebGL phosphor shader in `phosphor.ts`).
-- `src/levels/` campaign: JSON levels in `world0/`, fault injection, `check.ts` (spec checks + diagnoses like `explainDivider`), stars, session, progress (localStorage `signal-path.progress.v1`).
-- `src/learn/` Learn tab: one class per level (`classes.ts`), live labs (`Labs.tsx`) built on `physics.ts`, progress in `signal-path.learn.v1`.
-- `src/drills/` exam drill generators with worked solutions.
-- `src/app/` App shell, title screen (option C boot terminal), `Crt.tsx` power-on effect (clip-path, never transform: R3F/WebGL canvases must measure their real size), `nav.ts` tab store.
-- Dev only: `window.__signalPath` exposes stores, `window.__signalPathProject(hole)` for click tests.
+- `src/instruments/` scope acquisition and knob store (the desk scope draws from them).
+- `src/levels/` campaign: JSON levels in `world0/`, fault injection, `check.ts` (spec checks + diagnoses), stars, session, progress (localStorage `signal-path.progress.v1`).
+- `src/learn/` lesson content per level (`classes.ts`), live labs (`Labs.tsx`) on `physics.ts`, `check.tsx` (lesson markup and answer grading), progress in `signal-path.learn.v1`.
+- `src/drills/` exam drill generators with worked solutions (the notebook's Math pages).
+- `src/schematic/` 2D schematics (used by labs and drills).
+- Animate with `clip-path`, never `transform`, on anything that contains an R3F canvas: canvases measure their real size.
+- Dev only: `window.__signalPath` exposes the stores (`useBench`, `useDesk`, `useSession`, `useScope`, `bench`, `useLive`).
 
 ## Working rules (Mike's)
 
@@ -36,11 +40,4 @@ npm run build    # typecheck + production build
 
 ## Status (2026-09-29)
 
-Both repos at `8e9c941` (Learn tab). World 0 is complete: 5 levels, 5 classes, title screen, 190 tests.
-
-## Next steps, in order
-
-1. **Play-test World 0**: Mike takes each class, then its level, and notes what's confusing, too easy or badly worded.
-2. **Fix what that turns up**: wording in classes, hints and par values.
-3. **World 1**: bigger networks: Kirchhoff's laws, superposition, Thevenin/Norton, bridges. Same pattern as World 0: levels + a class each + drills (superposition/Thevenin drill generators don't exist yet).
-4. **Polish**: settings menu (Esc: CRT effects on/off, sound), ride mode choosing the branch at junctions and a wall at reversed diodes, oscilloscope-style title screen (design option A, kept for later).
+Branch `desk-3d`: the desk replaces the old tabbed app. All of World 0 plays on the bench, with the notebook (Task, Theory, Math), meter, scope, free bench and Clear the circuit. See `docs/design/desk-3d-plan.md` for what's done and next.

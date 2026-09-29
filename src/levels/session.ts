@@ -67,8 +67,6 @@ export const useSession = create<Session>((set, get) => ({
     const stash = get().levelId ? get().stash : { supply: bench.supply, parts: bench.parts };
     bench.load({ ...structuredClone(startingBoard(level)), scope: { ch1: level.scope?.ch1, ch2: level.scope?.ch2 } });
     bench.setRules({ locked: level.locked ?? [], pinned: level.pinned ?? [], spares: level.spares?.led ?? null });
-    bench.setView('build');
-    bench.setScopeOpen(level.tools.includes('scope'));
     if (level.scope?.setup) useScope.getState().apply(level.scope.setup);
     if (level.resistorValues && !level.resistorValues.includes(bench.ohms)) bench.setOhms(level.resistorValues[0]!);
     useScope.getState().setRunning(true);
@@ -86,7 +84,6 @@ export const useSession = create<Session>((set, get) => ({
     if (!levelId) return;
     const bench = useBench.getState();
     bench.load(stash ?? { supply: { volts: 9, on: true }, parts: [] });
-    bench.setScopeOpen(true);
     set({ levelId: null, stash: null, last: null, showResult: false, complete: false });
   },
 
@@ -126,7 +123,6 @@ export const useSession = create<Session>((set, get) => ({
   closeResult: () => set({ showResult: false }),
   finish: () => {
     if (!get().last?.check.pass) return;
-    useBench.getState().setView('build');
     set({ showResult: false, complete: true });
   },
   closeComplete: () => set({ complete: false }),

@@ -5,8 +5,7 @@
  */
 import { useEffect } from 'react';
 import '../desk/desk.css';
-import { useProgress } from '../levels/progress';
-import { worldStars } from './menu';
+import { useProgress, worldStars } from '../levels/progress';
 
 export type FrontChoice = 'continue' | 'play' | 'learn' | 'practice';
 

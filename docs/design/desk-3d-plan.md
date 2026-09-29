@@ -58,9 +58,14 @@ Front page (riso poster) → Continue → desk → notebook (task) → breadboar
 - Free bench: the blue card on the corkboard. Every part (four at a glance, "More" for the rest), value pickers, turn round / take out, supply voltage, the example circuits, the scope, and "Go inside your circuit" to walk it. Nothing is scored.
 - Screenshots 20–55.
 
+### Session 5: the old app is gone
+
+- Removed the tabbed app: the old Play, Learn, Drills and Sandbox screens, the solver bench, the boot-terminal title screen, the CRT effect, the phosphor scope panel, electron flow and ride modes (Clear the circuit replaces them), and the 600-line phosphor stylesheet. `src/app/base.css` keeps only what the lessons' labs and schematics use, in ink on paper.
+- The app is two screens: the front page and the bench. README and CLAUDE.md describe the new layout.
+
 ### Next
 
-1. Retire the old tabs (Play, Learn, Drills, Sandbox, Solver bench), the boot-terminal title screen and the CSS only they use. Keep the solver bench reachable as a dev tool if wanted.
-2. Scripted replays (clips) for the lessons.
-3. Parts lifting out of the parts box on the way to the board; the whole strip lighting while you carry a part.
-4. Short circuit as a flood in the circuit world; code-split three.js (the bundle is about 1.4 MB); sound.
+1. Scripted replays (clips) for the lessons: camera moves, board changes, meter readings and captions on the real bench, with pause and "try it from here".
+2. Parts lifting out of the parts box on the way to the board; the whole strip lighting while you carry a part.
+3. Short circuit as a flood in the circuit world; sound; code-split three.js (the bundle is about 1.4 MB).
+4. World 1 on the same bench.

@@ -284,7 +284,7 @@ function BreadboardOnDesk({ analysis, glow, dynamic }: { analysis: BoardAnalysis
   return (
     <group onWheel={onWheel}>
       <group position={BOARD_POS} scale={S}>
-        <BreadboardContents analysis={analysis} dynamic={dynamic} look="desk" supplyBox={false} />
+        <BreadboardContents analysis={analysis} dynamic={dynamic} />
         {working && <PartLabels analysis={analysis} />}
       </group>
       <group position={[BOARD_POS.x, 0, BOARD_POS.z]}>

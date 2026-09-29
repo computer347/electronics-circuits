@@ -1,0 +1,100 @@
+/*
+ * Base styles: page reset, and the pieces the notebook's lessons are built from (live labs,
+ * schematics, formulas, answer feedback), drawn in ink on paper. The front page and the desk
+ * have their own sheet (src/desk/desk.css).
+ */
+:root {
+  --signal: #0078bf;
+  --signal-dim: #5a8fb5;
+  --amber: #ff48b0;
+  --fault: #c2185b;
+  --bg: #f7f3e8;
+  --bg-raised: transparent;
+  --line: rgba(28, 10, 58, 0.28);
+  --text: #1c0a3a;
+  --text-dim: #5b5068;
+  --mono: 'Space Mono', ui-monospace, 'Courier New', monospace;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body { background: #15110d; color: var(--text); font-family: var(--mono); font-size: 14px; -webkit-font-smoothing: antialiased; }
+button { font: inherit; cursor: pointer; }
+button:disabled { opacity: 0.4; cursor: default; }
+table { width: 100%; border-collapse: collapse; }
+
+/* ---- schematics */
+.schematic { width: 100%; height: auto; max-height: 72vh; display: block; }
+.sch-part { stroke: var(--text); stroke-width: 2.4; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.sch-part .sch-body { fill: var(--bg); }
+.sch-part .sch-fill { fill: var(--text); stroke: none; }
+.sch-part text { stroke: none; font-family: var(--mono); }
+.sch-id { fill: var(--text-dim); font-size: 12px; }
+.sch-value { fill: var(--text); font-size: 13px; }
+.sch-part.hot { stroke: var(--amber); }
+.sch-part.hot .sch-fill, .sch-node.hot circle { fill: var(--amber); }
+.sch-part.hot .sch-value, .sch-node.hot text { fill: var(--amber); }
+.sch-dot, .sch-node circle { fill: var(--text); }
+.sch-node text { fill: var(--signal); font-size: 13px; font-family: var(--mono); font-weight: 700; }
+
+/* ---- lesson text and answers */
+code.formula { font-family: var(--mono); font-size: 0.92em; color: var(--text); background: rgba(255, 232, 0, 0.45); padding: 0 0.25em; white-space: nowrap; }
+.verdict { margin: 0.5em 0 0; font-weight: 700; }
+.verdict.good { color: #0b7a3b; }
+.verdict.bad { color: var(--fault); }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.presets button { border: 1.5px solid var(--line); border-radius: 0; background: transparent; color: var(--text); padding: 3px 10px; font-size: 12px; }
+.presets button.active { background: #ffe800; border-color: var(--text); }
+
+/* ---- live labs: a circuit above its sliders and readings */
+.lab { display: grid; grid-template-columns: 1fr; gap: 0.6em; }
+.lab-figure { display: grid; place-items: center; }
+.lab-figure svg { width: 100%; max-height: 11em; }
+.lab-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.lab-controls { display: flex; flex-direction: column; gap: 8px; }
+.lab-control { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; font-size: 12px; }
+.lab-control-label { grid-column: 1 / -1; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em; font-size: 11px; }
+.lab-control input[type='range'] { width: 100%; accent-color: var(--signal); }
+.lab-control b { color: var(--signal); font-weight: 700; min-width: 64px; text-align: right; font-variant-numeric: tabular-nums; }
+.lab-toggle { grid-column: 1 / -1; margin: 0; }
+.lab-readings { display: flex; flex-direction: column; gap: 4px; }
+.lab-reading { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; color: var(--text-dim); border-bottom: 1px solid rgba(28, 10, 58, 0.15); padding: 3px 0; }
+.lab-reading b { color: var(--text); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lab-reading.good b { color: var(--signal); }
+.lab-reading.bad b { color: var(--fault); }
+.lab-reading.warn b { color: var(--amber); }
+.lab-note { margin: 0; font-size: 11px; color: var(--text-dim); }
+.lab-note.bad { color: var(--fault); }
+.lab-led { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--text-dim); }
+.lab-led-dome {
+  width: 18px; height: 18px; border-radius: 50% 50% 40% 40%; border: 1px solid #7a1a1a;
+  background: color-mix(in srgb, #ff3b30 calc(var(--glow) * 100%), #5a1d1d);
+  box-shadow: 0 0 calc(var(--glow) * 18px) calc(var(--glow) * 4px) rgba(255, 70, 50, calc(var(--glow) * 0.8));
+}
+.lab-led.burnt .lab-led-dome { background: #2a2a2a; border-color: #555; box-shadow: none; }
+.lab-led.burnt .lab-led-text, .lab-led.bright .lab-led-text { color: var(--fault); }
+.lab-led.lit .lab-led-text { color: var(--signal); }
+.lab-flow { height: 10px; border: 1px solid var(--line); overflow: hidden; margin-top: 4px; }
+.lab-flow-dots {
+  display: block; height: 100%; width: 200%;
+  background: radial-gradient(circle, var(--signal) 0 2px, transparent 2.5px) 0 50% / 16px 10px repeat-x;
+  animation: lab-flow linear infinite;
+}
+@keyframes lab-flow { from { transform: translateX(-50%); } to { transform: translateX(0); } }
+.lab-budget { position: relative; height: 16px; border: 1px solid var(--line); overflow: hidden; }
+.lab-budget span { position: absolute; inset: 0 auto 0 0; background: rgba(0, 120, 191, 0.35); }
+.lab-budget span.bad { background: rgba(255, 72, 176, 0.55); }
+.lab-budget em { position: relative; font-style: normal; font-size: 10px; padding-left: 6px; line-height: 16px; color: var(--text); }
+.lab-bar { position: relative; height: 70px; width: 22px; border: 1px solid var(--line); align-self: flex-end; }
+.lab-bar span { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(0, 120, 191, 0.45); }
+.lab-bar em { position: absolute; top: -2px; right: 28px; font-style: normal; font-size: 10px; color: var(--text-dim); }
+.rc-plot { width: 100%; }
+.rc-plot .grid { stroke: rgba(0, 120, 191, 0.15); }
+.rc-plot .axis { stroke: var(--line); }
+.rc-plot .window { fill: rgba(255, 72, 176, 0.1); }
+.rc-plot .mark { stroke: var(--amber); stroke-dasharray: 3 4; }
+.rc-plot .trace { fill: none; stroke: var(--amber); stroke-width: 3; }
+.rc-plot .label { fill: var(--amber); font-size: 11px; font-family: var(--mono); }
+.rc-plot .label.dim { fill: var(--text-dim); }
+
+@media (prefers-reduced-motion: reduce) { .lab-flow-dots { animation: none; } }

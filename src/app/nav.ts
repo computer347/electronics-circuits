@@ -1,34 +1,12 @@
 /**
- * Which screen is showing. A store rather than App state so a level can open its class
- * and a class can start its level without threading callbacks through every view.
+ * Which screen is showing: the front page, or the desk (where everything else happens).
+ * A store rather than App state so any view can send you back to the front page.
  */
 import { create } from 'zustand';
-import { useSession } from '../levels/session';
-import type { Tab } from './menu';
 
-interface Nav {
-  tab: Tab;
-  /** The class open in Learn (null shows the class list). */
-  classId: string | null;
-  go: (tab: Tab) => void;
-  openClass: (id: string | null) => void;
-  playLevel: (levelId: string) => void;
-}
+export type Screen = 'home' | 'desk';
 
-export const useNav = create<Nav>((set) => ({
-  tab: 'home',
-  classId: null,
-  go: (tab) => {
-    // Leaving the campaign puts the sandbox bench back the way it was.
-    if (tab !== 'play') useSession.getState().exit();
-    set({ tab });
-  },
-  openClass: (id) => {
-    if (useNav.getState().tab === 'play') useSession.getState().exit();
-    set({ tab: 'learn', classId: id });
-  },
-  playLevel: (levelId) => {
-    set({ tab: 'play' });
-    useSession.getState().start(levelId);
-  },
+export const useNav = create<{ screen: Screen; go: (screen: Screen) => void }>((set) => ({
+  screen: 'home',
+  go: (screen) => set({ screen }),
 }));

@@ -221,38 +221,9 @@
 .part-model .callout-layer, .desk-label-layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
 .callout { display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px 2px 2px; background: var(--r-paper); color: var(--r-ink); font-family: var(--r-mono); font-size: 12px; font-weight: 700; white-space: nowrap; box-shadow: 2px 2px 0 var(--r-blue); }
 .callout i { font-style: normal; display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--r-pink); color: var(--r-paper); font-family: var(--r-display); font-size: 12px; }
-/*
- * Labs and schematics on the page are drawn in ink on paper: the same components as the old
- * Learn tab, with the phosphor palette swapped for riso inks (they are all colour variables).
- */
-.nb {
-  --signal: #0078bf; --signal-dim: #5a8fb5; --amber: #ff48b0; --fault: #c2185b;
-  --bg: #f7f3e8; --bg-raised: transparent; --line: rgba(28, 10, 58, 0.28);
-  --text: #1c0a3a; --text-dim: #5b5068; --mono: 'Space Mono', ui-monospace, monospace;
-}
+/* Labs and schematics on the page (their ink-on-paper styles are in app/base.css). */
 .nb-lab, .nb-schematic { margin: 0.5em 0; padding: 0.3em; color: var(--text); font-family: var(--mono); font-size: 0.85em; border: 1.5px solid rgba(28, 10, 58, 0.35); background: rgba(255, 255, 255, 0.35); }
 .nb-lab svg, .nb-schematic svg { max-width: 100%; height: auto; }
-.nb .lab { grid-template-columns: 1fr; gap: 0.6em; padding: 0.4em; border: 0; background: transparent; }
-.nb .lab-figure { background: transparent; border: 0; min-height: 0; padding: 0; }
-.nb .lab-figure svg { max-height: 11em; }
-.nb .sch-part { stroke-width: 2.4; }
-.nb .sch-part { stroke: var(--text); }
-.nb .sch-part .sch-fill, .nb .sch-dot, .nb .sch-node circle { fill: var(--text); }
-.nb .sch-node text { fill: var(--signal); }
-.nb .sch-part.hot { stroke: var(--amber); filter: none; }
-.nb .sch-node.hot circle { filter: none; }
-.nb .lab-control input[type='range'] { accent-color: var(--r-blue); }
-.nb .lab-control b, .nb .lab-reading.good b { color: var(--r-blue); }
-.nb .lab-reading { border-bottom-color: rgba(28, 10, 58, 0.15); }
-.nb .lab-budget span { background: rgba(0, 120, 191, 0.35); }
-.nb .lab-budget span.bad { background: rgba(255, 72, 176, 0.55); }
-.nb .lab-bar span { background: rgba(0, 120, 191, 0.45); }
-.nb .lab-led-dome { border-color: #7a1a1a; }
-.nb .rc-plot .grid { stroke: rgba(0, 120, 191, 0.15); }
-.nb .rc-plot .trace { stroke: var(--r-pink); filter: none; stroke-width: 3; }
-.nb .lab-toggle button, .nb .presets button { border-radius: 0; border-color: rgba(28, 10, 58, 0.4); color: var(--text); }
-.nb .lab-toggle button.active { background: var(--r-yellow); border-color: var(--text); color: var(--text); }
-.nb code.formula { background: rgba(255, 232, 0, 0.45); color: var(--text); border: 0; padding: 0 0.25em; font-family: var(--mono); }
 .nb-try { font-weight: 700; padding: 0.5em 0.7em; background: rgba(255, 232, 0, 0.55); }
 .nb-q { font-weight: 700; margin-bottom: 0.4em; }
 .nb-check { padding-left: 1.3em; margin: 0.5em 0; }
