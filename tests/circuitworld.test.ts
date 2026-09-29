@@ -114,3 +114,26 @@ describe('a fix inside', () => {
     expect(after.plazas[1]!.height).not.toBeCloseTo(before.plazas[1]!.height, 1);
   });
 });
+
+describe('using things and finding the way', () => {
+  it('offers the door to turn round, and the power panel', async () => {
+    const { targets } = await import('../src/circuitworld/interact');
+    const t = targets(world(startingBoard(L2)));
+    expect(t.map((x) => x.kind).sort()).toEqual(['door', 'panel']);
+    expect(targets(world(flipped(startingBoard(L2), 'LED1'))).map((x) => x.kind)).toEqual(['panel']);
+  });
+
+  it('routes to a place along passable links, never through a shut door', async () => {
+    const { routeTo } = await import('../src/circuitworld/interact');
+    const shut = world(startingBoard(L2));
+    const s = spawnWalker(shut);
+    expect(routeTo(shut, s, 1).length).toBeGreaterThan(1);
+    // With the door shut, the floor is still reachable, but only back down the supply's stair.
+    const down = routeTo(shut, s, 2);
+    const door = shut.links[2]!;
+    expect(down.some((p) => door.path.includes(p))).toBe(false);
+    expect(down.some((p) => shut.links[0]!.path.includes(p))).toBe(true);
+    const open = world(flipped(startingBoard(L2), 'LED1'));
+    expect(routeTo(open, spawnWalker(open), 2).length).toBeGreaterThan(2);
+  });
+});

@@ -251,6 +251,12 @@ Stars stay as they are on the bench (spec, no hints / nothing burnt, par); the r
 
 Each step is playable and committed on its own.
 
+## Status (2026-09-30)
+
+Built (steps 1–4, most of 5): `world.ts` (voltage as height), `walker.ts` (the controller), `interact.ts` (usable things, routes), `WorldView.tsx` (drawing), `CircuitWorld.tsx` (the mode). You spawn at the top of the supply's stair; WASD / mouse look with pointer lock (drag to look without it), ← → turn, Shift, C; Q or right button scans every place and part; E or click uses (turn a backwards door round, hold a drawbridge, the power panel); Tab shows the map, click a place to walk there; the objective line and the Use prompt say what's next; a first-time controls card. A fix re-solves the board: heights change, plazas stay put, and you fall to the new floor. Power on sends the current round and scores the level. Tested in `tests/circuitworld.test.ts`; screenshots 70–78.
+
+Not yet: touch controls and settings (step 5), the challenge (step 6), stakes (step 7), set pieces (step 8).
+
 ## Decisions (Mike, 2026-09-30: all as recommended)
 
 1. **Voltage is height.** Every point stands at its voltage, 1 V = 1 m.

@@ -11,6 +11,7 @@
  *
  * Pure data, no three.js: the renderer draws it and the walker walks on it.
  */
+import * as THREE from 'three';
 import type { BoardAnalysis, BoardState } from '../breadboard/model';
 import { buildMap, type CircuitMap, type Room } from './map';
 
@@ -251,4 +252,21 @@ export function floorsAt(w: World, x: number, z: number): number[] {
     if (f !== undefined) out.push(f);
   }
   return out.sort((a, b) => b - a);
+}
+
+/** A 3D point along a link at fraction t (on its floor, or at h0 where there's a gap). */
+export function linkPoint(l: Link, t: number): THREE.Vector3 {
+  let acc = 0;
+  const segs = l.path.slice(1).map((p, i) => { const a = l.path[i]!; const len = Math.hypot(p[0] - a[0], p[1] - a[1]); const s = { a, b: p, len, from: acc }; acc += len; return s; });
+  const target = t * acc;
+  const seg = segs.find((s) => target <= s.from + s.len) ?? segs[segs.length - 1]!;
+  const u = seg.len ? (target - seg.from) / seg.len : 0;
+  const y = linkFloor(l, t) ?? l.h0;
+  return new THREE.Vector3(seg.a[0] + (seg.b[0] - seg.a[0]) * u, y, seg.a[1] + (seg.b[1] - seg.a[1]) * u);
+}
+
+/** Heading of a link at fraction t, as a rotation about y (local +x along the path). */
+export function linkYaw(l: Link, t: number): number {
+  const a = linkPoint(l, Math.max(0, t - 0.02)), b = linkPoint(l, Math.min(1, t + 0.02));
+  return Math.atan2(-(b.z - a.z), b.x - a.x);
 }
