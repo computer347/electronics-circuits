@@ -7,8 +7,8 @@
 export type StepId = 'task' | 'build' | 'test' | 'clear';
 export const STEPS: StepId[] = ['task', 'build', 'test', 'clear'];
 
-/** The objects on the desk you can bring into focus. */
-export type DeskObject = 'notebook' | 'breadboard' | 'meter' | 'corkboard';
+/** The objects on the desk you can bring into focus. The scope is an extra tool, outside the four steps. */
+export type DeskObject = 'notebook' | 'breadboard' | 'meter' | 'corkboard' | 'scope';
 
 export const STEP_OBJECT: Record<StepId, DeskObject> = {
   task: 'notebook',
@@ -72,6 +72,7 @@ const OPEN_LABEL: Record<DeskObject, string> = {
   breadboard: 'Go to the breadboard',
   meter: 'Test it',
   corkboard: 'Next level',
+  scope: 'Look at the scope',
 };
 
 /** The single blue button in the bottom-right corner, for what's in focus right now. */
@@ -83,6 +84,7 @@ export function mainAction(p: LoopProgress, focus: DeskObject | null): MainActio
     if (cur === 'test') return { kind: 'submit', label: canSubmit(p) ? 'Submit' : 'Measure first', enabled: canSubmit(p) };
     return { kind: 'back', label: 'Back to the desk' };
   }
+  if (focus === 'scope') return { kind: 'back', label: 'Back to the desk' };
   // On the level map the button plays the suggested level (the view names it).
   if (focus === 'corkboard') return { kind: 'pick-level', label: 'Play' };
   const next = glowing(p);

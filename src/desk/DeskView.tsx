@@ -14,6 +14,10 @@ import { useProgress } from '../levels/progress';
 import { useSession, type Attempt } from '../levels/session';
 import type { LevelDef } from '../levels/types';
 import { reducedMotion } from './anim';
+import { bench as liveBench, startLiveBench, useLive } from '../breadboard/live';
+import { isDynamicBoard } from '../breadboard/model';
+import { SandboxTray } from './SandboxTray';
+import { ScopeControls } from './ScopeControls';
 import { isUnlocked, followingLevel, nextLevel } from './levelPick';
 import { DIAL, meteredBoard, readMeter } from './meter';
 import { spreads } from './notebook';
@@ -101,6 +105,12 @@ export function DeskView({ onMenu }: { onMenu: () => void }) {
   const meterMode = useDesk((s) => s.meterMode);
   // With the dial on A the meter is part of the circuit (a wire between the probes), so solve it in.
   const analysis = useMemo(() => analyzeBoard(meteredBoard(board, meterMode, probes)), [board, meterMode, probes]);
+  // Boards that change over time (capacitors, generators) run the live transient bench: the
+  // scope draws it, LEDs follow it, and the meter's volts come from it.
+  const dynamic = isDynamicBoard(board);
+  const live = useLive((st) => (dynamic ? st.result : null));
+  const sandbox = desk.mode === 'sandbox';
+  useEffect(() => startLiveBench(), []);
   const [fonts, setFonts] = useState(false);
   const labelLayer = useRef<HTMLDivElement>(null);
   const [printed, setPrinted] = useState(false);
@@ -112,7 +122,7 @@ export function DeskView({ onMenu }: { onMenu: () => void }) {
     const recs = useProgress.getState().levels;
     const id = d.levelId ?? nextLevel(recs) ?? WORLD0[0]!.id;
     const startOn = d.startOn;
-    if (useSession.getState().levelId !== id) d.enter(id);
+    if (d.mode !== 'sandbox' && useSession.getState().levelId !== id) d.enter(id);
     useDesk.setState({ startOn: null });
     if (startOn === 'theory') useDesk.getState().openNotebook('theory');
     else if (startOn === 'practice') useDesk.getState().openNotebook('math', spreads(levelById(id)!, 'math').length - 1);
@@ -147,17 +157,22 @@ export function DeskView({ onMenu }: { onMenu: () => void }) {
     if (desk.focus === 'breadboard' && (bench.tool !== 'select' || bench.pending || bench.moving)) { bench.cancelMove(); bench.setTool('select'); return; }
     if (desk.focus) desk.focusOn(null);
   };
-  const reading = useMemo(
-    () => readMeter(board, meterMode, probes, { ok: analysis.result.ok, voltageAt: analysis.voltageAt, currents: analysis.result.currents }),
-    [board, meterMode, probes, analysis],
-  );
+  const reading = useMemo(() => {
+    const useLiveVolts = dynamic && meterMode === 'V' && live?.ok;
+    const solved = useLiveVolts
+      ? { ok: true, voltageAt: (h: string) => liveBench.voltageAt(live, h), currents: live!.currents }
+      : { ok: analysis.result.ok, voltageAt: analysis.voltageAt, currents: analysis.result.currents };
+    return readMeter(board, meterMode, probes, solved);
+  }, [board, meterMode, probes, analysis, dynamic, live]);
 
   // The suggested level on the map: the next one after this, once this one's passed.
   const suggested = records[level.id] ? followingLevel(level.id, records) ?? nextLevel(records) ?? level.id : level.id;
   const suggestedLevel = levelById(suggested)!;
   const playLevel = (id: string) => { desk.enter(id); };
 
-  const main = mainAction(loop, desk.focus);
+  const main: ReturnType<typeof mainAction> = sandbox
+    ? (desk.focus ? { kind: 'back', label: 'Back to the desk' } : { kind: 'focus', object: 'breadboard', label: 'Go to the breadboard' })
+    : mainAction(loop, desk.focus);
   const mainLabel = main.kind === 'pick-level' ? `Play ${suggestedLevel.world}–${suggestedLevel.number} ${suggestedLevel.title}` : main.label;
   function runMain() {
     switch (main.kind) {
@@ -204,14 +219,15 @@ export function DeskView({ onMenu }: { onMenu: () => void }) {
   // The box holds the level's parts, plus one LED per spare.
   const boxItems: BoxItem[] = [...BOX.filter((k) => level.tools.includes(k)), ...Array.from({ length: spares ?? 0 }, () => 'led' as const)];
   const start = startingBoard(level);
-  const diveHole = (start.parts.find((p) => level.pinned?.includes(p.id)) ?? start.parts.find((p) => p.kind === 'led' || p.kind === 'capacitor') ?? start.parts[0])?.h1 ?? 'e15';
+  const diveHole = sandbox ? (parts.find((p) => p.kind === 'led' || p.kind === 'capacitor') ?? parts[0])?.h1 ?? 'e15' : (start.parts.find((p) => level.pinned?.includes(p.id)) ?? start.parts.find((p) => p.kind === 'led' || p.kind === 'capacitor') ?? start.parts[0])?.h1 ?? 'e15';
   const step = currentStep(loop);
 
   if (desk.phase === 'clear') {
     const r = desk.result;
     return (
       <div className="desk">
-        <CircuitWorld rail={<StepRail interactive={false} />} onCleared={() => desk.finishClear()} onGiveUp={() => desk.finishClear()} />
+        <CircuitWorld rail={sandbox ? null : <StepRail interactive={false} />}
+          onCleared={() => (sandbox ? desk.returnToDesk() : desk.finishClear())} onGiveUp={() => (sandbox ? desk.returnToDesk() : desk.finishClear())} />
         {r && (
           <div className="desk-result" role="dialog" aria-label="Level result">
             {r.check.pass ? (
@@ -251,7 +267,9 @@ export function DeskView({ onMenu }: { onMenu: () => void }) {
           <DeskScene
             analysis={analysis}
             reading={reading}
-            glow={desk.phase === 'desk' && desk.focus === null && desk.tour === null ? glowing(loop) : null}
+            glow={!sandbox && desk.phase === 'desk' && desk.focus === null && desk.tour === null ? glowing(loop) : null}
+            dynamic={dynamic}
+            onFreeBench={() => desk.enterSandbox()}
             page={page}
             levelNumber={level.number}
             passed={passed}
@@ -268,11 +286,11 @@ export function DeskView({ onMenu }: { onMenu: () => void }) {
       {!printed && <div className="desk-print" aria-hidden><i /><i /><i /></div>}
       {desk.phase === 'dive' && <div className="desk-dive" aria-hidden><i /><i /><i /><i /><span>1 : 1 000 000 000</span></div>}
 
-      <StepRail interactive={desk.phase === 'desk'} />
-      <p className="desk-level">{level.world}–{level.number} {level.title}
+      {!sandbox && <StepRail interactive={desk.phase === 'desk'} />}
+      <p className="desk-level">{sandbox ? 'Free bench' : `${level.world}–${level.number} ${level.title}`}
         {desk.phase === 'desk' && desk.tour === null && <button className="desk-tour-btn" onClick={() => desk.setTour(0)}>Tour</button>}
       </p>
-      {desk.phase === 'desk' && desk.tour === null && (
+      {!sandbox && desk.phase === 'desk' && desk.tour === null && (
         <div className="desk-extras"><SpareLeds />{step !== 'done' && <HintNote key={level.id} level={level} />}</div>
       )}
       {stop && (
@@ -298,8 +316,12 @@ export function DeskView({ onMenu }: { onMenu: () => void }) {
           Learn this first: {cls.title} →
         </button>
       )}
-      {desk.phase === 'desk' && desk.focus === 'breadboard' && <PartsTray level={level} />}
-      {desk.phase === 'desk' && (desk.focus === 'breadboard' || desk.focus === 'meter') && (
+      {desk.phase === 'desk' && desk.focus === 'breadboard' && (sandbox ? <SandboxTray /> : <PartsTray level={level} />)}
+      {desk.phase === 'desk' && desk.focus === 'scope' && <ScopeControls />}
+      {sandbox && desk.phase === 'desk' && desk.focus === 'breadboard' && parts.length > 0 && (
+        <button className="desk-link" onClick={() => { useBench.getState().setTool('select'); desk.setPhase('dive'); }}>Go inside your circuit →</button>
+      )}
+      {desk.phase === 'desk' && (desk.focus === 'breadboard' || desk.focus === 'meter' || desk.focus === 'scope') && (
         <div className="desk-zoom" aria-label="Zoom">
           <button onClick={() => desk.setZoom(desk.zoom * 1.4)} aria-label="Zoom in">+</button>
           <button onClick={() => desk.setZoom(desk.zoom / 1.4)} disabled={desk.zoom <= 1} aria-label="Zoom out">−</button>

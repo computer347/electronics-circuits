@@ -1,7 +1,7 @@
 /** The desk top, the floor, the back wall with the corkboard (the level map) and the riso poster. */
 import { RoundedBox } from '@react-three/drei';
 import { WORLD0_PLAN } from '../../levels';
-import { corkTexture, levelCardTexture, posterTexture, wallTexture, woodTexture } from './textures';
+import { corkTexture, freeBenchCardTexture, levelCardTexture, posterTexture, wallTexture, woodTexture } from './textures';
 
 export const DESK = { width: 1.7, depth: 0.86, thickness: 0.04, frontZ: 0.4, wallZ: -0.46 } as const;
 
@@ -36,10 +36,12 @@ export function Wall() {
 }
 
 /** The level map: a corkboard with one card per World 0 level, the current one ringed. */
-export function Corkboard({ current, passed, unlocked, onPick }: {
+export function Corkboard({ current, passed, unlocked, onPick, onFreeBench }: {
   current: number; passed: Set<number>; unlocked: Set<number>;
   /** Set while the map is in focus: a click on an open card plays it. */
   onPick?: (n: number) => void;
+  /** The last card: the free bench, always open. */
+  onFreeBench?: () => void;
 }) {
   return (
     <group>
@@ -52,7 +54,7 @@ export function Corkboard({ current, passed, unlocked, onPick }: {
       </mesh>
       {WORLD0_PLAN.map((l, i) => {
         const state = l.number === current ? 'here' : passed.has(l.number) ? 'done' : unlocked.has(l.number) ? 'open' : 'later';
-        const x = -0.24 + i * 0.12, y = i % 2 ? -0.03 : 0.03;
+        const x = -0.26 + i * 0.105, y = i % 2 ? -0.03 : 0.03;
         const canPick = !!onPick && unlocked.has(l.number);
         return (
           <group key={l.number} position={[x, y, 0.012]} rotation={[0, 0, (i % 3 - 1) * 0.05]}
@@ -70,6 +72,17 @@ export function Corkboard({ current, passed, unlocked, onPick }: {
           </group>
         );
       })}
+      {/* the free bench: a blue card at the end, always open */}
+      <group position={[0.265, 0.03, 0.012]} rotation={[0, 0, 0.06]}
+        onClick={onFreeBench ? (e) => { e.stopPropagation(); onFreeBench(); } : undefined}
+        onPointerOver={onFreeBench ? () => { document.body.style.cursor = 'pointer'; } : undefined}
+        onPointerOut={onFreeBench ? () => { document.body.style.cursor = ''; } : undefined}>
+        <mesh castShadow>
+          <planeGeometry args={[0.1, 0.078]} />
+          <meshStandardMaterial map={freeBenchCardTexture()} roughness={0.9} />
+        </mesh>
+        <mesh position={[0, 0.03, 0.006]}><sphereGeometry args={[0.006, 12, 8]} /><meshStandardMaterial color="#ffe800" roughness={0.3} /></mesh>
+      </group>
     </group>
   );
 }

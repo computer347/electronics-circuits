@@ -37,6 +37,9 @@ interface DeskStore {
    * or its practice page (Practice). Null opens on the desk itself.
    */
   startOn: 'map' | 'theory' | 'practice' | null;
+  /** A level (the four-step loop) or the free bench (build anything, nothing scored). */
+  mode: 'level' | 'sandbox';
+  enterSandbox: () => void;
   /** Where the multimeter's dial points. */
   meterMode: MeterMode;
   setMeterMode: (m: MeterMode) => void;
@@ -69,6 +72,15 @@ export const useDesk = create<DeskStore>((set, get) => ({
   flags: FRESH_FLAGS,
   result: null,
   meterMode: 'V',
+  mode: 'level',
+  enterSandbox: () => {
+    // Leaving a level puts the sandbox board back (the session stashed it when the level started).
+    useSession.getState().exit();
+    const bench = useBench.getState();
+    bench.setRules({ locked: [], pinned: [], spares: null });
+    bench.setTool('select');
+    set({ mode: 'sandbox', levelId: null, focus: null, phase: 'desk', flags: FRESH_FLAGS, result: null, tour: null, zoom: 1 });
+  },
   startOn: null,
   tour: null,
   setTour: (tour) => { if (tour !== null) get().focusOn(null); set({ tour }); },
@@ -85,12 +97,12 @@ export const useDesk = create<DeskStore>((set, get) => ({
   enter: (levelId) => {
     useSession.getState().start(levelId);
     useBench.getState().setTool('select');
-    set({ levelId, focus: null, phase: 'desk', flags: FRESH_FLAGS, result: null, meterMode: 'V', nbSection: 'task', nbPage: 0, tour: null });
+    set({ mode: 'level', levelId, focus: null, phase: 'desk', flags: FRESH_FLAGS, result: null, meterMode: 'V', nbSection: 'task', nbPage: 0, tour: null });
   },
   focusOn: (focus) => {
     const bench = useBench.getState();
-    // The meter view is where you probe; everywhere else a click selects.
-    bench.setTool(focus === 'meter' ? 'probe' : 'select');
+    // The meter view is where you probe, the scope view where you clip scope probes; elsewhere a click selects.
+    bench.setTool(focus === 'meter' ? 'probe' : focus === 'scope' ? 'scope' : 'select');
     bench.select(null);
     // Picking something up ends the tour.
     set({ focus, zoom: 1, ...(focus ? { tour: null } : {}) });
@@ -114,7 +126,7 @@ export const useDesk = create<DeskStore>((set, get) => ({
   returnToDesk: () => { get().focusOn(null); set({ phase: 'desk' }); },
   leave: () => {
     useSession.getState().exit();
-    set({ levelId: null, focus: null, phase: 'desk', flags: FRESH_FLAGS, result: null });
+    set({ mode: 'level', levelId: null, focus: null, phase: 'desk', flags: FRESH_FLAGS, result: null });
   },
 }));
 

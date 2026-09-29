@@ -326,3 +326,21 @@
 .star-rules li small { grid-column: 2; }
 .star-rule-stars { grid-row: span 2; color: rgba(28, 10, 58, 0.3); }
 .star-rules li.met .star-rule-stars { color: var(--r-pink); }
+
+/* ------------------------------------------------------------ free bench tray, scope controls */
+.tray-tools .tray-more { width: auto; padding: 6px 12px; background: var(--r-blue); color: var(--r-paper); font-size: 12px; box-shadow: 3px 3px 0 var(--r-pink); }
+.tray-tools .tray-more:hover { color: var(--r-paper); }
+.tray-colors { display: inline-flex; gap: 6px; padding: 6px 8px; background: var(--r-paper); box-shadow: 3px 3px 0 var(--r-blue); }
+.tray-colors button { width: 22px; height: 22px; border-radius: 50%; border: 2px solid rgba(28, 10, 58, 0.25); padding: 0; }
+.tray-colors button.on { border-color: var(--r-ink); box-shadow: 0 0 0 2px var(--r-paper), 0 0 0 4px var(--r-pink); }
+.tray-shapes { display: inline-flex; background: var(--r-paper); box-shadow: 3px 3px 0 var(--r-blue); }
+.tray-shapes button { border: 0; border-radius: 0; background: none; color: var(--r-ink); font-family: var(--r-mono); font-size: 12px; font-weight: 700; padding: 8px 10px; }
+.tray-shapes button.on { background: var(--r-yellow); }
+.tray-bench { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; color: var(--r-paper); font-family: var(--r-mono); font-size: 12px; font-weight: 700; }
+.tray-bench label { display: inline-flex; align-items: center; gap: 6px; }
+.tray-bench select { font: inherit; font-weight: 400; padding: 6px; border: 0; border-radius: 0; background: var(--r-paper); color: var(--r-ink); box-shadow: 3px 3px 0 var(--r-blue); }
+.scope-stepper small { padding: 2px 6px; font-family: var(--r-mono); font-weight: 700; font-size: 11px; background: rgba(28, 10, 58, 0.12); color: var(--r-ink); }
+/* The scope's knobs sit in a column on the left, clear of the board. */
+.scope-tray { position: fixed; left: 20px; top: 76px; z-index: 12; display: grid; gap: 10px; justify-items: start; }
+.scope-tray-knobs { display: grid; gap: 8px; justify-items: start; }
+.desk-zoom { top: auto; bottom: 110px; transform: none; }

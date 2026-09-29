@@ -331,3 +331,28 @@ describe('stars and hints on the desk', () => {
     expect(useDesk.getState().finishClear()?.stars).toBe(1);
   });
 });
+
+describe('free bench', () => {
+  it('leaves the level, keeps the sandbox board, and scores nothing', () => {
+    useDesk.getState().leave();
+    useBench.getState().load({ supply: { volts: 9, on: true }, parts: [{ id: 'MINE', kind: 'wire', h1: 'a1', h2: 'a5' }] });
+    useDesk.getState().enter(L2.id);
+    expect(useBench.getState().parts.some((p) => p.id === 'MINE')).toBe(false);
+    useDesk.getState().enterSandbox();
+    expect(useDesk.getState().mode).toBe('sandbox');
+    expect(useSession.getState().levelId).toBeNull();
+    expect(useBench.getState().parts.map((p) => p.id)).toEqual(['MINE']);
+    expect(useBench.getState().locked).toEqual([]);
+    // Picking a level from the corkboard goes back to level mode.
+    useDesk.getState().enter(L2.id);
+    expect(useDesk.getState().mode).toBe('level');
+    useDesk.getState().leave();
+  });
+
+  it('puts the scope probes on in the scope view', () => {
+    useDesk.getState().focusOn('scope');
+    expect(useBench.getState().tool).toBe('scope');
+    expect(mainAction(FRESH, 'scope').kind).toBe('back');
+    useDesk.getState().focusOn(null);
+  });
+});

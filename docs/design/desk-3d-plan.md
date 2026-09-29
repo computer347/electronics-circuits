@@ -49,10 +49,18 @@ Front page (riso poster) → Continue → desk → notebook (task) → breadboar
 - Meter reaches every mode (the dial bounced between Ω and A); smooth wires; labels over parts, a stats card on click, zoom at the board.
 - Not yet seen in a browser: sessions 2 and 3.
 
+### Session 4
+
+- Hints (sticky note, first one asks before it costs the second star), spare LEDs, and the star rules spelled out on the result card.
+- Browser pass with fixes: LED light scaled to the desk board, meter leads with slack, part close-ups fit their page, page turn via clip-path, HTML label layers.
+- Front page: Play → corkboard, Learn → notebook Theory, Practice → notebook practice page (any exam topic). Labs, schematics and worked examples drawn in ink on paper.
+- Oscilloscope on the bench (live LCD, yellow CH1 / cyan CH2, time and volts knobs, Run/Stop, probe leads to the clipped holes). The live transient bench runs on the desk: capacitors charge on the scope, the meter's volts follow it, LEDs on changing boards glow with it. Level 0–5 is fully playable with its curve.
+- Free bench: the blue card on the corkboard. Every part (four at a glance, "More" for the rest), value pickers, turn round / take out, supply voltage, the example circuits, the scope, and "Go inside your circuit" to walk it. Nothing is scored.
+- Screenshots 20–55.
+
 ### Next
 
-1. Browser pass over the bench, the tour, the notebook sections and all five levels, with screenshots; tune layout, lighting and sizes from what it shows.
-2. Scripted replays (clips): a timeline of camera moves, board changes, meter readings and captions played on the real bench and inside the circuit, with pause, scrub and "try it from here". Author one for 0–2 first, then one per lesson step, shown as a "watch" page in Theory.
-3. An oscilloscope on the bench for level 0–5.
-4. Parts lifting out of the parts box on the way to the board; the whole strip lighting while you carry a part.
-5. Short circuit as a flood in the circuit world. Retire the old tabs once World 0 has been played on the desk; code-split three.js; sound.
+1. Retire the old tabs (Play, Learn, Drills, Sandbox, Solver bench), the boot-terminal title screen and the CSS only they use. Keep the solver bench reachable as a dev tool if wanted.
+2. Scripted replays (clips) for the lessons.
+3. Parts lifting out of the parts box on the way to the board; the whole strip lighting while you carry a part.
+4. Short circuit as a flood in the circuit world; code-split three.js (the bundle is about 1.4 MB); sound.

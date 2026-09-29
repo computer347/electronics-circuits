@@ -7,6 +7,7 @@ export const TAGS: Record<DeskObject, [string, string]> = {
   breadboard: ['Breadboard', 'build or fix'],
   meter: ['Multimeter', 'test it'],
   corkboard: ['Level map', 'pick a level'],
+  scope: ['Oscilloscope', 'watch it change'],
 };
 
 interface Hover {

@@ -604,7 +604,8 @@ export function BreadboardContents({ analysis, dynamic, look = 'phosphor', suppl
       )}
       {probes.red && <Probe h={probes.red} color="#e8413c" />}
       {probes.black && <Probe h={probes.black} color="#222" />}
-      {scopeProbes.ch1 && <ScopeProbe h={scopeProbes.ch1} color="#39ff88" label="CH1" />}
+      {/* Scope probes in their trace colours: phosphor green on the old bench, yellow like a real scope on the desk. */}
+      {scopeProbes.ch1 && <ScopeProbe h={scopeProbes.ch1} color={look === 'desk' ? '#ffd21f' : '#39ff88'} label="CH1" />}
       {scopeProbes.ch2 && <ScopeProbe h={scopeProbes.ch2} color="#3ad7ff" label="CH2" />}
     </LookContext.Provider>
   );

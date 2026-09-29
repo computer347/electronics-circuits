@@ -17,7 +17,9 @@ import { Lamp } from './assets/Lamp';
 import { JACKS, Lead, METER, Multimeter } from './assets/Multimeter';
 import { Notebook, NOTEBOOK } from './assets/Notebook';
 import { PartsBox, type BoxItem } from './assets/PartsBox';
+import { BenchScope, BNC, TRACE } from './assets/BenchScope';
 import { BenchSupply } from './assets/BenchSupply';
+import type { ScopeCh } from '../instruments/scope';
 import { Cutters, LedBag, PartsDrawers, ResistorTape, Tweezers } from './assets/Clutter';
 import { AntistaticMat } from './assets/Mat';
 import { HelpingHands, SolderingStation, SolderSpool } from './assets/Soldering';
@@ -62,6 +64,8 @@ function poseFor(focus: DeskObject | null, phase: DeskPhase, cam: THREE.Perspect
   if (phase === 'dive') return { pos: diveAt.clone().add(new THREE.Vector3(0, 0.012, 0.003)), target: diveAt.clone() };
   if (phase === 'power' || focus === 'breadboard') return framePose(BOARD_CENTER, 0.36, 0.26, 64, cam);
   if (focus === 'meter') return framePose(METER_VIEW_CENTER, 0.5, 0.28, 64, cam);
+  // The scope view takes in the board and the scope's screen behind it.
+  if (focus === 'scope') return framePose(new THREE.Vector3(0.05, 0.04, -0.15), 0.6, 0.62, 55, cam, 0.92);
   if (focus === 'corkboard') return { pos: new THREE.Vector3(-0.18, 0.3, 0.22), target: new THREE.Vector3(-0.18, 0.2, DESK.wallZ) };
   // Seated at the desk (also while the notebook is presented: it comes to you).
   return framePose(DESK_CENTER, 1.2, 0.72, 60, cam, 0.86);
@@ -265,10 +269,10 @@ function MeterOnDesk({ reading, glow }: { reading: Reading; glow: boolean }) {
   );
 }
 
-function BreadboardOnDesk({ analysis, glow }: { analysis: BoardAnalysis; glow: boolean }) {
+function BreadboardOnDesk({ analysis, glow, dynamic }: { analysis: BoardAnalysis; glow: boolean; dynamic: boolean }) {
   const focus = useDesk((s) => s.focus);
   const phase = useDesk((s) => s.phase);
-  const working = (focus === 'breadboard' || focus === 'meter') && phase === 'desk';
+  const working = (focus === 'breadboard' || focus === 'meter' || focus === 'scope') && phase === 'desk';
   const w = BOARD.width * S, d = BOARD.depth * S;
   // The wheel zooms in toward the point under the pointer (only while working at the board).
   const onWheel = (e: ThreeEvent<WheelEvent>) => {
@@ -280,7 +284,7 @@ function BreadboardOnDesk({ analysis, glow }: { analysis: BoardAnalysis; glow: b
   return (
     <group onWheel={onWheel}>
       <group position={BOARD_POS} scale={S}>
-        <BreadboardContents analysis={analysis} dynamic={false} look="desk" supplyBox={false} />
+        <BreadboardContents analysis={analysis} dynamic={dynamic} look="desk" supplyBox={false} />
         {working && <PartLabels analysis={analysis} />}
       </group>
       <group position={[BOARD_POS.x, 0, BOARD_POS.z]}>
@@ -332,6 +336,27 @@ function PartLabels({ analysis }: { analysis: BoardAnalysis }) {
   );
 }
 
+/** The oscilloscope on the bench, and its probe leads to whatever holes they're clipped on. */
+function ScopeOnDesk() {
+  const probes = useBench((s) => s.scopeProbes);
+  const world = useMemo(() => new THREE.Matrix4().compose(LAYOUT.scope.pos, new THREE.Quaternion().setFromEuler(new THREE.Euler(0, LAYOUT.scope.rotY, 0)), new THREE.Vector3(1, 1, 1)), []);
+  const socket = (ch: ScopeCh) => () => BNC[ch].clone().applyMatrix4(world);
+  const tip = (h: string | null, k: number) => () => {
+    if (h) { const i = hole(h); return boardToWorld(i.x, 2.6, i.z); }
+    // Unclipped, the probes lie on the desk in front of the scope.
+    return new THREE.Vector3(LAYOUT.scope.pos.x + 0.06 + k * 0.03, 0.005, LAYOUT.scope.pos.z + 0.16);
+  };
+  return (
+    <>
+      <group position={LAYOUT.scope.pos} rotation={[0, LAYOUT.scope.rotY, 0]}>
+        <Interactive id="scope" lift={0}><BenchScope /></Interactive>
+      </group>
+      <Lead from={socket('ch1')} to={tip(probes.ch1, 0)} color={TRACE.ch1} resting={!probes.ch1} />
+      <Lead from={socket('ch2')} to={tip(probes.ch2, 1)} color={TRACE.ch2} resting={!probes.ch2} />
+    </>
+  );
+}
+
 // ---------------------------------------------------------------- scene
 
 /** The HTML layer the part labels go into (owned by the desk view, outside React's canvas wrapper). */
@@ -347,6 +372,10 @@ export interface DeskSceneProps {
   unlocked: Set<number>;
   onPickLevel: (n: number) => void;
   boxItems: BoxItem[];
+  /** The board changes over time (capacitors, generators): parts follow the live simulation. */
+  dynamic: boolean;
+  /** The corkboard's Free bench card. */
+  onFreeBench: () => void;
   /** Hole the camera dives into after a submit. */
   diveHole: string;
 }
@@ -394,13 +423,14 @@ export function DeskScene(p: DeskSceneProps) {
       <group position={LAYOUT.corkboard.pos}>
         <Interactive id="corkboard" lift={0}>
           <Glow w={0.3} d={0.15} on={p.glow === 'corkboard'} />
-          <Corkboard current={p.levelNumber} passed={p.passed} unlocked={p.unlocked} onPick={focus === 'corkboard' ? p.onPickLevel : undefined} />
+          <Corkboard current={p.levelNumber} passed={p.passed} unlocked={p.unlocked} onPick={focus === 'corkboard' ? p.onPickLevel : undefined} onFreeBench={focus === 'corkboard' ? p.onFreeBench : undefined} />
         </Interactive>
       </group>
       <group position={LAYOUT.poster.pos} rotation={[0, 0, -0.03]}><Poster /></group>
 
       <group position={LAYOUT.mat.pos}><AntistaticMat w={LAYOUT.mat.w} d={LAYOUT.mat.d} cordTo={new THREE.Vector3(-0.1, 0.002, -0.2)} /></group>
-      <BreadboardOnDesk analysis={p.analysis} glow={p.glow === 'breadboard'} />
+      <BreadboardOnDesk analysis={p.analysis} glow={p.glow === 'breadboard'} dynamic={p.dynamic} />
+      <ScopeOnDesk />
       <BenchSupply position={LAYOUT.supply.pos} rotY={LAYOUT.supply.rotY} volts={supply.volts} on={supply.on}
         amps={Math.max(0, -(p.analysis.result.currents[SUPPLY_ID] ?? 0))} pressed={submitted} plusTo={railPlus} minusTo={railMinus} />
       <NotebookOnDesk page={p.page} glow={p.glow === 'notebook'} />

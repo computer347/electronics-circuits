@@ -120,6 +120,14 @@ export const levelCardTexture = (n: number, title: string, state: 'done' | 'here
   if (state === 'later') { g.fillStyle = '#9a9186'; g.font = `bold 18px ${FONT_MONO}`; g.fillText('locked', 18, 150); }
 }));
 
+/** The corkboard's last card: the free bench. */
+export const freeBenchCardTexture = () => once('card-free', () => canvas(256, 200, (g) => {
+  g.fillStyle = INK.blue; g.fillRect(0, 0, 256, 200);
+  g.fillStyle = INK.paper; g.font = `46px ${FONT_DISPLAY}`; g.textBaseline = 'top';
+  g.fillText('FREE', 18, 18); g.fillText('BENCH', 18, 66);
+  g.font = `bold 18px ${FONT_MONO}`; g.fillText('build anything', 18, 150);
+}));
+
 /** The notebook cover: blue card with a white label. */
 export const coverTexture = () => once('cover', () => canvas(512, 700, (g) => {
   g.fillStyle = '#23406e'; g.fillRect(0, 0, 512, 700);
