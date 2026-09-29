@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { analyzeBoard, type BoardState } from '../src/breadboard/model';
 import { useBench } from '../src/breadboard/store';
 import { buildMap } from '../src/circuitworld/map';
+import { followingLevel, isUnlocked, nextLevel } from '../src/desk/levelPick';
 import { meteredBoard, readMeter, type MeterMode } from '../src/desk/meter';
+import { taskPage } from '../src/desk/taskPages';
 import { measurementsNow, useDesk } from '../src/desk/store';
 import { canSubmit, currentStep, FRESH, glowing, mainAction, railStates } from '../src/desk/steps';
 import { startingBoard, WORLD0 } from '../src/levels';
@@ -155,5 +157,72 @@ describe('multimeter modes', () => {
 
   it('shows nothing when switched off', () => {
     expect(read(fixedL2(), 'off', 'h12', 'h14').text).toBe('');
+  });
+});
+
+describe('every World 0 level on the desk', () => {
+  const L1 = WORLD0[0]!, L5 = WORLD0[4]!;
+  const map = (b: BoardState) => buildMap(b, analyzeBoard(b));
+
+  it('opens levels in order and suggests the next one', () => {
+    expect(isUnlocked(1, {})).toBe(true);
+    expect(isUnlocked(2, {})).toBe(false);
+    const rec = { [L1.id]: { stars: 2 as const, seconds: 30, firstPassed: '2026-09-29' } };
+    expect(isUnlocked(2, rec)).toBe(true);
+    expect(nextLevel({})).toBe(L1.id);
+    expect(nextLevel(rec)).toBe(L2.id);
+    expect(followingLevel(L1.id, rec)).toBe(L2.id);
+    expect(followingLevel(L2.id, rec)).toBeNull();
+  });
+
+  it('has a notebook page for every level: one sentence, the goal, a tip and a picture', () => {
+    for (const l of WORLD0) {
+      const p = taskPage(l);
+      expect(p.headline.length).toBeLessThan(60);
+      expect(p.goal).toBe(l.brief.goal);
+      expect(p.tip.length).toBeGreaterThan(20);
+      expect(['led', 'two-leds', 'divider', 'rc']).toContain(p.picture);
+    }
+  });
+
+  it('shows a missing resistor as a loop that never closes (the broken bridge)', () => {
+    const m = map(startingBoard(L1));
+    expect(m.closed).toBe(false);
+    expect(m.loop.map((r) => r.id)).toEqual(['SUPPLY']);
+  });
+
+  it('closes the loop once the resistor is in, and puts a bleed resistor in a side alcove', () => {
+    const b1 = startingBoard(L1);
+    b1.parts.push({ id: 'R1', kind: 'resistor', h1: 'g3', h2: 'g12', ohms: 330 });
+    expect(map(b1)).toMatchObject({ closed: true, faults: [] });
+    const b5 = startingBoard(L5);
+    b5.parts.push({ id: 'R1', kind: 'resistor', h1: 'i6', h2: 'i14', ohms: 10000 });
+    const m5 = map(b5);
+    expect(m5.closed).toBe(true);
+    expect(m5.loop.map((r) => r.id)).toEqual(['SUPPLY', 'SW1', 'R1', 'C1']);
+    expect(m5.side.map((r) => r.id)).toEqual(['R2']);
+  });
+
+  it('plays a build level through the desk: place, measure, submit, score', () => {
+    useDesk.getState().leave();
+    useProgress.getState().reset();
+    const desk = () => useDesk.getState();
+    const bench = () => useBench.getState();
+    desk().enter(L1.id);
+    desk().closeNotebook();
+    desk().focusOn('breadboard');
+    bench().setTool('resistor');
+    bench().setOhms(330);
+    bench().clickHole('g3');
+    bench().clickHole('g12');
+    desk().doneBuilding();
+    desk().focusOn('meter');
+    bench().clickHole('h12');
+    bench().clickHole('T-:5');
+    expect(desk().submit()).toBe(true);
+    const a = desk().finishClear();
+    expect(a?.check.pass).toBe(true);
+    expect(nextLevel(useProgress.getState().levels)).toBe(L2.id);
+    expect(mainAction({ ...FRESH, readTask: true, built: true, measurements: 1, submitted: true, cleared: true }, 'corkboard').kind).toBe('pick-level');
   });
 });

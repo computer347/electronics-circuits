@@ -64,6 +64,7 @@ export type MainAction =
   | { kind: 'close-notebook'; label: string }
   | { kind: 'done-building'; label: string }
   | { kind: 'submit'; label: string; enabled: boolean }
+  | { kind: 'pick-level'; label: string }
   | { kind: 'back'; label: string };
 
 const OPEN_LABEL: Record<DeskObject, string> = {
@@ -82,7 +83,8 @@ export function mainAction(p: LoopProgress, focus: DeskObject | null): MainActio
     if (cur === 'test') return { kind: 'submit', label: canSubmit(p) ? 'Submit' : 'Measure first', enabled: canSubmit(p) };
     return { kind: 'back', label: 'Back to the desk' };
   }
-  if (focus === 'corkboard') return { kind: 'back', label: 'Back to the desk' };
+  // On the level map the button plays the suggested level (the view names it).
+  if (focus === 'corkboard') return { kind: 'pick-level', label: 'Play' };
   const next = glowing(p);
   return { kind: 'focus', object: next, label: OPEN_LABEL[next] };
 }

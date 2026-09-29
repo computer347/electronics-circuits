@@ -36,7 +36,11 @@ export function Wall() {
 }
 
 /** The level map: a corkboard with one card per World 0 level, the current one ringed. */
-export function Corkboard({ current, passed }: { current: number; passed: Set<number> }) {
+export function Corkboard({ current, passed, unlocked, onPick }: {
+  current: number; passed: Set<number>; unlocked: Set<number>;
+  /** Set while the map is in focus: a click on an open card plays it. */
+  onPick?: (n: number) => void;
+}) {
   return (
     <group>
       <RoundedBox args={[0.66, 0.3, 0.02]} radius={0.006} castShadow receiveShadow>
@@ -47,10 +51,14 @@ export function Corkboard({ current, passed }: { current: number; passed: Set<nu
         <meshStandardMaterial map={corkTexture()} roughness={1} />
       </mesh>
       {WORLD0_PLAN.map((l, i) => {
-        const state = passed.has(l.number) ? 'done' : l.number === current ? 'here' : 'later';
+        const state = l.number === current ? 'here' : passed.has(l.number) ? 'done' : unlocked.has(l.number) ? 'open' : 'later';
         const x = -0.24 + i * 0.12, y = i % 2 ? -0.03 : 0.03;
+        const canPick = !!onPick && unlocked.has(l.number);
         return (
-          <group key={l.number} position={[x, y, 0.012]} rotation={[0, 0, (i % 3 - 1) * 0.05]}>
+          <group key={l.number} position={[x, y, 0.012]} rotation={[0, 0, (i % 3 - 1) * 0.05]}
+            onClick={canPick ? (e) => { e.stopPropagation(); onPick!(l.number); } : undefined}
+            onPointerOver={canPick ? () => { document.body.style.cursor = 'pointer'; } : undefined}
+            onPointerOut={canPick ? () => { document.body.style.cursor = ''; } : undefined}>
             <mesh castShadow>
               <planeGeometry args={[0.1, 0.078]} />
               <meshStandardMaterial map={levelCardTexture(l.number, l.title, state)} roughness={0.9} />

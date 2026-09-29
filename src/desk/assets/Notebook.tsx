@@ -5,6 +5,7 @@
 import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
+import type { TaskPage } from '../taskPages';
 import { coverTexture, taskPagesTexture } from './textures';
 
 export const NOTEBOOK = { w: 0.2, d: 0.27, pages: 0.012, cover: 0.003 } as const;
@@ -17,22 +18,30 @@ function half(t: THREE.Texture, right: boolean) {
   return c;
 }
 
-export function Notebook({ open, goal, level }: { open: { value: number }; goal: string; level: string }) {
+/**
+ * Printed pages light themselves a little (emissive) and take less from the lamp, so the text
+ * stays even and readable instead of burning out under the spotlight.
+ */
+function pageMaterial(map: THREE.Texture) {
+  return new THREE.MeshStandardMaterial({ map, color: '#8c8c8c', emissive: '#ffffff', emissiveMap: map, emissiveIntensity: 0.5, roughness: 1, metalness: 0 });
+}
+
+export function Notebook({ open, page }: { open: { value: number }; page: TaskPage }) {
   const { W, D, P, C } = { W: NOTEBOOK.w, D: NOTEBOOK.d, P: NOTEBOOK.pages, C: NOTEBOOK.cover };
   const pivot = useRef<THREE.Group>(null);
   const under = useRef<THREE.Mesh>(null);
   const tex = useMemo(() => {
-    const full = taskPagesTexture(goal, level);
+    const full = taskPagesTexture(page);
     const left = half(full, false);
     // The cover's underside ends up turned half round once it's flipped over: turn the texture back.
     left.repeat.set(-0.5, -1); left.offset.set(0.5, 1);
     return { left, right: half(full, true), cover: coverTexture() };
-  }, [goal, level]);
+  }, [page]);
 
   const paperSide = useMemo(() => new THREE.MeshStandardMaterial({ color: '#efe8d8', roughness: 0.95 }), []);
   const blue = useMemo(() => new THREE.MeshStandardMaterial({ color: '#1f3a66', roughness: 0.75 }), []);
-  const pageMats = useMemo(() => [paperSide, paperSide, new THREE.MeshStandardMaterial({ map: tex.right, roughness: 0.9 }), blue, paperSide, paperSide], [paperSide, blue, tex]);
-  const coverMats = useMemo(() => [blue, blue, new THREE.MeshStandardMaterial({ map: tex.cover, roughness: 0.8 }), new THREE.MeshStandardMaterial({ map: tex.left, roughness: 0.9 }), blue, blue], [blue, tex]);
+  const pageMats = useMemo(() => [paperSide, paperSide, pageMaterial(tex.right), blue, paperSide, paperSide], [paperSide, blue, tex]);
+  const coverMats = useMemo(() => [blue, blue, new THREE.MeshStandardMaterial({ map: tex.cover, roughness: 0.8 }), pageMaterial(tex.left), blue, blue], [blue, tex]);
 
   useFrame(() => {
     // The cover rises over the spine and lands flat on the left, at pages height.

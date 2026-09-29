@@ -41,7 +41,8 @@ export function App() {
   const setTab = useNav((s) => s.go);
   const choose = (c: FrontChoice) => {
     if (c === 'continue') setTab('desk');
-    else if (c === 'play') setTab('play');
+    // Play opens the desk on its level map (the corkboard).
+    else if (c === 'play') { useDesk.setState({ startOnMap: true }); setTab('desk'); }
     else if (c === 'learn') useNav.getState().openClass(null);
     else setTab('drills');
   };

@@ -9,11 +9,14 @@ import { analyzeBoard } from '../breadboard/model';
 import { useBench } from '../breadboard/store';
 import { CircuitWorld } from '../circuitworld/CircuitWorld';
 import { WORLD0_CLASSES } from '../learn/classes';
-import { levelById, startingBoard } from '../levels';
+import { levelById, startingBoard, WORLD0 } from '../levels';
 import { useProgress } from '../levels/progress';
 import { useSession } from '../levels/session';
 import { reducedMotion } from './anim';
+import { isUnlocked, followingLevel, nextLevel } from './levelPick';
 import { meteredBoard, readMeter } from './meter';
+import { PartsTray } from './PartsTray';
+import { taskPage } from './taskPages';
 import type { BoxItem } from './assets/PartsBox';
 import { DeskScene } from './DeskScene';
 import { TAGS, useHover } from './hover';
@@ -21,9 +24,8 @@ import { currentStep, mainAction, railStates, STEP_OBJECT, STEPS, glowing, type 
 import { useDesk, useLoop } from './store';
 import './desk.css';
 
-/** The vertical slice plays level 0–2. The goal is one sentence; the page draws the rest. */
-export const DESK_LEVEL = 'w0-02-wrong-way-round';
-const GOALS: Record<string, string> = { 'w0-02-wrong-way-round': 'Make the LED light up.' };
+/** What the 3D parts box can hold. */
+const BOX: BoxItem[] = ['resistor', 'led', 'capacitor', 'wire'];
 
 function StepIcon({ step }: { step: StepId }) {
   const common = { fill: 'none', stroke: 'currentColor', strokeWidth: 2.4, strokeLinejoin: 'round' as const, strokeLinecap: 'round' as const };
@@ -66,15 +68,15 @@ function Stars({ n }: { n: number }) {
 }
 
 export function DeskView({ onMenu, onLearn }: { onMenu: () => void; onLearn: (classId: string) => void }) {
-  const level = levelById(DESK_LEVEL)!;
   const desk = useDesk();
   const loop = useLoop();
   const parts = useBench((s) => s.parts);
   const supply = useBench((s) => s.supply);
   const probes = useBench((s) => s.probes);
-  const selected = useBench((s) => s.selected);
   const notice = useBench((s) => s.notice);
+  const tool = useBench((s) => s.tool);
   const records = useProgress((s) => s.levels);
+  const level = levelById(desk.levelId ?? '') ?? WORLD0[0]!;
   const board = useMemo(() => ({ supply, parts }), [supply, parts]);
   const meterMode = useDesk((s) => s.meterMode);
   // With the dial on A the meter is part of the circuit (a wire between the probes), so solve it in.
@@ -83,18 +85,23 @@ export function DeskView({ onMenu, onLearn }: { onMenu: () => void; onLearn: (cl
   const [printed, setPrinted] = useState(false);
 
   useEffect(() => {
-    // A fresh visit starts the level (the session is closed whenever you leave the desk).
-    if (useSession.getState().levelId !== DESK_LEVEL) useDesk.getState().enter(DESK_LEVEL);
+    // A fresh visit starts a level: the one you were on, else the next one not passed yet.
+    // Play on the front page (or a finished World 0) opens on the level map instead.
+    const d = useDesk.getState();
+    const recs = useProgress.getState().levels;
+    const id = d.levelId ?? nextLevel(recs) ?? WORLD0[0]!.id;
+    if (useSession.getState().levelId !== id) d.enter(id);
+    if (d.startOnMap || !nextLevel(recs)) { useDesk.setState({ startOnMap: false }); useDesk.getState().focusOn('corkboard'); }
     // Canvas textures draw text, so wait for the riso fonts (but never for long).
     const t = setTimeout(() => setFonts(true), 1500);
-    void Promise.all([document.fonts.load("64px 'Anton'"), document.fonts.load("bold 20px 'Space Mono'"), document.fonts.load("20px 'Space Mono'")]).finally(() => setFonts(true));
+    void Promise.all([document.fonts.load("64px 'Anton'"), document.fonts.load("bold 20px 'Space Mono'"), document.fonts.load("20px 'Space Mono'"), document.fonts.load("italic 20px 'Space Mono'")]).finally(() => setFonts(true));
     const p = setTimeout(() => setPrinted(true), reducedMotion() ? 0 : 1300);
     return () => { clearTimeout(t); clearTimeout(p); };
   }, []);
 
   // LEDs that get overloaded stay burnt, as on the bench.
   useEffect(() => {
-    const fresh = analysis.newlyBurnt.filter((id) => !parts.find((p) => p.id === id)?.burnt);
+    const fresh = analysis.newlyBurnt.filter((id) => parts.some((p) => p.id === id && !p.burnt));
     if (fresh.length) useBench.getState().markBurnt(fresh);
   }, [analysis]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -105,47 +112,60 @@ export function DeskView({ onMenu, onLearn }: { onMenu: () => void; onLearn: (cl
     if (desk.phase === 'dive') { const t = setTimeout(() => desk.setPhase('clear'), fast ? 300 : 1700); return () => clearTimeout(t); }
   }, [desk.phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const selPart = parts.find((p) => p.id === selected);
-  const canTurn = !!selPart && desk.focus === 'breadboard' && useBench.getState().pinned.includes(selPart.id) && (selPart.kind === 'led' || selPart.kind === 'capacitor');
-
-  const back = () => { if (desk.focus) desk.focusOn(null); };
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && desk.phase === 'desk') { if (desk.focus) desk.focusOn(null); }
-      if ((e.key === 'm' || e.key === 'M') && desk.focus === 'meter') desk.turnDial(desk.meterMode === 'A' ? -1 : 1);
-      if (e.key === 'Enter' && desk.phase === 'desk' && (e.target as HTMLElement).tagName !== 'BUTTON') { e.preventDefault(); runMain(); }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  });
-
+  const back = () => {
+    const bench = useBench.getState();
+    // Esc first puts down whatever you're holding, then leaves the object.
+    if (desk.focus === 'breadboard' && (bench.tool !== 'select' || bench.pending || bench.moving)) { bench.cancelMove(); bench.setTool('select'); return; }
+    if (desk.focus) desk.focusOn(null);
+  };
   const reading = useMemo(
     () => readMeter(board, meterMode, probes, { ok: analysis.result.ok, voltageAt: analysis.voltageAt, currents: analysis.result.currents }),
     [board, meterMode, probes, analysis],
   );
 
+  // The suggested level on the map: the next one after this, once this one's passed.
+  const suggested = records[level.id] ? followingLevel(level.id, records) ?? nextLevel(records) ?? level.id : level.id;
+  const suggestedLevel = levelById(suggested)!;
+  const playLevel = (id: string) => { desk.enter(id); };
+
   const main = mainAction(loop, desk.focus);
+  const mainLabel = main.kind === 'pick-level' ? `Play ${suggestedLevel.world}–${suggestedLevel.number} ${suggestedLevel.title}` : main.label;
   function runMain() {
     switch (main.kind) {
-      case 'focus': if (main.object === 'corkboard') desk.focusOn('corkboard'); else desk.focusOn(main.object); break;
+      case 'focus': desk.focusOn(main.object); break;
       case 'close-notebook': desk.closeNotebook(); break;
       case 'done-building': desk.doneBuilding(); break;
       case 'submit': if (main.enabled) desk.submit(); break;
+      case 'pick-level': playLevel(suggested); break;
       case 'back': back(); break;
     }
   }
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (desk.phase !== 'desk') return;
+      if (e.key === 'Escape') back();
+      if ((e.key === 'm' || e.key === 'M') && desk.focus === 'meter') desk.turnDial(desk.meterMode === 'A' ? -1 : 1);
+      if ((e.key === 'Delete' || e.key === 'Backspace') && desk.focus === 'breadboard') useBench.getState().removeSelected();
+      if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'BUTTON') { e.preventDefault(); runMain(); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
 
+  const page = useMemo(() => taskPage(level), [level]);
   const cls = WORLD0_CLASSES.find((c) => c.levelId === level.id);
   const passed = useMemo(() => new Set(Object.keys(records).map((id) => levelById(id)?.number ?? 0)), [records]);
-  const boxItems: BoxItem[] = level.format === 'find-fault' ? [] : ['resistor', 'led', 'wire'];
-  const diveHole = startingBoard(level).parts.find((p) => level.pinned?.includes(p.id))?.h1 ?? 'e15';
+  const unlocked = useMemo(() => new Set(WORLD0.filter((l) => isUnlocked(l.number, records)).map((l) => l.number)), [records]);
+  const boxItems: BoxItem[] = BOX.filter((k) => level.tools.includes(k));
+  const start = startingBoard(level);
+  const diveHole = (start.parts.find((p) => level.pinned?.includes(p.id)) ?? start.parts.find((p) => p.kind === 'led' || p.kind === 'capacitor') ?? start.parts[0])?.h1 ?? 'e15';
   const step = currentStep(loop);
 
   if (desk.phase === 'clear') {
     const r = desk.result;
     return (
       <div className="desk">
-        <CircuitWorld rail={<StepRail interactive={false} />} onCleared={() => desk.finishClear()} />
+        <CircuitWorld rail={<StepRail interactive={false} />} onCleared={() => desk.finishClear()} onGiveUp={() => desk.finishClear()} />
         {r && (
           <div className="desk-result" role="dialog" aria-label="Level result">
             {r.check.pass ? (
@@ -153,15 +173,20 @@ export function DeskView({ onMenu, onLearn }: { onMenu: () => void; onLearn: (cl
                 <h2>Circuit clear</h2>
                 <Stars n={r.stars ?? 1} />
                 <p className="desk-result-sub">{r.stats.measurements} measurements · {r.stats.seconds} s{r.improved ? ' · new best' : ''}</p>
+                <p>{level.debrief}</p>
               </>
             ) : (
               <>
                 <h2>Not yet</h2>
-                <p>{r.check.diagnosis?.message}</p>
+                <p>{r.check.diagnosis?.message ?? r.check.lines.find((x) => !x.ok)?.label}</p>
               </>
             )}
-            <button className="desk-main" autoFocus onClick={() => { if (!r.check.pass) useDesk.setState((s) => ({ flags: { ...s.flags, submitted: false } })); desk.returnToDesk(); }}>
-              Back to the desk
+            <button className="desk-main" autoFocus onClick={() => {
+              // A miss sends you back to the bench to fix it, then test and submit again.
+              if (!r.check.pass) useDesk.setState((s) => ({ flags: { ...s.flags, built: false, submitted: false } }));
+              desk.returnToDesk();
+            }}>
+              {r.check.pass ? 'Back to the desk' : 'Back to the bench'}
             </button>
           </div>
         )}
@@ -178,10 +203,11 @@ export function DeskView({ onMenu, onLearn }: { onMenu: () => void; onLearn: (cl
             analysis={analysis}
             reading={reading}
             glow={desk.phase === 'desk' && desk.focus === null ? glowing(loop) : null}
-            goal={GOALS[level.id] ?? level.brief.goal}
-            levelLabel={`LEVEL 0–${level.number}`}
+            page={page}
             levelNumber={level.number}
             passed={passed}
+            unlocked={unlocked}
+            onPickLevel={(n) => { const l = WORLD0.find((x) => x.number === n); if (l && unlocked.has(n)) playLevel(l.id); }}
             boxItems={boxItems}
             diveHole={diveHole}
           />
@@ -192,6 +218,7 @@ export function DeskView({ onMenu, onLearn }: { onMenu: () => void; onLearn: (cl
       {desk.phase === 'dive' && <div className="desk-dive" aria-hidden><i /><i /><i /><i /><span>1 : 1 000 000 000</span></div>}
 
       <StepRail interactive={desk.phase === 'desk'} />
+      <p className="desk-level">{level.world}–{level.number} {level.title}</p>
       <button className="desk-back" onClick={() => (desk.focus ? back() : onMenu())}>
         ‹ {desk.focus ? 'Back' : 'Menu'} <kbd>Esc</kbd>
       </button>
@@ -202,30 +229,25 @@ export function DeskView({ onMenu, onLearn }: { onMenu: () => void; onLearn: (cl
           Learn this first: {cls.title}
         </button>
       )}
-      {desk.phase === 'desk' && desk.focus === 'breadboard' && (
-        <div className="desk-hint">
-          {canTurn ? (
-            <button className="desk-chip" onClick={() => useBench.getState().flipPart(selPart!.id)}>↻ Turn {selPart!.id} round</button>
-          ) : (
-            <span className="desk-pict"><span className="dot pink" /> click a part</span>
-          )}
-        </div>
-      )}
+      {desk.phase === 'desk' && desk.focus === 'breadboard' && <PartsTray level={level} />}
       {desk.phase === 'desk' && desk.focus === 'meter' && (
         <div className="desk-hint">
-          <span className="desk-pict"><span className="dot red" /> a leg <span className="dot black" /> − rail</span>
-          <span className="desk-reading">{meterMode === 'off' ? 'OFF' : `${reading.text} ${reading.unit}`}</span>
-          <span className="desk-pict">turn the dial <kbd>M</kbd></span>
+          <span className="desk-pict"><span className="dot red" /> a point <span className="dot black" /> − rail</span>
+          <span className={`desk-reading ${meterMode}`}>{meterMode === 'off' ? 'OFF' : `${reading.text} ${reading.unit}`}</span>
+          <span className="desk-pict">twist the dial <kbd>M</kbd></span>
         </div>
       )}
-      {desk.phase === 'desk' && notice && desk.focus === 'breadboard' && <p className="desk-notice">{notice}</p>}
+      {desk.phase === 'desk' && desk.focus === 'corkboard' && (
+        <div className="desk-hint"><span className="desk-pict"><span className="dot pink" /> click a card to play it</span></div>
+      )}
+      {desk.phase === 'desk' && notice && desk.focus === 'breadboard' && tool !== 'probe' && <p className="desk-notice">{notice}</p>}
       {desk.phase === 'desk' && desk.focus === 'meter' && reading.note && <p className="desk-notice">{reading.note}</p>}
       {desk.phase === 'desk' && step === 'done' && desk.focus === null && <div className="desk-done"><Stars n={records[level.id]?.stars ?? 0} /></div>}
 
       {desk.phase === 'desk' && (
         <button className={`desk-main ${main.kind === 'submit' && !main.enabled ? 'locked' : ''}`} onClick={runMain}
           disabled={main.kind === 'submit' && !main.enabled} aria-disabled={main.kind === 'submit' && !main.enabled}>
-          {main.kind === 'submit' && !main.enabled && <span aria-hidden>🔒 </span>}{main.label}
+          {main.kind === 'submit' && !main.enabled && <span aria-hidden>🔒 </span>}{mainLabel}
         </button>
       )}
     </div>

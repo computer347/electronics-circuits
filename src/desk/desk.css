@@ -87,10 +87,31 @@
 .desk-done .desk-stars span { color: rgba(241, 236, 225, 0.2); }
 .desk-done .desk-stars span.on { color: var(--r-pink); }
 
-.desk-result { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 20; width: min(440px, calc(100% - 32px)); padding: 26px 26px 90px; background: var(--r-paper); color: var(--r-ink); box-shadow: 8px 8px 0 var(--r-pink); }
+.desk-result { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 20; width: min(520px, calc(100% - 32px)); max-height: calc(100% - 40px); overflow: auto; padding: 26px 26px 90px; background: var(--r-paper); color: var(--r-ink); box-shadow: 8px 8px 0 var(--r-pink); }
 .desk-result h2 { margin: 0 0 12px; font-family: var(--r-display); font-weight: 400; font-size: 44px; color: var(--r-blue); letter-spacing: 0.02em; }
 .desk-result p { margin: 10px 0 0; font-size: 14px; }
 .desk-result .desk-main { position: absolute; right: 20px; bottom: 20px; }
+
+/* Which level is on the desk. */
+.desk-level { position: absolute; top: 24px; right: 22px; margin: 0; z-index: 10; font-family: var(--r-display); font-size: 20px; letter-spacing: 0.03em; color: var(--r-paper); opacity: 0.8; }
+.desk-reading.off { background: #737c68; }
+
+/* The breadboard's parts tray: at most three parts plus the hand, then what you can do with the selection. */
+.tray { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 12; display: grid; justify-items: center; gap: 10px; }
+.tray-tools { display: flex; gap: 6px; padding: 6px; background: rgba(241, 236, 225, 0.12); }
+.tray-tools button { display: grid; justify-items: center; gap: 2px; width: 76px; padding: 6px 4px; border: 0; border-radius: 0; background: rgba(241, 236, 225, 0.9); color: var(--r-ink); font-family: var(--r-mono); font-size: 11px; font-weight: 700; }
+.tray-tools button svg { width: 36px; height: 24px; }
+.tray-tools button.on { background: var(--r-yellow); box-shadow: 3px 3px 0 var(--r-pink); }
+.tray-tools button:hover { color: var(--r-ink); border: 0; transform: translateY(-2px); }
+.tray-context { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; }
+.tray-stepper { display: inline-flex; align-items: center; gap: 8px; padding: 6px 8px; background: var(--r-paper); color: var(--r-ink); box-shadow: 3px 3px 0 var(--r-blue); }
+.tray-stepper b { font-family: var(--r-mono); font-size: 18px; min-width: 70px; text-align: center; }
+.tray-stepper button { border: 0; border-radius: 0; background: var(--r-blue); color: var(--r-paper); font-size: 20px; line-height: 1; padding: 4px 10px; }
+.tray-stepper button:disabled { opacity: 0.3; }
+.tray-bands { display: inline-flex; gap: 3px; padding: 3px 6px; background: #e7b863; border-radius: 6px; }
+.tray-bands i { width: 5px; height: 16px; display: block; }
+.tray-remove { border: 0; background: none; color: var(--r-paper); font-family: var(--r-mono); font-weight: 700; font-size: 13px; text-decoration: underline; text-underline-offset: 4px; }
+.tray-remove:hover { color: var(--r-pink); border: 0; }
 
 /* Front page → desk: the three inks print the desk into place. */
 .desk-print { position: absolute; inset: 0; z-index: 30; pointer-events: none; }

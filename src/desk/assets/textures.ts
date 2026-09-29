@@ -3,6 +3,7 @@
  * and the riso poster. Everything is drawn in code (no image files).
  */
 import * as THREE from 'three';
+import type { TaskPage, TaskPicture } from '../taskPages';
 
 export const INK = { paper: '#f1ece1', pink: '#ff48b0', blue: '#0078bf', yellow: '#ffe800', ink: '#1c0a3a' } as const;
 export const FONT_DISPLAY = "'Anton', 'Impact', 'Arial Narrow', sans-serif";
@@ -107,7 +108,7 @@ export const posterTexture = () => once('poster', () => canvas(600, 840, (g) => 
 }));
 
 /** A level card pinned on the corkboard. */
-export const levelCardTexture = (n: number, title: string, state: 'done' | 'here' | 'later') => once(`card${n}${state}`, () => canvas(256, 200, (g) => {
+export const levelCardTexture = (n: number, title: string, state: 'done' | 'here' | 'open' | 'later') => once(`card${n}${state}`, () => canvas(256, 200, (g) => {
   paperGrain(g, 256, 200, 20 + n, state === 'here' ? '#fff7c2' : INK.paper);
   g.globalCompositeOperation = 'multiply';
   g.font = `72px ${FONT_DISPLAY}`; g.textBaseline = 'top';
@@ -116,6 +117,7 @@ export const levelCardTexture = (n: number, title: string, state: 'done' | 'here
   g.fillStyle = INK.ink; g.font = `bold 20px ${FONT_MONO}`;
   g.fillText(title, 18, 110);
   if (state === 'done') { g.fillStyle = INK.pink; g.font = `36px ${FONT_DISPLAY}`; g.fillText('✓', 206, 20); }
+  if (state === 'later') { g.fillStyle = '#9a9186'; g.font = `bold 18px ${FONT_MONO}`; g.fillText('locked', 18, 150); }
 }));
 
 /** The notebook cover: blue card with a white label. */
@@ -129,68 +131,175 @@ export const coverTexture = () => once('cover', () => canvas(512, 700, (g) => {
   g.font = `bold 22px ${FONT_MONO}`; g.fillText('world 0', 120, 280);
 }));
 
-/** A ruled notebook page. */
-function ruled(g: CanvasRenderingContext2D, w: number, h: number, seed: number) {
-  paperGrain(g, w, h, seed, '#f6f1e4');
-  g.strokeStyle = 'rgba(0,120,191,0.18)'; g.lineWidth = 2;
-  for (let y = 90; y < h; y += 44) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
-  g.strokeStyle = 'rgba(255,72,176,0.35)'; g.beginPath(); g.moveTo(70, 0); g.lineTo(70, h); g.stroke();
-}
-
 /**
- * The task, drawn: the circuit with the LED lit (the target), one sentence, and the step
- * pictures on the right page. Pictures first, a few words second.
+ * The notebook's two-page spread for a level. Left: level and title, the target drawn as a
+ * circuit, one big sentence, then the goal with its numbers and the story. Right: the part's
+ * datasheet, a tip, and the four steps. Pictures first, a few words second.
  */
-export const taskPagesTexture = (goal: string, level: string) => once(`task${level}`, () => canvas(1400, 960, (g) => {
-  ruled(g, 1400, 960, 13);
-  // spine shadow
-  const sp = g.createLinearGradient(660, 0, 740, 0);
-  sp.addColorStop(0, 'rgba(0,0,0,0)'); sp.addColorStop(0.5, 'rgba(60,40,20,0.25)'); sp.addColorStop(1, 'rgba(0,0,0,0)');
-  g.fillStyle = sp; g.fillRect(660, 0, 80, 960);
-
+export const taskPagesTexture = (p: TaskPage) => once(`task:${p.label}`, () => canvas(2048, 1400, (g) => {
+  ruledSpread(g, 2048, 1400);
   g.textBaseline = 'top';
-  g.fillStyle = INK.blue; g.font = `64px ${FONT_DISPLAY}`; g.fillText(level, 100, 36);
 
-  // Target picture: supply → resistor → LED (lit) → back, drawn in ink with the glow in pink.
-  g.save(); g.translate(120, 180);
-  g.strokeStyle = INK.ink; g.lineWidth = 7; g.lineJoin = 'round'; g.lineCap = 'round';
-  // loop
-  g.beginPath(); g.moveTo(40, 70); g.lineTo(40, 20); g.lineTo(200, 20); g.stroke();
-  // resistor zigzag
-  g.beginPath(); g.moveTo(200, 20);
-  for (let i = 0; i < 6; i++) g.lineTo(215 + i * 18, i % 2 ? 0 : 40);
-  g.lineTo(330, 20); g.lineTo(460, 20); g.lineTo(460, 120); g.stroke();
-  // LED triangle pointing down
-  g.fillStyle = INK.pink; g.beginPath(); g.moveTo(420, 120); g.lineTo(500, 120); g.lineTo(460, 190); g.closePath(); g.fill(); g.stroke();
-  g.beginPath(); g.moveTo(420, 190); g.lineTo(500, 190); g.stroke();
-  g.beginPath(); g.moveTo(460, 190); g.lineTo(460, 330); g.lineTo(40, 330); g.lineTo(40, 170); g.stroke();
-  // battery
-  g.beginPath(); g.moveTo(0, 70); g.lineTo(80, 70); g.stroke();
-  g.lineWidth = 12; g.beginPath(); g.moveTo(15, 110); g.lineTo(65, 110); g.stroke(); g.lineWidth = 7;
-  g.beginPath(); g.moveTo(40, 110); g.lineTo(40, 170); g.stroke();
-  g.fillStyle = INK.ink; g.font = `bold 34px ${FONT_MONO}`; g.fillText('+', 90, 40);
-  // glow rays
-  g.strokeStyle = INK.pink; g.lineWidth = 6;
-  for (const [dx, dy] of [[70, -20], [85, 20], [70, 60]] as const) { g.beginPath(); g.moveTo(515, 150); g.lineTo(515 + dx, 150 + dy); g.stroke(); }
-  g.restore();
+  // ---- left page
+  const L = 150;
+  g.fillStyle = INK.blue; g.font = `78px ${FONT_DISPLAY}`; g.fillText(p.label, L, 60);
+  g.fillStyle = INK.ink; g.font = `54px ${FONT_DISPLAY}`; g.fillText(p.title, L, 150);
+  g.save(); g.translate(L + 40, 250); drawPicture(g, p.picture); g.restore();
+  g.fillStyle = INK.ink; g.font = `bold 52px ${FONT_MONO}`;
+  let y = wrap(g, p.headline, L, 720, 780, 62);
+  g.font = `32px ${FONT_MONO}`; g.fillStyle = '#2b2140';
+  y = wrap(g, p.goal, L, y + 36, 780, 44);
+  g.font = `italic 27px ${FONT_MONO}`; g.fillStyle = '#5b5068';
+  wrap(g, p.story, L, y + 30, 780, 38);
 
-  // One sentence.
-  g.fillStyle = INK.ink; g.font = `bold 40px ${FONT_MONO}`;
-  wrap(g, goal, 100, 600, 540, 50);
+  // ---- right page
+  const R = 1160;
+  g.fillStyle = INK.blue; g.font = `64px ${FONT_DISPLAY}`; g.fillText('THE PARTS', R, 60);
+  y = 160;
+  if (p.datasheet) {
+    g.fillStyle = INK.ink; g.font = `bold 36px ${FONT_MONO}`; g.fillText(p.datasheet.title, R, y);
+    y += 64;
+    for (const [k, v] of p.datasheet.rows) {
+      g.font = `31px ${FONT_MONO}`; g.fillStyle = '#2b2140'; g.fillText(k, R, y);
+      g.font = `bold 31px ${FONT_MONO}`; g.fillStyle = INK.ink; g.textAlign = 'right'; g.fillText(v, 1930, y); g.textAlign = 'left';
+      g.strokeStyle = 'rgba(28,10,58,0.25)'; g.lineWidth = 2; g.beginPath(); g.moveTo(R, y + 46); g.lineTo(1930, y + 46); g.stroke();
+      y += 58;
+    }
+  }
+  // Tip, on a yellow overprint.
+  y += 40;
+  g.font = `bold 32px ${FONT_MONO}`;
+  const lines = measureLines(g, p.tip, 700);
+  g.globalCompositeOperation = 'multiply';
+  g.fillStyle = INK.yellow; g.fillRect(R - 24, y - 18, 800, 90 + lines * 44);
+  g.globalCompositeOperation = 'source-over';
+  g.fillStyle = INK.pink; g.font = `44px ${FONT_DISPLAY}`; g.fillText('TIP', R, y);
+  g.fillStyle = INK.ink; g.font = `bold 32px ${FONT_MONO}`;
+  wrap(g, p.tip, R, y + 60, 740, 44);
 
-  // Right page: the four steps as pictures, the next one ringed.
-  g.fillStyle = INK.blue; g.font = `52px ${FONT_DISPLAY}`; g.fillText('HOW', 800, 44);
-  const steps: [string, string][] = [['read', 'this page'], ['look', 'at the board'], ['measure', 'with the meter'], ['go in', 'and clear it']];
+  // The four steps, always the same.
+  const steps: [string, string][] = [['read', 'this page'], ['build', 'or fix'], ['measure', 'with the meter'], ['go in', 'and clear it']];
   steps.forEach(([a, b], i) => {
-    const y = 160 + i * 180;
+    const sx = R + i * 200, sy = 1170;
     g.fillStyle = i === 0 ? INK.pink : INK.blue;
-    g.globalAlpha = 0.9; g.beginPath(); g.arc(850, y + 40, 44, 0, Math.PI * 2); g.fill(); g.globalAlpha = 1;
-    g.fillStyle = INK.paper; g.font = `48px ${FONT_DISPLAY}`; g.fillText(String(i + 1), 836, y + 12);
-    g.fillStyle = INK.ink; g.font = `bold 40px ${FONT_MONO}`; g.fillText(a, 920, y + 4);
-    g.font = `30px ${FONT_MONO}`; g.fillText(b, 920, y + 52);
+    g.beginPath(); g.arc(sx + 40, sy + 40, 38, 0, Math.PI * 2); g.fill();
+    g.fillStyle = INK.paper; g.font = `46px ${FONT_DISPLAY}`; g.textAlign = 'center'; g.fillText(String(i + 1), sx + 40, sy + 14); g.textAlign = 'left';
+    g.fillStyle = INK.ink; g.font = `bold 28px ${FONT_MONO}`; g.fillText(a, sx, sy + 96);
+    g.font = `22px ${FONT_MONO}`; g.fillText(b, sx, sy + 132);
   });
 }));
 
+function ruledSpread(g: CanvasRenderingContext2D, w: number, h: number) {
+  paperGrain(g, w, h, 13, '#f7f3e8');
+  g.strokeStyle = 'rgba(0,120,191,0.13)'; g.lineWidth = 2;
+  for (let y = 120; y < h; y += 58) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
+  g.strokeStyle = 'rgba(255,72,176,0.3)';
+  for (const x of [110, 1120]) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }
+  const sp = g.createLinearGradient(w / 2 - 70, 0, w / 2 + 70, 0);
+  sp.addColorStop(0, 'rgba(0,0,0,0)'); sp.addColorStop(0.5, 'rgba(60,40,20,0.22)'); sp.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = sp; g.fillRect(w / 2 - 70, 0, 140, h);
+}
+
+// ---- the target pictures: circuits in ink, what should glow in pink
+
+function line(g: CanvasRenderingContext2D, pts: number[][]) {
+  g.beginPath(); g.moveTo(pts[0]![0]!, pts[0]![1]!);
+  for (const [x, y] of pts.slice(1)) g.lineTo(x!, y!);
+  g.stroke();
+}
+/** Resistor zigzag from (x, y), horizontal (len 130) or vertical. */
+function resistor(g: CanvasRenderingContext2D, x: number, y: number, vertical = false) {
+  g.beginPath(); g.moveTo(x, y);
+  for (let i = 0; i < 6; i++) {
+    const t = 15 + i * 18, s = i % 2 ? -20 : 20;
+    if (vertical) g.lineTo(x + s, y + t); else g.lineTo(x + t, y + s);
+  }
+  if (vertical) g.lineTo(x, y + 130); else g.lineTo(x + 130, y);
+  g.stroke();
+}
+/** LED pointing down at (x, y) (anode on top), lit in pink with rays. */
+function led(g: CanvasRenderingContext2D, x: number, y: number, lit = true) {
+  g.fillStyle = lit ? INK.pink : 'transparent';
+  g.beginPath(); g.moveTo(x - 38, y); g.lineTo(x + 38, y); g.lineTo(x, y + 64); g.closePath(); g.fill(); g.stroke();
+  line(g, [[x - 38, y + 64], [x + 38, y + 64]]);
+  if (lit) {
+    g.save(); g.strokeStyle = INK.pink; g.lineWidth = 6;
+    for (const [dx, dy] of [[60, -10], [72, 26], [58, 62]] as const) line(g, [[x + 46, y + 30], [x + 46 + dx * 0.8, y + 30 + dy * 0.8]]);
+    g.restore();
+  }
+}
+function battery(g: CanvasRenderingContext2D, x: number, y: number, label: string) {
+  line(g, [[x - 40, y], [x + 40, y]]);
+  g.lineWidth = 12; line(g, [[x - 22, y + 30], [x + 22, y + 30]]); g.lineWidth = 7;
+  g.fillStyle = INK.ink; g.font = `bold 34px ${FONT_MONO}`; g.fillText('+', x + 48, y - 40);
+  g.font = `bold 30px ${FONT_MONO}`; g.fillText(label, x - 150, y);
+}
+
+function drawPicture(g: CanvasRenderingContext2D, pic: TaskPicture) {
+  g.strokeStyle = INK.ink; g.lineWidth = 7; g.lineJoin = 'round'; g.lineCap = 'round';
+  const top = 30, bot = 400, left = 60, right = 640;
+  if (pic === 'led' || pic === 'two-leds') {
+    battery(g, left, 190, pic === 'led' ? '' : '9 V');
+    line(g, [[left, 190], [left, top], [240, top]]);
+    resistor(g, 240, top);
+    if (pic === 'led') {
+      line(g, [[370, top], [right, top], [right, 150]]);
+      led(g, right, 150);
+      line(g, [[right, 214], [right, bot], [left, bot], [left, 220]]);
+    } else {
+      line(g, [[370, top], [right, top], [right, 80]]);
+      led(g, right, 80);
+      line(g, [[right, 144], [right, 230]]);
+      led(g, right, 230);
+      line(g, [[right, 294], [right, bot], [left, bot], [left, 220]]);
+    }
+  }
+  if (pic === 'divider') {
+    battery(g, left, 190, '9 V');
+    line(g, [[left, 190], [left, top], [right, top], [right, 60]]);
+    resistor(g, right, 60, true);
+    line(g, [[right, 190], [right, 230]]);
+    resistor(g, right, 230, true);
+    line(g, [[right, 360], [right, bot], [left, bot], [left, 220]]);
+    // the tap, and what it should read
+    g.save(); g.strokeStyle = INK.pink; g.fillStyle = INK.pink; g.lineWidth = 7;
+    line(g, [[right, 210], [right - 170, 210]]);
+    g.beginPath(); g.arc(right - 180, 210, 12, 0, Math.PI * 2); g.fill();
+    g.font = `64px ${FONT_DISPLAY}`; g.fillText('3.0 V', right - 390, 170);
+    g.restore();
+  }
+  if (pic === 'rc') {
+    battery(g, left, 190, '9 V');
+    line(g, [[left, 190], [left, top], [140, top]]);
+    // push button
+    line(g, [[140, top], [160, top]]); line(g, [[160, top], [210, top - 26]]); line(g, [[210, top], [240, top]]);
+    resistor(g, 240, top);
+    line(g, [[370, top], [440, top], [440, 170]]);
+    // capacitor
+    g.lineWidth = 9; line(g, [[400, 170], [480, 170]]); line(g, [[400, 196], [480, 196]]); g.lineWidth = 7;
+    line(g, [[440, 196], [440, bot], [left, bot], [left, 220]]);
+    // the charge curve, and the 63 % point at about 1 s
+    g.save(); g.translate(500, 80);
+    g.strokeStyle = 'rgba(28,10,58,0.35)'; g.lineWidth = 3; line(g, [[0, 250], [200, 250]]); line(g, [[0, 250], [0, 0]]);
+    g.strokeStyle = INK.pink; g.lineWidth = 6; g.beginPath(); g.moveTo(0, 250);
+    for (let t = 0; t <= 200; t += 5) g.lineTo(t, 250 - 220 * (1 - Math.exp(-t / 55)));
+    g.stroke();
+    g.fillStyle = INK.pink; g.beginPath(); g.arc(55, 250 - 220 * 0.632, 10, 0, Math.PI * 2); g.fill();
+    g.fillStyle = INK.ink; g.font = `bold 26px ${FONT_MONO}`; g.fillText('1 s', 38, 262);
+    g.restore();
+  }
+}
+
+function measureLines(g: CanvasRenderingContext2D, text: string, w: number) {
+  let line = '', n = 1;
+  for (const word of text.split(' ')) {
+    const t = line ? `${line} ${word}` : word;
+    if (g.measureText(t).width > w && line) { n++; line = word; } else line = t;
+  }
+  return n;
+}
+
+/** Word-wrap text; returns the y below the last line. */
 function wrap(g: CanvasRenderingContext2D, text: string, x: number, y: number, w: number, lh: number) {
   let line = '';
   for (const word of text.split(' ')) {
@@ -198,6 +307,7 @@ function wrap(g: CanvasRenderingContext2D, text: string, x: number, y: number, w
     if (g.measureText(t).width > w && line) { g.fillText(line, x, y); y += lh; line = word; } else line = t;
   }
   g.fillText(line, x, y);
+  return y + lh;
 }
 
 /** Draw the meter's LCD into an existing canvas (it changes with every reading). */

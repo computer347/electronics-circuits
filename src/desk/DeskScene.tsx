@@ -19,6 +19,7 @@ import { PowerUnit } from './assets/PowerUnit';
 import { Corkboard, Desk, DESK, Mug, Poster, Wall } from './assets/Room';
 import { useHover } from './hover';
 import type { Reading } from './meter';
+import type { TaskPage } from './taskPages';
 import type { DeskObject } from './steps';
 import { useDesk, type DeskPhase } from './store';
 
@@ -172,7 +173,7 @@ function presentPose(cam: THREE.PerspectiveCamera, w: number, h: number, fill = 
   return { pos, quat };
 }
 
-function NotebookOnDesk({ goal, level, glow }: { goal: string; level: string; glow: boolean }) {
+function NotebookOnDesk({ page, glow }: { page: TaskPage; glow: boolean }) {
   const focused = useDesk((s) => s.focus === 'notebook');
   const g = useRef<THREE.Group>(null);
   const k = useEased(focused ? 1 : 0);
@@ -183,7 +184,7 @@ function NotebookOnDesk({ goal, level, glow }: { goal: string; level: string; gl
     if (!g.current) return;
     // Rest pose puts the closed book's centre at REST; open, the spine is the centre.
     const rest = REST.notebook.pos.clone().add(new THREE.Vector3(-NOTEBOOK.w / 2, 0, 0).applyQuaternion(restQ));
-    const p = presentPose(camera as THREE.PerspectiveCamera, NOTEBOOK.w * 2, NOTEBOOK.d);
+    const p = presentPose(camera as THREE.PerspectiveCamera, NOTEBOOK.w * 2, NOTEBOOK.d, 0.8);
     g.current.position.lerpVectors(rest, p.pos, k.value);
     g.current.quaternion.slerpQuaternions(restQ, p.quat, k.value);
   });
@@ -191,7 +192,7 @@ function NotebookOnDesk({ goal, level, glow }: { goal: string; level: string; gl
     <group ref={g}>
       <Interactive id="notebook">
         <group position={[NOTEBOOK.w / 2, 0, 0]}><Glow w={NOTEBOOK.w} d={NOTEBOOK.d} on={glow} /></group>
-        <Notebook open={open} goal={goal} level={level} />
+        <Notebook open={open} page={page} />
       </Interactive>
     </group>
   );
@@ -267,10 +268,11 @@ export interface DeskSceneProps {
   analysis: BoardAnalysis;
   reading: Reading;
   glow: DeskObject | null;
-  goal: string;
-  levelLabel: string;
+  page: TaskPage;
   levelNumber: number;
   passed: Set<number>;
+  unlocked: Set<number>;
+  onPickLevel: (n: number) => void;
   boxItems: BoxItem[];
   /** Hole the camera dives into after a submit. */
   diveHole: string;
@@ -283,7 +285,7 @@ export function DeskScene(p: DeskSceneProps) {
   const dim = focus !== null || phase !== 'desk';
   const ambient = useEased(dim ? 0.12 : 0.34);
   // In focus the lamp drops back so it doesn't burn out the page you're reading.
-  const lamp = useEased(focus === 'notebook' ? 0.9 : dim ? 1.8 : 3.2);
+  const lamp = useEased(focus === 'notebook' ? 0.35 : dim ? 1.8 : 3.2);
   const focusLight = useEased(focus && focus !== 'corkboard' ? 1 : 0);
   const amb = useRef<THREE.AmbientLight>(null);
   const hemi = useRef<THREE.HemisphereLight>(null);
@@ -313,13 +315,13 @@ export function DeskScene(p: DeskSceneProps) {
       <group position={[-0.18, 0.2, DESK.wallZ + 0.012]}>
         <Interactive id="corkboard" lift={0}>
           <Glow w={0.3} d={0.15} on={p.glow === 'corkboard'} />
-          <Corkboard current={p.levelNumber} passed={p.passed} />
+          <Corkboard current={p.levelNumber} passed={p.passed} unlocked={p.unlocked} onPick={focus === 'corkboard' ? p.onPickLevel : undefined} />
         </Interactive>
       </group>
       <group position={[0.36, 0.22, DESK.wallZ + 0.003]} rotation={[0, 0, -0.03]}><Poster /></group>
 
       <BreadboardOnDesk analysis={p.analysis} glow={p.glow === 'breadboard'} flipped={submitted} />
-      <NotebookOnDesk goal={p.goal} level={p.levelLabel} glow={p.glow === 'notebook'} />
+      <NotebookOnDesk page={p.page} glow={p.glow === 'notebook'} />
       <MeterOnDesk reading={p.reading} glow={p.glow === 'meter'} />
       <group position={[-0.3, 0, -0.3]} rotation={[0, 0.1, 0]}><PartsBox items={p.boxItems} /></group>
       <group position={[0.66, 0, 0.12]}><Mug /></group>

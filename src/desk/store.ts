@@ -19,6 +19,8 @@ interface DeskStore {
   flags: Omit<LoopProgress, 'measurements'>;
   /** The checked result once the circuit is cleared. */
   result: Attempt | null;
+  /** Open the desk on the level map (Play on the front page). */
+  startOnMap: boolean;
   /** Where the multimeter's dial points. */
   meterMode: MeterMode;
   setMeterMode: (m: MeterMode) => void;
@@ -49,6 +51,7 @@ export const useDesk = create<DeskStore>((set, get) => ({
   flags: FRESH_FLAGS,
   result: null,
   meterMode: 'V',
+  startOnMap: false,
   setMeterMode: (meterMode) => set({ meterMode }),
   turnDial: (dir) => {
     const i = DIAL.indexOf(get().meterMode);

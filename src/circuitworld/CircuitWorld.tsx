@@ -5,6 +5,10 @@
  * room to see the voltage on both sides and whether anything flows, fix what's wrong (a
  * backwards LED is a one-way door facing you: turn it round), then switch the current on and
  * watch it run round, lighting each room as it passes. Current is conventional, + to −.
+ *
+ * What can't be fixed from the inside shows as what it is: a missing part is a broken bridge
+ * (the loop never closes), a burnt LED is a scorched room. Then the way on is back to the bench.
+ * Parts off the main loop (a bleed resistor, a parallel branch) sit in alcoves off the corridor.
  */
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -23,6 +27,8 @@ const WALK_SPEED = 10; // m/s
 const DOOR_GAP = 3.2; // how close you can get to a closed door
 const ROOM_HALF = 3.6;
 const HALL = 1.7; // half width of a corridor
+const GAP_HALF = 2.2; // half length of a broken bridge
+const ALCOVE_HALF = 1.6;
 
 /** A point on the loop (x, z), walking from the middle of the left side, first toward −z. */
 export function pointAt(s: number): [number, number] {
@@ -81,7 +87,7 @@ const ROOM_COLOR: Record<Room['kind'], string> = {
 };
 
 /** Corridor floors and walls, laid in 1 m pieces round the loop (gaps where the rooms are). */
-function Corridors({ roomS }: { roomS: number[] }) {
+function Corridors({ roomS, gapS, alcoveS }: { roomS: number[]; gapS: number | null; alcoveS: number[] }) {
   const floor = useRef<THREE.InstancedMesh>(null);
   const walls = useRef<THREE.InstancedMesh>(null);
   const arrows = useRef<THREE.InstancedMesh>(null);
@@ -94,10 +100,14 @@ function Corridors({ roomS }: { roomS: number[] }) {
       const [x, z] = pointAt(s);
       const h = heading(s);
       const yaw = Math.atan2(-h.y, h.x);
-      m.position.set(x, 0, z); m.rotation.set(0, yaw, 0); m.scale.set(1.02, 1, 1); m.updateMatrix();
+      // No floor over the broken bridge.
+      const broken = gapS !== null && dist(gapS, s) < GAP_HALF;
+      m.position.set(x, broken ? -50 : 0, z); m.rotation.set(0, yaw, 0); m.scale.set(1.02, 1, 1); m.updateMatrix();
       floor.current?.setMatrixAt(i, m.matrix);
       if (roomS.some((r) => dist(r, s) < ROOM_HALF)) continue;
       for (const side of [-1, 1]) {
+        // An alcove opens in the inner wall (the left side, walking with the current).
+        if (side === 1 && alcoveS.some((a) => dist(a, s) < ALCOVE_HALF)) continue;
         const nx = -h.y, nz = h.x; // left normal of the heading
         m.position.set(x + nx * side * HALL, 1.2, z + nz * side * HALL);
         m.rotation.set(0, yaw, 0); m.scale.set(1.02, 1, 1); m.updateMatrix();
@@ -108,7 +118,7 @@ function Corridors({ roomS }: { roomS: number[] }) {
     if (walls.current) { walls.current.count = wi; walls.current.instanceMatrix.needsUpdate = true; }
     if (arrows.current) { arrows.current.count = ai; arrows.current.instanceMatrix.needsUpdate = true; }
     if (floor.current) floor.current.instanceMatrix.needsUpdate = true;
-  }, [roomS, n]);
+  }, [roomS, gapS, alcoveS, n]);
   const chevron = useMemo(() => {
     const sh = new THREE.Shape();
     sh.moveTo(-0.35, -0.5); sh.lineTo(0.25, 0); sh.lineTo(-0.35, 0.5); sh.lineTo(-0.1, 0.5); sh.lineTo(0.5, 0); sh.lineTo(-0.1, -0.5); sh.closePath();
@@ -139,6 +149,64 @@ function Sign({ text, pos, yaw, bg = '#f1ece1', fg = '#1c0a3a', w = 3.2 }: { tex
       <planeGeometry args={[w, w * (160 / 512)]} />
       <meshBasicMaterial map={tex} side={THREE.DoubleSide} toneMapped={false} />
     </mesh>
+  );
+}
+
+/** Where the loop never closes: the corridor floor ends in snapped planks over a drop. */
+function BrokenBridge({ s }: { s: number }) {
+  const [x, z] = pointAt(s);
+  const h = heading(s);
+  const yaw = Math.atan2(-h.y, h.x);
+  return (
+    <group position={[x, 0, z]} rotation={[0, yaw, 0]}>
+      {/* the drop, and the dark below */}
+      <mesh position={[0, -6, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[GAP_HALF * 2, HALL * 2]} />
+        <meshBasicMaterial color="#0a2a45" />
+      </mesh>
+      {/* snapped planks hanging off each edge */}
+      {[-1, 1].map((side) => [-0.9, 0, 0.9].map((dz, i) => (
+        <mesh key={`${side}${i}`} position={[side * (GAP_HALF - 0.25), -0.25 - i * 0.12, dz]} rotation={[0, 0, side * (0.5 + i * 0.25)]} castShadow>
+          <boxGeometry args={[0.9 - i * 0.2, 0.1, 0.8]} />
+          <meshStandardMaterial color="#1f6fb2" roughness={0.8} />
+        </mesh>
+      )))}
+      <Sign text="NO PATH" pos={[-GAP_HALF - 0.1, 2.4, 0]} yaw={Math.PI / 2} bg="#ff48b0" fg="#f1ece1" w={2.6} />
+      <Sign text="NO PATH" pos={[GAP_HALF + 0.1, 2.4, 0]} yaw={-Math.PI / 2} bg="#ff48b0" fg="#f1ece1" w={2.6} />
+      <pointLight position={[0, 1.6, 0]} color="#ff2e88" intensity={10} distance={7} />
+    </group>
+  );
+}
+
+/** A part off the main loop (a bleed resistor, a parallel branch), in an alcove off the corridor. */
+function Alcove({ room, s }: { room: Room; s: number }) {
+  const [x, z] = pointAt(s);
+  const h = heading(s);
+  const yaw = Math.atan2(-h.y, h.x);
+  const color = ROOM_COLOR[room.kind];
+  // Inside the ring is the left of the walking direction: local +z after the yaw.
+  return (
+    <group position={[x, 0, z]} rotation={[0, yaw, 0]}>
+      <group position={[0, 0, HALL + 1.4]}>
+        <mesh position={[0, 0.02, 0]} receiveShadow>
+          <boxGeometry args={[ALCOVE_HALF * 2, 0.08, 2.8]} />
+          <meshStandardMaterial color={color} roughness={0.85} />
+        </mesh>
+        <mesh position={[0, 1.2, 1.45]} receiveShadow>
+          <boxGeometry args={[ALCOVE_HALF * 2 + 0.3, 2.4, 0.25]} />
+          <meshStandardMaterial color="#e9dcc4" roughness={0.9} />
+        </mesh>
+        {[-1, 1].map((k) => (
+          <mesh key={k} position={[k * (ALCOVE_HALF + 0.1), 1.2, 0]}><boxGeometry args={[0.25, 2.4, 2.8]} /><meshStandardMaterial color="#e9dcc4" roughness={0.9} /></mesh>
+        ))}
+        {room.kind === 'resistor' && [-0.5, 0, 0.5].map((dx, i) => (
+          <mesh key={dx} position={[dx, 0, 0.3]} rotation={[0, 0, 0]}><torusGeometry args={[1, 0.14, 10, 24, Math.PI]} /><meshStandardMaterial color={['#7a4a22', '#2e9e4f', '#d4af37'][i]} roughness={0.5} /></mesh>
+        ))}
+        {room.kind === 'capacitor' && [-0.3, 0.3].map((dx) => <mesh key={dx} position={[dx, 1, 0.3]}><boxGeometry args={[0.15, 1.8, 1.6]} /><meshStandardMaterial color="#0078bf" /></mesh>)}
+        {room.kind === 'led' && <mesh position={[0, 0, 0.3]}><sphereGeometry args={[1.1, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2]} /><meshStandardMaterial color="#ff3b30" transparent opacity={room.lit ? 0.5 : 0.2} emissive="#ff3b30" emissiveIntensity={room.lit ? 1 : 0} /></mesh>}
+        <Sign text={`branch · ${room.id}`} pos={[0, 2.1, 1.3]} yaw={Math.PI} w={2.4} />
+      </group>
+    </group>
   );
 }
 
@@ -274,9 +342,9 @@ interface Walker {
   bump: number;
 }
 
-function FirstPerson({ w, doorS, onMove, onBlocked, scanning }: {
-  w: { current: Walker }; doorS: number | null;
-  onMove: (s: number) => void; onBlocked: () => void; scanning: boolean;
+function FirstPerson({ w, barriers, onMove, onBlocked, scanning }: {
+  w: { current: Walker }; barriers: number[];
+  onMove: (s: number) => void; onBlocked: (at: number) => void; scanning: boolean;
 }) {
   const { camera } = useThree();
   const scan = useRef<THREE.SpotLight>(null);
@@ -292,15 +360,15 @@ function FirstPerson({ w, doorS, onMove, onBlocked, scanning }: {
       if (left <= WALK_SPEED * dt) st.to = null;
     }
     if (delta) {
-      let next = wrap(st.s + delta), blocked = false;
-      if (doorS !== null) {
-        const u = wrap(st.s - doorS) + delta;
-        if (u < DOOR_GAP) { next = wrap(doorS + DOOR_GAP); blocked = true; }
-        if (u > PERIM - DOOR_GAP) { next = wrap(doorS - DOOR_GAP); blocked = true; }
+      let next = wrap(st.s + delta), blocked: number | null = null;
+      for (const b of barriers) {
+        const u = wrap(st.s - b) + delta;
+        if (u < DOOR_GAP) { next = wrap(b + DOOR_GAP); blocked = b; }
+        if (u > PERIM - DOOR_GAP) { next = wrap(b - DOOR_GAP); blocked = b; }
       }
       st.s = next;
       onMove(next);
-      if (blocked) { st.held = 0; st.to = null; st.bump = performance.now(); onBlocked(); }
+      if (blocked !== null) { st.held = 0; st.to = null; st.bump = performance.now(); onBlocked(blocked); }
     }
     const [x, z] = pointAt(st.s);
     const [lx, lz] = pointAt(st.s + st.facing * 5);
@@ -338,14 +406,26 @@ function WorldFog({ clear }: { clear: boolean }) {
 
 // ---------------------------------------------------------------- the mode
 
-export function CircuitWorld({ onCleared, rail }: { onCleared: () => void; rail: ReactNode }) {
+export function CircuitWorld({ onCleared, onGiveUp, rail }: {
+  onCleared: () => void;
+  /** Something here can only be fixed on the bench: check the level (it fails with the diagnosis) and go back. */
+  onGiveUp: () => void;
+  rail: ReactNode;
+}) {
   const parts = useBench((s) => s.parts);
   const supply = useBench((s) => s.supply);
   const map = useMemo(() => { const b = { supply, parts }; return buildMap(b, analyzeBoard(b)); }, [supply, parts]);
   const n = map.loop.length;
-  const roomS = useMemo(() => map.loop.map((_, i) => (i * PERIM) / n), [n]); // eslint-disable-line react-hooks/exhaustive-deps
+  // An open loop keeps one slot empty: that's where the bridge is out.
+  const slots = n + (map.closed ? 0 : 1);
+  const roomS = useMemo(() => map.loop.map((_, i) => (i * PERIM) / slots), [n, slots]); // eslint-disable-line react-hooks/exhaustive-deps
+  const gapS = map.closed ? null : (n * PERIM) / slots;
+  const alcoveS = useMemo(() => map.side.map((_, j) => wrap(roomS[j % n]! + PERIM / slots / 2 + Math.floor(j / n) * 5)), [map.side.length, roomS]); // eslint-disable-line react-hooks/exhaustive-deps
   const faultIdx = map.loop.findIndex((r) => r.fault === 'reversed');
   const doorS = faultIdx >= 0 ? roomS[faultIdx]! : null;
+  const barriers = useMemo(() => [doorS, gapS].filter((b): b is number => b !== null), [doorS, gapS]);
+  /** Problems you can only fix on the bench. */
+  const benchOnly = !map.closed || map.loop.some((r) => r.fault === 'burnt');
 
   // Start just past the supply, facing along the current.
   const walker = useRef<Walker>({ s: 2.5, facing: 1, held: 0, to: null, look: new THREE.Vector3(0, -0.18, -1).normalize(), bump: 0 });
@@ -356,6 +436,8 @@ export function CircuitWorld({ onCleared, rail }: { onCleared: () => void; rail:
   const [flowing, setFlowing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [landed, setLanded] = useState(false);
+  /** You've walked up to the broken bridge. */
+  const [seenGap, setSeenGap] = useState(false);
 
   useEffect(() => { const t = setTimeout(() => setLanded(true), reducedMotion() ? 0 : 900); return () => clearTimeout(t); }, []);
 
@@ -377,14 +459,22 @@ export function CircuitWorld({ onCleared, rail }: { onCleared: () => void; rail:
     return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); };
   }, []);
 
-  /** Walk to a room the way that isn't blocked (stopping in front of a closed door). */
+  /** Walk to a room the shorter way that doesn't cross a closed door or a broken bridge. */
   const walkTo = (i: number) => {
     setNotice(null);
     const st = walker.current;
     let target = roomS[i]!;
+    // A closed door: stand in front of it, on your side.
     if (doorS !== null && i === faultIdx) target = wrap(st.s - doorS) < PERIM / 2 ? wrap(doorS + DOOR_GAP) : wrap(doorS - DOOR_GAP);
-    let dir: 1 | -1 = wrap(target - st.s) <= wrap(st.s - target) ? 1 : -1;
-    if (doorS !== null) dir = wrap(target - doorS) >= wrap(st.s - doorS) ? 1 : -1; // never through the door
+    const crosses = (dir: 1 | -1) => barriers.some((b) => {
+      const toB = dir === 1 ? wrap(b - st.s) : wrap(st.s - b);
+      const toT = dir === 1 ? wrap(target - st.s) : wrap(st.s - target);
+      return toB > 0 && toB < toT;
+    });
+    const cw = wrap(target - st.s), ccw = wrap(st.s - target);
+    const order: (1 | -1)[] = cw <= ccw ? [1, -1] : [-1, 1];
+    const dir = order.find((d) => !crosses(d));
+    if (!dir) { setNotice("You can't get there from here: the way is blocked both ways."); return; }
     st.facing = dir;
     st.to = target;
   };
@@ -410,7 +500,8 @@ export function CircuitWorld({ onCleared, rail }: { onCleared: () => void; rail:
   else if (map.faults.length === 0 && map.closed) main = { label: 'Switch the current on', run: switchOn, icon: '⚡' };
   else if (room && room.id !== 'SUPPLY' && !scanned.has(room.id)) main = { label: `Scan ${room.id}`, run: () => { setScanned(new Set([...scanned, room.id])); setScanning(room.id); }, icon: '◎' };
   else if (room?.fault === 'reversed' && scanned.has(room.id)) main = { label: 'Turn the door round', run: fix, icon: '↻' };
-  else if (nextUnscanned >= 0) main = { label: `Walk to ${map.loop[nextUnscanned]!.id}`, run: () => walkTo(nextUnscanned), icon: '→' };
+  else if (nextUnscanned >= 0 && !(benchOnly && seenGap)) main = { label: `Walk to ${map.loop[nextUnscanned]!.id}`, run: () => walkTo(nextUnscanned), icon: '→' };
+  else if (benchOnly) main = { label: 'Back to the bench to fix it', run: onGiveUp, icon: '‹' };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if ((e.key === 'Enter' || e.key === ' ') && main) { e.preventDefault(); main.run(); } };
@@ -433,7 +524,9 @@ export function CircuitWorld({ onCleared, rail }: { onCleared: () => void; rail:
         <ambientLight intensity={0.55} color="#fff6ea" />
         <hemisphereLight args={['#ffffff', '#6a8fb0', 0.6]} />
         <directionalLight position={[10, 30, 8]} intensity={0.8} castShadow shadow-mapSize={[1024, 1024]} />
-        <Corridors roomS={roomS} />
+        <Corridors roomS={roomS} gapS={gapS} alcoveS={alcoveS} />
+        {gapS !== null && <BrokenBridge s={gapS} />}
+        {map.side.map((r, j) => <Alcove key={r.id} room={r} s={alcoveS[j]!} />)}
         {map.loop.map((r, i) => (
           <RoomView key={r.id} room={r} s={roomS[i]!} turning={turning && i === faultIdx} onClick={() => walkTo(i)}
             lit={!!r.lit} flowAt={flowing ? flowStart.t + (roomS[i]! / 18) * 1000 : null} />
@@ -447,8 +540,11 @@ export function CircuitWorld({ onCleared, rail }: { onCleared: () => void; rail:
           return <Sign key={i} text={`${c.v.toFixed(1)} V`} pos={[x - h.y * (HALL - 0.2), 1.9, z + h.x * (HALL - 0.2)]} yaw={Math.atan2(-h.y, h.x)} bg="#ffe800" w={1.6} />;
         })}
         <Flow on={flowing} />
-        <FirstPerson w={walker} doorS={doorS} onMove={onMove} scanning={!!scanning}
-          onBlocked={() => setNotice('A one-way door facing you: it only opens from the other side. Scan it.')} />
+        <FirstPerson w={walker} barriers={barriers} onMove={onMove} scanning={!!scanning}
+          onBlocked={(b) => {
+            if (b === gapS) { setSeenGap(true); setNotice('The bridge is out: nothing connects here, so no current can get round. That has to be fixed on the bench.'); }
+            else setNotice('A one-way door facing you: it only opens from the other side. Scan it.');
+          }} />
       </Canvas>
       <div className="cw-halftone" aria-hidden />
       {!landed && <div className="cw-landing" aria-hidden />}
