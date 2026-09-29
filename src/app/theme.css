@@ -370,3 +370,108 @@ select:disabled { opacity: 0.6; }
 @media (prefers-reduced-motion: reduce) { .complete, .complete-backdrop, .stars-xl .on { animation: none; } }
 .datasheet td { white-space: normal; }
 .datasheet th { white-space: nowrap; padding-right: 10px; }
+
+/* ── CRT power-on ─────────────────────────────────────────────────────────
+   clip-path only (see Crt.tsx): dot → horizontal line → full picture, with a phosphor
+   flash on top that fades out. 'quick' is the same shape, faster, for mode switches. */
+.crt { position: relative; min-height: 0; }
+.mode-crt { display: grid; grid-template-rows: 1fr; }
+.crt-full { animation: crt-on 1.7s cubic-bezier(.22, .8, .25, 1) both; }
+.crt-quick { animation: crt-on .6s cubic-bezier(.22, .8, .25, 1) both; }
+@keyframes crt-on {
+  0%, 16% { clip-path: inset(calc(50% - 2px) calc(50% - 2px) round 50%); filter: brightness(3); }
+  42% { clip-path: inset(calc(50% - 2px) 0 round 0); filter: brightness(2.2); }
+  72%, 100% { clip-path: inset(0 0 round 0); filter: brightness(1); }
+}
+.crt-flash {
+  position: absolute; inset: 0; pointer-events: none; z-index: 20;
+  background: radial-gradient(ellipse at center, #f2fff7 0%, #b9ffd8 40%, #39ff88 100%);
+  opacity: 0;
+}
+.crt-full > .crt-flash { animation: crt-flash 1.9s ease-out both; }
+.crt-quick > .crt-flash { animation: crt-flash .7s ease-out both; }
+@keyframes crt-flash { 0% { opacity: 1; } 55% { opacity: .85; } 100% { opacity: 0; } }
+.crt-full .reveal { animation: reveal .45s steps(4) both; }
+@keyframes reveal { from { opacity: 0; } to { opacity: 1; } }
+.cursor { color: var(--signal); animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+
+/* ── Title screen (option C · boot terminal) ─────────────────────────────── */
+.title-crt { height: 100%; }
+.title {
+  position: relative; height: 100%; min-height: 600px; overflow: hidden;
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 460px); gap: 48px;
+  align-content: start; padding: 64px 72px 150px;
+  background: radial-gradient(ellipse at 30% 40%, #07140c 0%, var(--bg) 70%);
+}
+.title-left { display: flex; flex-direction: column; gap: 28px; min-width: 0; }
+.title-word {
+  margin: 0; font-family: var(--display); font-weight: 700;
+  font-size: clamp(72px, 11.5vw, 150px); line-height: .86; letter-spacing: -.01em; color: var(--signal);
+  text-shadow: 0 0 22px rgba(57, 255, 136, .6), 0 0 60px rgba(57, 255, 136, .25);
+}
+.title-tag { margin: 0; font-size: 16px; line-height: 1.6; color: #a9dcbd; max-width: 460px; }
+.boot-log { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #6fbf93; white-space: pre; }
+.boot-log b { font-weight: 600; color: var(--signal); }
+.boot-log b.stars { color: var(--amber); }
+
+.title-menu { display: flex; flex-direction: column; gap: 10px; padding-top: 16px; position: relative; z-index: 2; }
+.title-menu .row {
+  display: flex; align-items: center; gap: 18px; width: 100%; text-align: left;
+  padding: 16px 20px; border: 1px solid #16402a; border-radius: 8px; background: transparent;
+  color: var(--text); font: inherit; cursor: pointer; transition: background .12s, border-color .12s;
+}
+.title-menu .row:hover, .title-menu .row.sel { background: rgba(57, 255, 136, .08); border-color: var(--signal); color: var(--text); }
+.title-menu .row:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+.title-menu .row-continue { padding: 18px 20px; border-color: var(--signal); background: rgba(57, 255, 136, .12); box-shadow: 0 0 22px rgba(57, 255, 136, .2); }
+.title-menu .row.soon { cursor: default; opacity: .7; }
+.title-menu .row.soon:hover { background: transparent; border-color: #16402a; }
+.row-key { font-size: 14px; color: #6fbf93; width: 44px; flex: none; }
+.row-continue .row-key { font-size: 12px; color: var(--signal); }
+.row-text { display: flex; flex-direction: column; gap: 4px; flex-grow: 1; min-width: 0; }
+.row-title { font-family: var(--display); font-weight: 700; font-size: 20px; }
+.row-continue .row-title { font-size: 22px; color: var(--signal); }
+.row-sub { font-size: 12px; color: var(--text-dim); }
+.row-continue .row-sub { color: #a9dcbd; }
+.row-go { font-size: 18px; color: var(--signal); }
+.row-stars { font-size: 12px; color: var(--amber); white-space: nowrap; }
+.row-soon { font-size: 11px; color: var(--text-dim); border: 1px solid #16402a; border-radius: 999px; padding: 3px 8px; }
+
+.title-trace { position: absolute; left: 0; bottom: 70px; width: 100%; height: 160px; opacity: .55; pointer-events: none; }
+.title-trace .trace {
+  fill: none; stroke: var(--signal); stroke-width: 2; filter: drop-shadow(0 0 5px rgba(57, 255, 136, .9));
+  /* non-scaling-stroke measures dashes in screen pixels, so the dash must outlast the widest screen. */
+  stroke-dasharray: 4000; animation: trace-draw 3s 2.4s linear both;
+}
+@keyframes trace-draw { from { stroke-dashoffset: 4000; } to { stroke-dashoffset: 0; } }
+.title-foot {
+  position: absolute; left: 72px; right: 72px; bottom: 32px; display: flex; justify-content: space-between; gap: 16px;
+  font-size: 12px; color: #6fbf93;
+}
+.power {
+  position: absolute; right: 24px; top: 24px; width: 40px; height: 40px; padding: 0; z-index: 3;
+  border-radius: 50%; border: 1px solid var(--signal); color: var(--signal);
+  display: flex; align-items: center; justify-content: center;
+}
+.power:hover { box-shadow: 0 0 14px rgba(57, 255, 136, .7); }
+.scanlines, .vignette { position: absolute; inset: 0; pointer-events: none; z-index: 10; }
+.scanlines { background: repeating-linear-gradient(0deg, rgba(0, 0, 0, .22) 0 1px, transparent 1px 3px); }
+.vignette { background: radial-gradient(ellipse at center, transparent 58%, rgba(0, 0, 0, .65) 100%); }
+
+.home-link { border: 0; padding: 0; border-radius: 0; font: inherit; color: inherit; letter-spacing: inherit; }
+.home-link:hover { border: 0; }
+
+@media (max-width: 900px) {
+  .title-crt { height: auto; min-height: 100%; }
+  .title { height: auto; min-height: 100%; grid-template-columns: 1fr; padding: 56px 16px 24px; gap: 28px; }
+  .title-word { font-size: clamp(64px, 20vw, 120px); }
+  .title-trace { position: relative; bottom: auto; height: 90px; }
+  .title-foot { position: static; flex-direction: column; gap: 4px; }
+  .boot-log { font-size: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crt-full, .crt-quick, .crt-full .reveal, .title-trace .trace, .cursor { animation: none; }
+  .title-trace .trace { stroke-dasharray: none; }
+  .crt-full > .crt-flash, .crt-quick > .crt-flash { animation: none; opacity: 0; }
+}

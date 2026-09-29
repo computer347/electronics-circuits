@@ -31,12 +31,14 @@ Needs Node 20+.
 
 ```bash
 npm install
-npm run dev      # drills + solver bench at http://localhost:5173
+npm run dev      # the game at http://localhost:5173
 npm test         # solver test suite
 npm run build    # typecheck + production build
 ```
 
 ## What's built
+
+**Title screen** (`src/app/TitleScreen.tsx`): the game opens on a boot terminal. The title and a start-up log sit on the left (the log shows your World 0 stars), the modes on the right: Continue, then Play, Learn (coming soon), Drills, Sandbox and Solver bench on keys **1–5**, with **↑ ↓** and **Enter**. Continue picks up at the first level you haven't passed (Start on a fresh save) and goes to the World 0 map once they're all done. The screen powers on like an old CRT: a bright dot, stretched into a line, opened into the picture as a phosphor flash fades (`src/app/Crt.tsx`), and every mode switch replays a quick version. The power button replays the full start-up; **‹ Menu** or the SIGNAL PATH title returns to it. The effect animates `clip-path`, not `transform`, so the 3D bench and the scope's WebGL screen still measure their real size when they mount. It all switches off under the system's reduced-motion setting. An oscilloscope-style title (design option A) is kept for later.
 
 **Circuit solver** (`src/sim/`): modified nodal analysis in TypeScript with ideal parts.
 
@@ -79,4 +81,4 @@ Levels are plain JSON (`src/levels/world0/`): a starting board, faults injected 
 
 ## Next up (Phase 0)
 
-World 0 levels 2–5 (reversed diode, series vs parallel, divider, RC timing) with "find the fault" → theory classes and superposition/Thevenin drills → landing page → ride extras (pick the branch at junctions, diode walls).
+Theory classes (the Learn tab: a class per World 0 topic) → superposition/Thevenin drills → settings (CRT effects, volume) → ride extras (pick the branch at junctions, diode walls).

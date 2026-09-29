@@ -6,8 +6,11 @@ import { LevelSelect } from '../levels/LevelSelect';
 import { LevelView } from '../levels/LevelView';
 import { useSession } from '../levels/session';
 import { parseNetlist, solve, type SolveResult } from '../sim';
+import { CrtPowerOn } from './Crt';
 import { CurrentStrip } from './CurrentStrip';
+import type { ContinueTarget, MenuItem, Tab } from './menu';
 import { PRESETS } from './presets';
+import { TitleScreen } from './TitleScreen';
 
 const fmtV = (v: number) => `${v.toFixed(3)} V`;
 function fmtA(a: number) {
@@ -20,8 +23,6 @@ function fmtA(a: number) {
 
 type Outcome = { result: SolveResult; error?: undefined } | { result?: undefined; error: string };
 
-type Tab = 'play' | 'drills' | 'breadboard' | 'bench';
-
 /** The campaign: the World 0 map, or the level being played. */
 function Play() {
   const levelId = useSession((s) => s.levelId);
@@ -32,9 +33,15 @@ function Play() {
 }
 
 export function App() {
-  const [tab, setTabRaw] = useState<Tab>('play');
+  // The game opens on the title screen.
+  const [tab, setTabRaw] = useState<Tab>('home');
   // Leaving the campaign puts the sandbox bench back the way it was.
   const setTab = (t: Tab) => { if (t !== 'play') useSession.getState().exit(); setTabRaw(t); };
+  const openFromMenu = (m: MenuItem) => { if (!m.soon) setTab(m.tab); };
+  const continueFrom = (c: ContinueTarget) => {
+    setTab('play');
+    if (c.kind === 'level') useSession.getState().start(c.levelId);
+  };
   const [text, setText] = useState(PRESETS['LED + resistor']!);
 
   const outcome: Outcome = useMemo(() => {
@@ -50,12 +57,15 @@ export function App() {
   // Current shown in the strip: the largest branch current in the circuit.
   const peak = r ? Math.max(0, ...Object.values(r.currents).map(Math.abs)) : 0;
 
+  if (tab === 'home') return <TitleScreen onOpen={openFromMenu} onContinue={continueFrom} />;
+
   return (
     <div className="app">
       <header className="header">
-        <h1>SIGNAL PATH</h1>
+        <h1><button className="home-link" onClick={() => setTab('home')} title="Back to the title screen">SIGNAL PATH</button></h1>
         <span>phase 0 · prototype</span>
         <nav className="tabs">
+          <button onClick={() => setTab('home')} title="Title screen">‹ Menu</button>
           <button className={tab === 'play' ? 'active' : ''} onClick={() => setTab('play')}>Play</button>
           <button className={tab === 'drills' ? 'active' : ''} onClick={() => setTab('drills')}>Exam drills</button>
           <button className={tab === 'breadboard' ? 'active' : ''} onClick={() => setTab('breadboard')}>Sandbox</button>
@@ -63,6 +73,8 @@ export function App() {
         </nav>
       </header>
 
+      {/* Each mode switch warms the tube up again, quickly. */}
+      <CrtPowerOn key={tab} variant="quick" className="mode-crt">
       {tab === 'play' ? <Play /> : tab === 'drills' ? <DrillView /> : tab === 'breadboard' ? <BenchView /> : (
       <main className="bench">
         <section className="panel">
@@ -119,6 +131,7 @@ export function App() {
         </section>
       </main>
       )}
+      </CrtPowerOn>
     </div>
   );
 }
