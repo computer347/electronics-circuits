@@ -16,10 +16,10 @@ import { buildMap, type Room } from './map';
 
 // ---------------------------------------------------------------- layout
 
-const RING = { hw: 22, hd: 13 } as const; // half width / depth of the loop, in metres of the tiny world
+const RING = { hw: 16, hd: 10 } as const; // half width / depth of the loop, in metres of the tiny world
 const PERIM = 4 * (RING.hw + RING.hd);
 const EYE = 1.55;
-const WALK_SPEED = 7; // m/s
+const WALK_SPEED = 10; // m/s
 const DOOR_GAP = 3.2; // how close you can get to a closed door
 const ROOM_HALF = 3.6;
 const HALL = 1.7; // half width of a corridor
@@ -453,7 +453,7 @@ export function CircuitWorld({ onCleared, rail }: { onCleared: () => void; rail:
       <div className="cw-halftone" aria-hidden />
       {!landed && <div className="cw-landing" aria-hidden />}
       {rail}
-      <p className="cw-legend"><span className="cw-legend-arrow">»</span> current flows + → − · <kbd>↑</kbd> walk · <kbd>↓</kbd> turn round</p>
+      <p className="cw-legend"><span className="cw-legend-arrow">»</span> current flows + <span className="cw-arrow">→</span> − · <kbd>↑</kbd> walk · <kbd>↓</kbd> turn round</p>
 
       {scanRoom && (
         <div className="cw-scan" role="status">

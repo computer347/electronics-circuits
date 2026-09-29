@@ -24,8 +24,8 @@ export function Notebook({ open, goal, level }: { open: { value: number }; goal:
   const tex = useMemo(() => {
     const full = taskPagesTexture(goal, level);
     const left = half(full, false);
-    // The cover's underside is seen mirrored once it's flipped over: mirror the texture back.
-    left.repeat.x = -0.5; left.offset.x = 0.5;
+    // The cover's underside ends up turned half round once it's flipped over: turn the texture back.
+    left.repeat.set(-0.5, -1); left.offset.set(0.5, 1);
     return { left, right: half(full, true), cover: coverTexture() };
   }, [goal, level]);
 

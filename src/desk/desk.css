@@ -123,6 +123,7 @@
 .cw .step-rail .step.current { background: var(--r-paper); color: var(--r-blue); }
 .cw .step-rail .step.done { background: var(--r-blue); color: var(--r-paper); }
 .cw-legend { position: fixed; left: 20px; top: 22px; margin: 0; padding: 6px 10px; background: var(--r-paper); font-size: 12px; font-weight: 700; box-shadow: 3px 3px 0 var(--r-blue); z-index: 10; }
+.cw-arrow { font-family: system-ui, sans-serif; }
 .cw-legend-arrow { color: var(--r-blue); font-size: 16px; }
 .cw-scan { position: fixed; left: 24px; bottom: 24px; z-index: 12; width: min(320px, calc(100% - 48px)); padding: 14px 16px; background: var(--r-paper); box-shadow: 5px 5px 0 var(--r-yellow); }
 .cw-scan b { font-family: var(--r-display); font-weight: 400; font-size: 22px; color: var(--r-blue); letter-spacing: 0.02em; }

@@ -27,8 +27,8 @@ const BOARD_POS = new THREE.Vector3(0, BOARD.thickness * S, -0.03);
 export const boardToWorld = (x: number, y: number, z: number) => new THREE.Vector3(x * S, y * S, z * S).add(BOARD_POS);
 
 const REST = {
-  notebook: { pos: new THREE.Vector3(-0.44, 0, 0.06), rotY: 0.18 },
-  meter: { pos: new THREE.Vector3(0.36, 0, 0.05), rotY: -0.22 },
+  notebook: { pos: new THREE.Vector3(-0.37, 0, 0.04), rotY: 0.16 },
+  meter: { pos: new THREE.Vector3(0.33, 0, 0.04), rotY: -0.22 },
 };
 const LAMP = { base: new THREE.Vector3(0.6, 0, -0.32), head: new THREE.Vector3(0.36, 0.5, -0.12), aim: new THREE.Vector3(0.02, 0, 0.0) };
 
@@ -55,7 +55,7 @@ function poseFor(focus: DeskObject | null, phase: DeskPhase, cam: THREE.Perspect
   if (focus === 'meter') return framePose(METER_VIEW_CENTER, 0.5, 0.28, 64, cam);
   if (focus === 'corkboard') return { pos: new THREE.Vector3(-0.18, 0.3, 0.22), target: new THREE.Vector3(-0.18, 0.2, DESK.wallZ) };
   // Seated at the desk (also while the notebook is presented: it comes to you).
-  return framePose(DESK_CENTER, 1.08, 0.7, 58, cam, 1);
+  return framePose(DESK_CENTER, 1.0, 0.7, 60, cam, 0.8);
 }
 
 function CameraRig({ diveAt }: { diveAt: THREE.Vector3 }) {
@@ -280,7 +280,8 @@ export function DeskScene(p: DeskSceneProps) {
   const submitted = useDesk((s) => s.flags.submitted);
   const dim = focus !== null || phase !== 'desk';
   const ambient = useEased(dim ? 0.12 : 0.34);
-  const lamp = useEased(dim ? 2.2 : 3.2);
+  // In focus the lamp drops back so it doesn't burn out the page you're reading.
+  const lamp = useEased(focus === 'notebook' ? 0.9 : dim ? 1.8 : 3.2);
   const focusLight = useEased(focus && focus !== 'corkboard' ? 1 : 0);
   const amb = useRef<THREE.AmbientLight>(null);
   const hemi = useRef<THREE.HemisphereLight>(null);
