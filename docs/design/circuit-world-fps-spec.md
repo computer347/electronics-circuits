@@ -36,18 +36,19 @@ What this teaches, for free:
 | Move | W A S D | ↑ ↓ + strafe on , . | left thumb stick |
 | Look | mouse (pointer lock) | ← → turn, PgUp/PgDn look | right half drag |
 | Sprint | Shift | Shift | double-tap stick |
+| Crouch (squeeze through high-ohm passages) | C / Ctrl | C | Crouch button |
 | Scan | right mouse / Q (hold) | Q | Scan button |
 | Use | left mouse / E | E | Use button |
 | Map | Tab (hold) | Tab | Map button |
 | Back to the bench | Esc (releases the pointer first) | Esc | Back |
 
-- Click the view to capture the pointer; a first-time card shows the four verbs with pictures (Move, Look, Scan, Use). That's the whole vocabulary: **four verbs, no more** (Hick's law).
+- Click the view to capture the pointer; a first-time card shows the four verbs with pictures (Move, Look, Scan, Use). That's the whole vocabulary: **four verbs, no more** (Hick's law). Sprint and crouch are ways of moving, taught when you first meet a long corridor and a narrow passage.
 - **Click-to-walk stays** as an option: click a room on the map (Tab) and the electron walks there on its own. It's the reduced-motion and "I don't play shooters" path.
 - Settings (in the Esc menu later): mouse sensitivity, invert Y, field of view (70–90°), head bob on/off (off under reduced motion), snap turning.
 
 ## Movement feel
 
-- Walk 4 m/s, sprint 7 m/s, acceleration over about 0.15 s, no jumping (drops are taken by walking off ledges, climbs only by lift or ramp: height must mean voltage, so no shortcuts).
+- Walk 4 m/s, sprint 7 m/s, crouch 1.6 m/s, acceleration over about 0.15 s, no jumping (drops are taken by walking off ledges, climbs only by lift or ramp: height must mean voltage, so no shortcuts).
 - Eye height 1.6 m, field of view 78°, gentle head bob (1.5 cm) only while walking.
 - Ramps are walkable up and down, but walking *up* a ramp is slow and the ramp glows "against the current": you can go against the flow, it's just visibly uphill work.
 - Drops: walking off a ledge lands you on the plaza below with a short camera dip. You can't climb back up except the way the circuit allows (lift, ramp).
@@ -99,16 +100,69 @@ World {
 
 Things you can't fix inside still count as progress: finding them is the point. The way back ("Back to the bench to fix it") appears once you've seen the fault, and the result card on the bench points at the part, as now.
 
+## Challenge: what makes it a game
+
+Finding the fault is a puzzle, but walking there should be a challenge too. Two layers, with one hard rule between them.
+
+**The rule: the circuit is never wrong.** Heights, drops, currents and what the scan says always come from the solver. Nothing you do while walking changes them (only a real fix does). The challenge acts on *you*, the electron, never on the circuit, so the world keeps agreeing with the multimeter on the bench.
+
+### 1. Resistance is a tight squeeze (physics you can feel)
+
+A resistor isn't a smooth ramp any more: it's a **passage through the metal**, built from its value the way a real resistor is: R = ρ × length ÷ cross-section.
+
+- **Narrower and longer for more ohms**, on a log scale so World 0's range fits: 100 Ω is a 3 m wide hall, 1 kΩ a 2 m corridor, 10 kΩ a 1.2 m passage you walk through sideways, 100 kΩ a 0.7 m crawlspace (**C** to crouch; crouching is slow).
+- **The lattice is in the way.** The passage is full of atoms (big, softly glowing spheres in rows) that **vibrate**. You weave between them; bumping one knocks you back, slows you, and throws off an orange **heat spark**. That's exactly what resistance is: electrons colliding with the lattice, and the collisions turning into heat.
+- **Hotter parts shake harder.** Vibration grows with the power the part dissipates (P = I² × R, from the solver): a resistor carrying lots of current is a rougher crossing than one that's barely working. Before the power is on the atoms only tremble.
+- The **drop is still the drop**: you come out at the height the solver says (I × R lower), however well you dodged. Skill buys you time, not volts.
+
+### 2. Your spark (the player's energy, a game layer)
+
+You carry a **spark**: the pink glow round the electron, shown as a small meter by the crosshair. It's full when you step off the lift.
+
+- **Heat wisps** hurt it. Heat sparks thrown off by collisions drift for a few seconds and chase you weakly; touching one dims your spark. So a clumsy crossing of a hot resistor costs you twice: knock-backs and wisps.
+- **Gremlins** (World 0: one or two per level, later worlds more) are the enemies: small riso-printed creatures that patrol corridors and **drain your spark** on contact. In World 0 they stand for **stray static**: they come from the edges of the board and fizz blue. In later worlds the same enemies become interference (EMI) along long traces and ground bounce around switching parts, so the enemy list grows with the course.
+- **Running out** isn't death: your spark gutters, the screen flashes, and you're back at the lift (charged again, the fog you cleared stays clear). It costs time, nothing else.
+- **Recharge** at the lift, or at a **tap** (a charged capacitor, a battery): step into the glow.
+- **Scan and Use cost nothing**, so learning is never punished; only moving carelessly is.
+
+A spark isn't a real voltage, and the game never calls it one. One Theory page (0–1) says what's fiction and what's real: real electrons don't get eaten, but the heat is real (P = I² × R), and that's why resistors get warm.
+
+### 3. Parts as set pieces
+
+| Part | Challenge |
+|---|---|
+| Resistor | The squeeze: narrow passage, vibrating lattice, heat wisps |
+| LED | The door; behind a working LED, a bright room you have to cross quickly (the light stings your spark) |
+| Capacitor (0–5) | A **reservoir** that fills while you hold the drawbridge (the push button). Water rising at the RC rate lifts a floating platform: you need it high enough (63 %, one τ) to cross, and it drains back through the bleed resistor when you let go. Timing, taught by feel |
+| Short circuit | A **flood** you outrun up the nearest ramp while every room goes dark |
+| Burnt part | Smoke that hides the way and slowly dims your spark |
+| Divider tap (0–4) | A ledge exactly 3 m up; stand on it and your meter says so |
+
+### 4. How it's scored
+
+The bench's three stars don't change (spec, no hints / nothing burnt, par). Inside, each level adds a **run badge** on the result card, not a star, so learning never locks progress:
+
+- **Clean**: no knock-backs from the lattice.
+- **Untouched**: no spark lost to wisps or gremlins.
+- **Quick**: under the level's run time.
+
+Badges are saved with the level and shown on its corkboard card as small stamps. Difficulty scales with the world: World 0 has slow gremlins, gentle lattices and generous run times.
+
+### Accessibility and tone
+
+- An **Easy passage** setting: atoms still move (it's the teaching) but can't knock you back, and gremlins don't drain. Reduced motion turns atom vibration down to a slow sway.
+- Enemies are silly, not scary: riso creatures that fizz and blink, no gore, no jump scares.
+
 ## Power on and the end of the level
 
 At the lift's panel, **Use** switches the power on. Water pours from the top of the lift, runs down every ramp in turn, through each door (the LED rooms light in their own colour), and pools at the floor, then back to the lift. Speed and width follow the real current. Then the level is checked (`checkLevel`), and the stars appear in the world before the camera rises back out of the board to the bench.
 
-Stars stay as they are on the bench (spec, no hints / nothing burnt, par). Inside the circuit there's no timer and no fail state. You can't die; the worst that happens is a door that won't open.
+Stars stay as they are on the bench (spec, no hints / nothing burnt, par); the run badges (above) are the inside's own score. There's no fail state: running out of spark sends you back to the lift, nothing more.
 
 ## HUD (the only things on screen)
 
 - The step rail, top centre (step 4 lit).
-- A small crosshair; the Use prompt appears under it only when something is usable.
+- A small crosshair with the spark meter as a ring round it; the Use prompt appears under it only when something is usable.
 - The scan tags, in the world, only while scanning.
 - The objective line, top left, one sentence: "Get the current round: find why LED1 is dark." It changes as you go ("Now switch the power on at the lift").
 - Bottom right: the one main button, as on the bench (Back to the bench / Switch on).
@@ -126,6 +180,7 @@ Stars stay as they are on the bench (spec, no hints / nothing burnt, par). Insid
 - `buildWorld`: heights equal node voltages; around every closed loop the lift's rise equals the sum of drops (KVL); a reversed LED gives a blocking door with the supply voltage across it; an open loop gives a chasm; branches become forks between the right two plazas.
 - Controller: can walk the whole loop of a clear circuit; can't pass a closed door, a raised bridge or a chasm; walking off a ledge lands on the lower plaza; can't climb a ledge; sliding along walls never lets you through a corner.
 - Level scripts: each World 0 level can be cleared from spawn by a scripted walker (walk to the fault, Use, walk to the lift, Use).
+- Challenge: passage width falls as R rises; lattice vibration follows the solver's power; the height after a resistor is the solver's, whatever the collisions; running out of spark respawns at the lift without changing the board; Easy passage removes knock-back and drain.
 
 ## Build plan
 
@@ -134,7 +189,8 @@ Stars stay as they are on the bench (spec, no hints / nothing burnt, par). Insid
 3. **Verbs**: Scan cone and tags, Use prompts (door, drawbridge, power panel), the objective line.
 4. **Power on**: the water, rooms lighting in order, the check and the stars in the world, rising back out to the bench.
 5. **Map and onboarding**: Tab schematic map with click-to-walk, the first-time controls card, touch controls, settings.
-6. **Faults for every level**: flood, steep ramp, scorched room, reservoir filling (0–5), divider tap plaza (0–4).
+6. **The challenge**: resistor passages sized by R with the vibrating lattice and heat wisps, the spark meter, gremlins, respawn at the lift, run badges.
+7. **Set pieces for every level**: the flood, smoke in burnt rooms, the reservoir platform (0–5), the divider ledge (0–4), Easy passage.
 
 Each step is playable and committed on its own.
 
@@ -145,3 +201,5 @@ Each step is playable and committed on its own.
 3. **Fixing from inside**: only the fixes that make sense in place (turn a door, hold a bridge), as specced, or also carry parts in (e.g. lay a resistor ramp across a chasm)? Carrying parts is fun, but it blurs "build on the bench, test inside".
 4. **Touch**: first-class now, or after the desktop feel is right?
 5. **Free bench**: the same free-roam world for your own circuits (no scoring), as now?
+6. **Enemies**: stray static in World 0 growing into interference (EMI) and ground bounce later, as specced? And do they chase, or only patrol? (Recommended: patrol in World 0, chase from World 1.)
+7. **Run badges**: separate from the stars as specced (recommended, so the challenge never blocks learning), or fold the run into the third star?
