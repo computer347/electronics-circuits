@@ -251,14 +251,14 @@ Stars stay as they are on the bench (spec, no hints / nothing burnt, par); the r
 
 Each step is playable and committed on its own.
 
-## Open questions for Mike
+## Decisions (Mike, 2026-09-30: all as recommended)
 
-1. **Voltage as height**: the core of this spec. Yes, or keep the flat world?
-2. **Direction**: downhill conventional current (recommended, it matches the height), or electron flow (you'd climb every ramp)?
-3. **Fixing from inside**: only the fixes that make sense in place (turn a door, hold a bridge), as specced, or also carry parts in (e.g. lay a resistor ramp across a chasm)? Carrying parts is fun, but it blurs "build on the bench, test inside".
-4. **Touch**: first-class now, or after the desktop feel is right?
-5. **Free bench**: the same free-roam world for your own circuits (no scoring), as now?
-6. **Enemies**: stray static in World 0 growing into interference (EMI) and ground bounce later, as specced? And do they chase, or only patrol? (Recommended: patrol in World 0, chase from World 1.)
-7. **Run badges**: separate from the stars as specced (recommended, so the challenge never blocks learning), or fold the run into the third star?
-8. **Current limit on the bench**: move the burning from the bench to the moment of truth inside, as specced (recommended), or keep LEDs burning on the bench the moment a wrong resistor goes in?
-9. **Failure timing**: real-life order (LED instant, resistor seconds, capacitor seconds) scaled so it's watchable, as specced, or slow everything down so every part can be saved?
+1. **Voltage is height.** Every point stands at its voltage, 1 V = 1 m.
+2. **Downhill conventional current**, + to −, with a Theory page on real electron flow.
+3. **Fixes inside are in place only** (turn a door, hold a drawbridge); parts are built on the bench.
+4. **Touch controls after** the mouse-and-keyboard feel is right.
+5. **Free bench circuits are walkable** in the same world, unscored.
+6. **Enemies**: stray static in World 0, interference (EMI) and ground bounce later; patrol in World 0, chase from World 1.
+7. **Run badges** (Clean, Untouched, Quick) stay separate from the stars.
+8. **Current-limited bench supply**: burning moves inside, to the power-on moment.
+9. **Real-life failure order**, scaled to be watchable: LED instant, resistor seconds, capacitor seconds; the breaker saves only the slow ones.
