@@ -40,10 +40,19 @@ Front page (riso poster) → Continue → desk → notebook (task) → breadboar
 - Clear the circuit for every level: broken bridge for an open loop, alcoves for branches, scorched rooms, and "Back to the bench" with the check's diagnosis when the fix belongs on the board.
 - Not yet seen in a browser: everything from session 2 (the dev server was stopped for low memory and not restarted).
 
+### Session 3
+
+- Lab bench: antistatic mat (grounded), bench power supply with live V/A readouts and an OUTPUT button that submits, soldering station with iron, sponge and brass wool, solder reel, helping hands, parts drawers, cutters, tweezers, taped resistors, spare LEDs. All placed from `src/desk/layout.ts`.
+- Notebook text is evenly lit (pages light themselves as the book opens).
+- Notebook sections: Task, Theory (part close-ups with numbered callouts, the class steps with live labs, the check with a stamp), Math (formulas with every symbol explained, worked examples from the drill generators, practice on the page). HTML pages laid over the 3D book.
+- Bench tour on the first visit (and from the Tour button): the camera visits each thing with a one- or two-sentence card.
+- Meter reaches every mode (the dial bounced between Ω and A); smooth wires; labels over parts, a stats card on click, zoom at the board.
+- Not yet seen in a browser: sessions 2 and 3.
+
 ### Next
 
-1. Browser pass over all five levels with screenshots, then tune what it shows (camera framing, lead slack, tray placement, the inside of each level).
-2. Level 0–5 on the desk has no oscilloscope yet: the charge-time check still runs, but you can't watch the curve. Put a small scope on the desk, or show the curve in the circuit world.
-3. Parts lifting out of the parts box on the way to the board, and the whole strip lighting while you carry a part.
-4. Short circuit as a flood in the circuit world.
-5. Retire the old tabs once Mike has played World 0 on the desk; code-split three.js; sound.
+1. Browser pass over the bench, the tour, the notebook sections and all five levels, with screenshots; tune layout, lighting and sizes from what it shows.
+2. Scripted replays (clips): a timeline of camera moves, board changes, meter readings and captions played on the real bench and inside the circuit, with pause, scrub and "try it from here". Author one for 0–2 first, then one per lesson step, shown as a "watch" page in Theory.
+3. An oscilloscope on the bench for level 0–5.
+4. Parts lifting out of the parts box on the way to the board; the whole strip lighting while you carry a part.
+5. Short circuit as a flood in the circuit world. Retire the old tabs once World 0 has been played on the desk; code-split three.js; sound.

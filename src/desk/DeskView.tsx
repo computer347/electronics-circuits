@@ -18,6 +18,7 @@ import { DIAL, meteredBoard, readMeter } from './meter';
 import { NotebookPages } from './NotebookPages';
 import { PartsTray } from './PartsTray';
 import { taskPage } from './taskPages';
+import { markTourSeen, TOUR, tourSeen } from './tour';
 import type { BoxItem } from './assets/PartsBox';
 import { DeskScene } from './DeskScene';
 import { TAGS, useHover } from './hover';
@@ -96,7 +97,11 @@ export function DeskView({ onMenu }: { onMenu: () => void }) {
     // Canvas textures draw text, so wait for the riso fonts (but never for long).
     const t = setTimeout(() => setFonts(true), 1500);
     void Promise.all([document.fonts.load("64px 'Anton'"), document.fonts.load("bold 20px 'Space Mono'"), document.fonts.load("20px 'Space Mono'"), document.fonts.load("italic 20px 'Space Mono'")]).finally(() => setFonts(true));
-    const p = setTimeout(() => setPrinted(true), reducedMotion() ? 0 : 1300);
+    const p = setTimeout(() => {
+      setPrinted(true);
+      // First time at the bench: show what everything is.
+      if (!tourSeen() && !useDesk.getState().focus) useDesk.getState().setTour(0);
+    }, reducedMotion() ? 0 : 1300);
     return () => { clearTimeout(t); clearTimeout(p); };
   }, []);
 
@@ -144,6 +149,12 @@ export function DeskView({ onMenu }: { onMenu: () => void }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (desk.phase !== 'desk') return;
+      if (desk.tour !== null) {
+        if (e.key === 'Escape') endTour();
+        if (e.key === 'Enter' || e.key === 'ArrowRight') { e.preventDefault(); tourStep(1); }
+        if (e.key === 'ArrowLeft') tourStep(-1);
+        return;
+      }
       if (e.key === 'Escape') back();
       if ((e.key === 'm' || e.key === 'M') && desk.focus === 'meter') desk.turnDial(e.shiftKey ? -1 : 1);
       if ((e.key === 'Delete' || e.key === 'Backspace') && desk.focus === 'breadboard') useBench.getState().removeSelected();
@@ -154,6 +165,13 @@ export function DeskView({ onMenu }: { onMenu: () => void }) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   });
+
+  const endTour = () => { markTourSeen(); desk.setTour(null); };
+  const tourStep = (d: number) => {
+    const i = (desk.tour ?? 0) + d;
+    if (i >= TOUR.length) endTour(); else desk.setTour(Math.max(0, i));
+  };
+  const stop = desk.tour !== null ? TOUR[desk.tour] : undefined;
 
   const page = useMemo(() => taskPage(level), [level]);
   const cls = WORLD0_CLASSES.find((c) => c.levelId === level.id);
@@ -205,7 +223,7 @@ export function DeskView({ onMenu }: { onMenu: () => void }) {
           <DeskScene
             analysis={analysis}
             reading={reading}
-            glow={desk.phase === 'desk' && desk.focus === null ? glowing(loop) : null}
+            glow={desk.phase === 'desk' && desk.focus === null && desk.tour === null ? glowing(loop) : null}
             page={page}
             levelNumber={level.number}
             passed={passed}
@@ -221,7 +239,21 @@ export function DeskView({ onMenu }: { onMenu: () => void }) {
       {desk.phase === 'dive' && <div className="desk-dive" aria-hidden><i /><i /><i /><i /><span>1 : 1 000 000 000</span></div>}
 
       <StepRail interactive={desk.phase === 'desk'} />
-      <p className="desk-level">{level.world}–{level.number} {level.title}</p>
+      <p className="desk-level">{level.world}–{level.number} {level.title}
+        {desk.phase === 'desk' && desk.tour === null && <button className="desk-tour-btn" onClick={() => desk.setTour(0)}>Tour</button>}
+      </p>
+      {stop && (
+        <div className="desk-tourcard" role="dialog" aria-label="Bench tour">
+          <p className="nb-kicker">Bench tour · {desk.tour! + 1} / {TOUR.length}</p>
+          <h2>{stop.title}</h2>
+          <p>{stop.text}</p>
+          <div className="desk-tourdots" aria-hidden>{TOUR.map((t, i) => <i key={t.id} className={i === desk.tour ? 'on' : i < desk.tour! ? 'seen' : ''} />)}</div>
+          <div className="nb-row">
+            {desk.tour! > 0 && <button className="nb-link" onClick={() => tourStep(-1)}>‹ Back</button>}
+            <button className="nb-link" onClick={endTour}>Skip the tour</button>
+          </div>
+        </div>
+      )}
       <button className="desk-back" onClick={() => (desk.focus ? back() : onMenu())}>
         ‹ {desk.focus ? 'Back' : 'Menu'} <kbd>Esc</kbd>
       </button>
@@ -260,7 +292,10 @@ export function DeskView({ onMenu }: { onMenu: () => void }) {
       {desk.phase === 'desk' && desk.focus === 'meter' && reading.note && <p className="desk-notice">{reading.note}</p>}
       {desk.phase === 'desk' && step === 'done' && desk.focus === null && <div className="desk-done"><Stars n={records[level.id]?.stars ?? 0} /></div>}
 
-      {desk.phase === 'desk' && (
+      {desk.phase === 'desk' && stop && (
+        <button className="desk-main" onClick={() => tourStep(1)}>{desk.tour === TOUR.length - 1 ? 'Start: read the task' : 'Next'}</button>
+      )}
+      {desk.phase === 'desk' && !stop && (
         <button className={`desk-main ${main.kind === 'submit' && !main.enabled ? 'locked' : ''}`} onClick={runMain}
           disabled={main.kind === 'submit' && !main.enabled} aria-disabled={main.kind === 'submit' && !main.enabled}>
           {main.kind === 'submit' && !main.enabled && <span aria-hidden>🔒 </span>}{mainLabel}

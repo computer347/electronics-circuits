@@ -29,6 +29,9 @@ interface DeskStore {
   nbPage: number;
   openNotebook: (section: Section, page?: number) => void;
   setNbPage: (page: number) => void;
+  /** The guided tour's current stop, or null when it isn't running. */
+  tour: number | null;
+  setTour: (i: number | null) => void;
   /** Open the desk on the level map (Play on the front page). */
   startOnMap: boolean;
   /** Where the multimeter's dial points. */
@@ -64,6 +67,8 @@ export const useDesk = create<DeskStore>((set, get) => ({
   result: null,
   meterMode: 'V',
   startOnMap: false,
+  tour: null,
+  setTour: (tour) => { if (tour !== null) get().focusOn(null); set({ tour }); },
   nbSection: 'task',
   nbPage: 0,
   openNotebook: (nbSection, nbPage = 0) => { if (get().focus !== 'notebook') get().focusOn('notebook'); set({ nbSection, nbPage }); },
@@ -77,14 +82,15 @@ export const useDesk = create<DeskStore>((set, get) => ({
   enter: (levelId) => {
     useSession.getState().start(levelId);
     useBench.getState().setTool('select');
-    set({ levelId, focus: null, phase: 'desk', flags: FRESH_FLAGS, result: null, meterMode: 'V', nbSection: 'task', nbPage: 0 });
+    set({ levelId, focus: null, phase: 'desk', flags: FRESH_FLAGS, result: null, meterMode: 'V', nbSection: 'task', nbPage: 0, tour: null });
   },
   focusOn: (focus) => {
     const bench = useBench.getState();
     // The meter view is where you probe; everywhere else a click selects.
     bench.setTool(focus === 'meter' ? 'probe' : 'select');
     bench.select(null);
-    set({ focus, zoom: 1 });
+    // Picking something up ends the tour.
+    set({ focus, zoom: 1, ...(focus ? { tour: null } : {}) });
   },
   closeNotebook: () => { set({ flags: { ...get().flags, readTask: true } }); get().focusOn(null); },
   doneBuilding: () => { set({ flags: { ...get().flags, built: true } }); get().focusOn(null); },

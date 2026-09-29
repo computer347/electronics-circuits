@@ -8,6 +8,7 @@ import { PARTS, spreads } from '../src/desk/notebook';
 import { partInfo } from '../src/desk/partInfo';
 import { makeDrill } from '../src/drills/generators';
 import { taskPage } from '../src/desk/taskPages';
+import { TOUR } from '../src/desk/tour';
 import { measurementsNow, useDesk } from '../src/desk/store';
 import { canSubmit, currentStep, FRESH, glowing, mainAction, railStates } from '../src/desk/steps';
 import { startingBoard, WORLD0 } from '../src/levels';
@@ -282,5 +283,19 @@ describe('notebook sections', () => {
 
   it('explains each part with at least two callouts', () => {
     for (const p of Object.values(PARTS)) expect(p.facts.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe('bench tour', () => {
+  it('visits each thing on the bench once, with a short card', () => {
+    expect(new Set(TOUR.map((t) => t.id)).size).toBe(TOUR.length);
+    for (const t of TOUR) {
+      expect(t.text.length).toBeLessThan(260);
+      expect(Number.isFinite(t.target.x + t.target.y + t.target.z)).toBe(true);
+      expect(t.elevation).toBeGreaterThan(0);
+    }
+    useDesk.getState().setTour(2);
+    useDesk.getState().focusOn('meter');
+    expect(useDesk.getState().tour).toBeNull();
   });
 });

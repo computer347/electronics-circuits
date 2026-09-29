@@ -26,6 +26,7 @@ import { useHover } from './hover';
 import type { Reading } from './meter';
 import { useNotebookRect } from './notebookRect';
 import { partInfo } from './partInfo';
+import { TOUR } from './tour';
 import type { TaskPage } from './taskPages';
 import type { DeskObject } from './steps';
 import { LAYOUT, MAT_T } from './layout';
@@ -72,15 +73,17 @@ function CameraRig({ diveAt }: { diveAt: THREE.Vector3 }) {
   const phase = useDesk((s) => s.phase);
   const zoom = useDesk((s) => s.zoom);
   const zoomAt = useDesk((s) => s.zoomAt);
+  const tour = useDesk((s) => s.tour);
   const tw = useRef<{ from: Pose; to: Pose; t0: number; dur: number; key: string } | null>(null);
   const cur = useRef<Pose>({ pos: new THREE.Vector3(), target: new THREE.Vector3() });
 
   useFrame(() => {
     const cam = camera as THREE.PerspectiveCamera;
     const zooming = (focus === 'breadboard' || focus === 'meter') && phase === 'desk' && zoom > 1;
-    const key = `${focus}|${phase}|${size.width}x${size.height}|${zooming ? `${zoom.toFixed(3)},${zoomAt.join(',')}` : ''}`;
+    const stop = tour !== null && phase === 'desk' && focus === null ? TOUR[tour] : undefined;
+    const key = `${focus}${stop ? `@${stop.id}` : ''}|${phase}|${size.width}x${size.height}|${zooming ? `${zoom.toFixed(3)},${zoomAt.join(',')}` : ''}`;
     if (!tw.current || tw.current.key !== key) {
-      const to = poseFor(focus, phase, cam, diveAt);
+      const to = stop ? framePose(stop.target, stop.size, stop.size * 0.6, stop.elevation, cam, 0.9) : poseFor(focus, phase, cam, diveAt);
       if (zooming) {
         // Lean in toward the point under the pointer, keeping the same viewing angle.
         const at = new THREE.Vector3(zoomAt[0], 0, zoomAt[1]);
