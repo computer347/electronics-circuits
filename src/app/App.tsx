@@ -9,10 +9,11 @@ import { useSession } from '../levels/session';
 import { parseNetlist, solve, type SolveResult } from '../sim';
 import { CrtPowerOn } from './Crt';
 import { CurrentStrip } from './CurrentStrip';
-import type { ContinueTarget, MenuItem } from './menu';
 import { useNav } from './nav';
 import { PRESETS } from './presets';
-import { TitleScreen } from './TitleScreen';
+import { DeskView } from '../desk/DeskView';
+import { useDesk } from '../desk/store';
+import { FrontPage, type FrontChoice } from './FrontPage';
 
 const fmtV = (v: number) => `${v.toFixed(3)} V`;
 function fmtA(a: number) {
@@ -38,11 +39,13 @@ export function App() {
   // The game opens on the title screen (nav.ts starts on 'home').
   const tab = useNav((s) => s.tab);
   const setTab = useNav((s) => s.go);
-  const openFromMenu = (m: MenuItem) => { if (m.soon) return; if (m.tab === 'learn') useNav.getState().openClass(null); else setTab(m.tab); };
-  const continueFrom = (c: ContinueTarget) => {
-    if (c.kind === 'level') useNav.getState().playLevel(c.levelId);
-    else setTab('play');
+  const choose = (c: FrontChoice) => {
+    if (c === 'continue') setTab('desk');
+    else if (c === 'play') setTab('play');
+    else if (c === 'learn') useNav.getState().openClass(null);
+    else setTab('drills');
   };
+  const leaveDesk = () => { useDesk.getState().leave(); };
   const [text, setText] = useState(PRESETS['LED + resistor']!);
 
   const outcome: Outcome = useMemo(() => {
@@ -58,7 +61,9 @@ export function App() {
   // Current shown in the strip: the largest branch current in the circuit.
   const peak = r ? Math.max(0, ...Object.values(r.currents).map(Math.abs)) : 0;
 
-  if (tab === 'home') return <TitleScreen onOpen={openFromMenu} onContinue={continueFrom} />;
+  // The front page (riso poster); Continue sits you at the desk.
+  if (tab === 'home') return <FrontPage onChoose={choose} />;
+  if (tab === 'desk') return <DeskView onMenu={() => { leaveDesk(); setTab('home'); }} onLearn={(id) => { leaveDesk(); useNav.getState().openClass(id); }} />;
 
   return (
     <div className="app">

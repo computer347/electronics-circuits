@@ -4,7 +4,7 @@
  */
 import { OrbitControls } from '@react-three/drei';
 import { Canvas, useThree, type ThreeEvent } from '@react-three/fiber';
-import { useEffect, useMemo } from 'react';
+import { createContext, useContext, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { colorBands } from './colorCode';
 import { BOARD, HOLES, hole, type HoleId } from './layout';
@@ -23,6 +23,18 @@ const FAULT = '#ff2e88';
 const Y_AXIS = new THREE.Vector3(0, 1, 0);
 
 type V3 = [number, number, number];
+
+/**
+ * Two looks for the same board: the phosphor bench (dark green, glowing strips) and the desk
+ * (a real white breadboard under a warm lamp, strips tinted riso blue).
+ */
+export type BoardLook = 'phosphor' | 'desk';
+const LOOKS = {
+  phosphor: { body: '#1b2d23', channel: '#0b140f', hole: '#010302', strip: '#2a6b4a', hot: SIGNAL, mark: '#39ff88' },
+  desk: { body: '#ebe6da', channel: '#d3ccbd', hole: '#3b3530', strip: '#c9c2b3', hot: new THREE.Color('#0078bf'), mark: '#ff48b0' },
+} as const;
+const LookContext = createContext<BoardLook>('phosphor');
+const useLook = () => LOOKS[useContext(LookContext)];
 const at = (id: HoleId, y = 0): V3 => { const h = hole(id); return [h.x, y, h.z]; };
 
 /** A cylinder stretched between two points. */
@@ -77,6 +89,7 @@ function Board({ analysis, dynamic }: { analysis: BoardAnalysis; dynamic: boolea
     });
   }, []);
   const hoverStrip = hover ? hole(hover).strip : null;
+  const look = useLook();
 
   const holeMatrices = useMemo(() => {
     const m = new THREE.Object3D();
@@ -97,10 +110,10 @@ function Board({ analysis, dynamic }: { analysis: BoardAnalysis; dynamic: boolea
     <group>
       <mesh position={[0, -BOARD.thickness / 2, 0]} receiveShadow>
         <boxGeometry args={[BOARD.width, BOARD.thickness, BOARD.depth]} />
-        <meshStandardMaterial color="#1b2d23" roughness={0.75} />
+        <meshStandardMaterial color={look.body} roughness={0.75} />
       </mesh>
       {/* centre channel and rail stripes */}
-      <mesh position={[0, 0.004, 0]}><boxGeometry args={[BOARD.width - 1, 0.01, 0.6]} /><meshBasicMaterial color="#0b140f" /></mesh>
+      <mesh position={[0, 0.004, 0]}><boxGeometry args={[BOARD.width - 1, 0.01, 0.6]} /><meshStandardMaterial color={look.channel} roughness={0.8} /></mesh>
       {/* rail markings: red beside the + rails, blue beside the - rails */}
       {[[-6.45, '#c0392b'], [-8.55, '#2f6fe0'], [6.45, '#c0392b'], [8.55, '#2f6fe0']].map(([z, c]) => (
         <mesh key={z as number} position={[0, 0.006, z as number]}>
@@ -112,7 +125,7 @@ function Board({ analysis, dynamic }: { analysis: BoardAnalysis; dynamic: boolea
         const v = voltageAt(s.sample);
         const level = v === undefined ? 0 : Math.min(1, Math.abs(v) / vref);
         const hot = s.strip === hoverStrip;
-        const color = hot ? SIGNAL : new THREE.Color('#2a6b4a').lerp(SIGNAL, showStrips ? level * 0.85 : 0);
+        const color = hot ? look.hot : new THREE.Color(look.strip).lerp(look.hot, showStrips ? level * 0.85 : 0);
         return (
           <mesh key={s.strip} position={[s.cx, 0.006, s.cz]}>
             <boxGeometry args={[s.w, 0.006, s.d]} />
@@ -122,7 +135,7 @@ function Board({ analysis, dynamic }: { analysis: BoardAnalysis; dynamic: boolea
       })}
       <instancedMesh args={[undefined, undefined, HOLES.length]} ref={(m) => { if (m) holeMatrices.forEach((mat, i) => m.setMatrixAt(i, mat)); if (m) m.instanceMatrix.needsUpdate = true; }}>
         <boxGeometry args={[0.3, 0.02, 0.3]} />
-        <meshBasicMaterial color="#010302" />
+        <meshBasicMaterial color={look.hole} />
       </instancedMesh>
       {/* invisible hit plane for picking the nearest hole */}
       <mesh
@@ -139,7 +152,7 @@ function Board({ analysis, dynamic }: { analysis: BoardAnalysis; dynamic: boolea
       {hover && (
         <mesh position={at(hover, 0.03)} rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[0.2, 0.3, 24]} />
-          <meshBasicMaterial color={SIGNAL} toneMapped={false} />
+          <meshBasicMaterial color={look.mark} toneMapped={false} />
         </mesh>
       )}
       {pending && (
@@ -507,7 +520,10 @@ function FitCamera() {
   return null;
 }
 
-export function BreadboardScene({ analysis, dynamic }: { analysis: BoardAnalysis; dynamic: boolean }) {
+/** Everything on the board (board, supply, parts, probes, flow), without a canvas, camera or lights. */
+export function BreadboardContents({ analysis, dynamic, look = 'phosphor', supplyBox = true }: {
+  analysis: BoardAnalysis; dynamic: boolean; look?: BoardLook; supplyBox?: boolean;
+}) {
   const parts = useBench((s) => s.parts);
   const selected = useBench((s) => s.selected);
   const probes = useBench((s) => s.probes);
@@ -520,7 +536,6 @@ export function BreadboardScene({ analysis, dynamic }: { analysis: BoardAnalysis
   const board = useMemo(() => ({ supply, parts }), [supply, parts]);
   const edges = useMemo(() => (view === 'build' ? [] : buildFlow(board, analysis)), [view, board, analysis]);
   const colors = useMemo(() => sourceColors(board), [board]);
-  const dim = view !== 'build';
 
   // While moving, draw the parts where they'd land, tinted green (ok) or magenta (blocked).
   const preview = useMemo(() => {
@@ -530,18 +545,11 @@ export function BreadboardScene({ analysis, dynamic }: { analysis: BoardAnalysis
   const shown = preview?.parts ?? parts;
   const movingIds = new Set(moving?.ids ?? []);
   const markOf = (id: string) =>
-    movingIds.has(id) ? (preview && !preview.valid ? FAULT : '#39ff88') : id === selected ? AMBER : undefined;
+    movingIds.has(id) ? (preview && !preview.valid ? FAULT : '#39ff88') : id === selected ? (look === 'desk' ? '#ff48b0' : AMBER) : undefined;
   return (
-    <Canvas camera={{ position: [0, 22, 17], fov: 40 }} dpr={[1, 2]} shadows={false}>
-      <color attach="background" args={['#030604']} />
-      <fog attach="fog" args={['#030604', 70, 130]} />
-      <ambientLight intensity={dim ? 0.35 : 0.9} />
-      <hemisphereLight args={['#c8ffe0', '#0a140e', dim ? 0.25 : 0.6]} />
-      <directionalLight position={[8, 20, 10]} intensity={dim ? 0.6 : 1.6} />
-      <directionalLight position={[-10, 8, -6]} intensity={0.35} color="#7fffc4" />
-      <gridHelper args={[80, 40, '#123824', '#0c2418']} position={[0, -BOARD.thickness - 0.01, 0]} />
+    <LookContext.Provider value={look}>
       <Board analysis={analysis} dynamic={dynamic} />
-      <Supply analysis={analysis} />
+      {supplyBox && <Supply analysis={analysis} />}
       {shown.map((p) => {
         const mark = markOf(p.id);
         switch (p.kind) {
@@ -565,6 +573,23 @@ export function BreadboardScene({ analysis, dynamic }: { analysis: BoardAnalysis
       {probes.black && <Probe h={probes.black} color="#222" />}
       {scopeProbes.ch1 && <ScopeProbe h={scopeProbes.ch1} color="#39ff88" label="CH1" />}
       {scopeProbes.ch2 && <ScopeProbe h={scopeProbes.ch2} color="#3ad7ff" label="CH2" />}
+    </LookContext.Provider>
+  );
+}
+
+export function BreadboardScene({ analysis, dynamic }: { analysis: BoardAnalysis; dynamic: boolean }) {
+  const view = useBench((s) => s.view);
+  const dim = view !== 'build';
+  return (
+    <Canvas camera={{ position: [0, 22, 17], fov: 40 }} dpr={[1, 2]} shadows={false}>
+      <color attach="background" args={['#030604']} />
+      <fog attach="fog" args={['#030604', 70, 130]} />
+      <ambientLight intensity={dim ? 0.35 : 0.9} />
+      <hemisphereLight args={['#c8ffe0', '#0a140e', dim ? 0.25 : 0.6]} />
+      <directionalLight position={[8, 20, 10]} intensity={dim ? 0.6 : 1.6} />
+      <directionalLight position={[-10, 8, -6]} intensity={0.35} color="#7fffc4" />
+      <gridHelper args={[80, 40, '#123824', '#0c2418']} position={[0, -BOARD.thickness - 0.01, 0]} />
+      <BreadboardContents analysis={analysis} dynamic={dynamic} />
       <FitCamera />
       {import.meta.env.DEV && <DevProject />}
       <OrbitControls makeDefault enabled={view !== 'ride'} enablePan target={[0, 0, 0]} maxPolarAngle={Math.PI / 2.3} minDistance={8} maxDistance={60} />

@@ -1,0 +1,446 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body>
+<title>Signal Path Bench</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Mono:wght@400;700&family=Kalam:wght@700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one full-window 3D scene, a small riso-ink HUD on top, one context panel at the bottom. Single dark look by design. */
+:root {
+  --room: #16130f;
+  --paper: #f1ece1;
+  --ink: #1c0a3a;
+  --pink: #ff48b0;
+  --blue: #0078bf;
+  --dim: #b9b0a2;
+  --display: 'Anton', 'Impact', 'Arial Narrow', sans-serif;
+  --mono: 'Space Mono', ui-monospace, 'Courier New', monospace;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--room); color: var(--paper); font-family: var(--mono); overflow: hidden; }
+#stage { position: fixed; inset: 0; }
+#stage canvas { display: block; width: 100%; height: 100%; }
+.hud-top { position: fixed; left: 0; right: 0; top: 0; padding: calc(env(safe-area-inset-top, 0px) + 18px) 22px 0; display: flex; align-items: center; gap: 14px; pointer-events: none; }
+.mark { font-family: var(--display); font-size: 26px; letter-spacing: .02em; color: var(--pink); }
+.where { font-size: 13px; color: var(--dim); }
+.tip { position: fixed; left: 0; top: 0; transform: translate(-50%, -100%); padding: 8px 12px; background: var(--pink); color: var(--ink); font-size: 13px; font-weight: 700; white-space: nowrap; pointer-events: none; box-shadow: 3px 3px 0 var(--blue); }
+.tip b { font-family: var(--display); font-weight: 400; font-size: 18px; letter-spacing: .03em; display: block; }
+.hint { position: fixed; left: 16px; right: 16px; bottom: calc(env(safe-area-inset-bottom, 0px) + 18px); text-align: center; font-size: 13px; color: var(--paper); opacity: .8; pointer-events: none; }
+.panel { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 18px); transform: translateX(-50%); width: min(560px, calc(100% - 32px)); box-sizing: border-box; padding: 16px 18px; background: var(--paper); color: var(--ink); box-shadow: 6px 6px 0 var(--pink); display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.panel h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 26px; letter-spacing: .02em; color: var(--blue); width: 100%; text-wrap: balance; }
+.panel p { margin: 0; font-size: 14px; line-height: 1.5; width: 100%; }
+.panel .grow { flex-grow: 1; }
+button { font: inherit; cursor: pointer; }
+.primary { padding: 12px 18px; border: 0; background: var(--blue); color: var(--paper); font-family: var(--display); font-size: 19px; letter-spacing: .03em; }
+.secondary { padding: 10px 2px; border: 0; background: transparent; color: var(--ink); font-weight: 700; font-size: 14px; text-decoration: underline; text-underline-offset: 4px; }
+button:focus-visible { outline: 3px solid var(--pink); outline-offset: 3px; }
+.fallback { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; text-align: center; font-size: 15px; line-height: 1.6; }
+@media (max-width: 520px) { .mark { font-size: 20px; } .where { display: none; } }
+</style>
+
+<div id="stage" aria-label="3D desk: a breadboard in front of you, a notebook on the left, a multimeter on the right, a level map pinned on the wall"></div>
+<div class="hud-top"><span class="mark">SIGNAL PATH</span><span class="where">World 0 · Foundations · prototype</span></div>
+<div class="tip" id="tip" hidden></div>
+<p class="hint" id="hint">Click the notebook, the breadboard, the meter or the map on the wall</p>
+<div class="panel" id="panel" hidden>
+  <h2 id="pTitle"></h2>
+  <p id="pText"></p>
+  <button class="primary" id="pMain" type="button"></button>
+  <span class="grow"></span>
+  <button class="secondary" id="pBack" type="button">Back to the desk</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  const stage = document.getElementById('stage');
+  const tip = document.getElementById('tip');
+  const hint = document.getElementById('hint');
+  const panel = document.getElementById('panel');
+  const pTitle = document.getElementById('pTitle'), pText = document.getElementById('pText');
+  const pMain = document.getElementById('pMain'), pBack = document.getElementById('pBack');
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const C = { paper: '#f1ece1', ink: '#1c0a3a', pink: '#ff48b0', blue: '#0078bf', yellow: '#ffe800' };
+
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+  } catch (e) {
+    stage.innerHTML = '<div class="fallback">This prototype needs WebGL, which this browser has turned off. Try another browser or enable hardware acceleration.</div>';
+    hint.hidden = true;
+    return;
+  }
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
+  stage.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color('#16130f');
+  scene.fog = new THREE.Fog('#16130f', 2.2, 4.5);
+  const camera = new THREE.PerspectiveCamera(50, 1, 0.02, 20);
+
+  // ---------- canvas textures ----------
+  function tex(w, h, draw) {
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const g = c.getContext('2d'); draw(g, w, h);
+    const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 8; t.srcCanvas = c; return t;
+  }
+  function redraw(t, draw) { const c = t.srcCanvas; const g = c.getContext('2d'); g.clearRect(0, 0, c.width, c.height); draw(g, c.width, c.height); t.needsUpdate = true; }
+  function rnd(seed) { let s = seed; return () => (s = (s * 16807) % 2147483647) / 2147483647; }
+  function wrap(g, text, x, y, maxW, lh) {
+    const words = text.split(' '); let line = '';
+    for (const w of words) { const t = line ? line + ' ' + w : w; if (g.measureText(t).width > maxW && line) { g.fillText(line, x, y); y += lh; line = w; } else line = t; }
+    if (line) g.fillText(line, x, y); return y + lh;
+  }
+  const grain = (g, w, h, a) => { const r = rnd(7); for (let i = 0; i < w * h / 40; i++) { g.fillStyle = `rgba(60,40,20,${a * r()})`; g.fillRect(r() * w, r() * h, 1.5, 1.5); } };
+
+  const woodTex = () => tex(1024, 512, (g, w, h) => {
+    g.fillStyle = '#8f5f37'; g.fillRect(0, 0, w, h);
+    const r = rnd(3);
+    for (let i = 0; i < 90; i++) {
+      const y = r() * h, amp = 4 + r() * 10, dark = r() < .5;
+      g.strokeStyle = dark ? `rgba(70,40,20,${.15 + r() * .25})` : `rgba(200,150,100,${.08 + r() * .15})`;
+      g.lineWidth = 1 + r() * 3; g.beginPath();
+      for (let x = 0; x <= w; x += 16) g.lineTo(x, y + Math.sin(x / (60 + r() * 40) + i) * amp);
+      g.stroke();
+    }
+  });
+  const corkTex = () => tex(512, 360, (g, w, h) => { g.fillStyle = '#b98a57'; g.fillRect(0, 0, w, h); const r = rnd(11); for (let i = 0; i < 5000; i++) { g.fillStyle = r() < .5 ? 'rgba(120,80,40,.5)' : 'rgba(220,180,130,.4)'; g.fillRect(r() * w, r() * h, 2, 2); } });
+  const wallTex = () => tex(512, 512, (g, w, h) => { g.fillStyle = '#34403c'; g.fillRect(0, 0, w, h); const r = rnd(5); for (let i = 0; i < 9000; i++) { g.fillStyle = `rgba(${r() < .5 ? '0,0,0' : '255,255,255'},${r() * .05})`; g.fillRect(r() * w, r() * h, 2, 2); } });
+
+  const boardTex = () => tex(1200, 400, (g, w, h) => {
+    g.fillStyle = '#f2f0ea'; g.fillRect(0, 0, w, h);
+    const rail = (y, col) => { g.fillStyle = col === 'r' ? '#f7dcd7' : '#d9e3f2'; g.fillRect(20, y, w - 40, 44); g.strokeStyle = col === 'r' ? '#d23b2a' : '#2c5aa0'; g.lineWidth = 4; g.beginPath(); g.moveTo(30, y + 6); g.lineTo(w - 30, y + 6); g.stroke(); g.fillStyle = '#5b5f64'; for (let x = 60; x < w - 50; x += 36) { if ((x / 36 | 0) % 6 === 5) continue; g.fillRect(x, y + 18, 12, 12); } };
+    rail(10, 'r'); rail(h - 54, 'b');
+    g.fillStyle = '#5b5f64';
+    for (let c = 0; c < 30; c++) for (let rr = 0; rr < 5; rr++) { g.fillRect(70 + c * 36, 80 + rr * 26, 12, 12); g.fillRect(70 + c * 36, 222 + rr * 26, 12, 12); }
+    g.fillStyle = '#e1ddd3'; g.fillRect(20, 196, w - 40, 16);
+    g.fillStyle = '#8b8f94'; g.font = '700 16px "Space Mono", monospace'; for (let c = 0; c < 30; c += 5) g.fillText(String(c + 1), 70 + c * 36, 76);
+  });
+
+  const mapTex = () => tex(900, 640, (g, w, h) => {
+    g.fillStyle = C.paper; g.fillRect(0, 0, w, h); grain(g, w, h, .25);
+    g.globalCompositeOperation = 'multiply';
+    g.strokeStyle = C.blue; g.lineWidth = 22; g.lineCap = 'round'; g.lineJoin = 'round';
+    g.beginPath(); g.moveTo(90, 540); g.bezierCurveTo(260, 540, 240, 380, 400, 370); g.bezierCurveTo(560, 360, 640, 460, 720, 330); g.bezierCurveTo(780, 230, 640, 170, 760, 110); g.stroke();
+    const stop = (x, y, done, here) => { g.fillStyle = here ? C.pink : done ? C.blue : C.paper; g.beginPath(); g.arc(x, y, here ? 34 : 24, 0, 7); g.fill(); g.lineWidth = 6; g.strokeStyle = C.ink; g.stroke(); };
+    stop(90, 540, 1); stop(250, 450, 1); stop(400, 370, 1); stop(600, 400, 0, 1); stop(760, 110, 0);
+    g.globalCompositeOperation = 'source-over';
+    g.fillStyle = C.blue; g.font = '72px Anton, sans-serif'; g.fillText('WORLD 0', 60, 110);
+    g.fillStyle = C.ink; g.font = '700 26px "Space Mono", monospace'; g.fillText('FOUNDATIONS · 12/15 ★', 64, 150);
+    g.font = '700 22px "Space Mono", monospace'; g.fillText('you are here', 560, 470);
+  });
+  const posterTex = () => tex(600, 800, (g, w, h) => {
+    g.fillStyle = C.paper; g.fillRect(0, 0, w, h); grain(g, w, h, .3);
+    g.globalCompositeOperation = 'multiply';
+    g.fillStyle = C.pink; g.beginPath(); g.arc(390, 520, 190, 0, 7); g.fill();
+    g.fillStyle = C.blue; g.font = '170px Anton, sans-serif'; g.fillText('SIGNAL', 34, 210); g.fillText('PATH', 34, 380);
+    g.fillStyle = C.pink; g.globalAlpha = .5; g.fillText('SIGNAL', 42, 216); g.fillText('PATH', 42, 386); g.globalAlpha = 1;
+    g.strokeStyle = C.blue; g.lineWidth = 20; g.lineCap = 'round'; g.beginPath(); g.moveTo(40, 700); g.bezierCurveTo(200, 560, 300, 720, 560, 600); g.stroke();
+  });
+
+  const coverTex = () => tex(560, 760, (g, w, h) => {
+    g.fillStyle = '#23406e'; g.fillRect(0, 0, w, h);
+    g.fillStyle = C.paper; g.fillRect(120, 180, 360, 220);
+    g.fillStyle = C.blue; g.font = '76px Anton, sans-serif'; g.fillText('LESSONS', 150, 290);
+    g.fillStyle = C.ink; g.font = '700 30px "Space Mono", monospace'; g.fillText('3 of 5 done', 152, 350);
+  });
+  const PAGES = [
+    { title: 'TWO RESISTORS SHARE THE VOLTAGE', body: 'Put two resistors in a line from 9 V down to ground. The same current goes through both, and the bigger one takes the bigger share of the 9 volts.', note: 'top = 2 × bottom → 3 V out', r1: '6.8k', r2: '3.3k', out: '2.9 V' },
+    { title: 'WHAT IT COSTS', body: 'The pair draws current all the time: 9 V divided by both resistors added up. Keep the same ratio with bigger resistors and it wastes less.', note: '6.8k + 3.3k → 0.89 mA', r1: '68k', r2: '33k', out: '2.9 V' },
+  ];
+  let pageIdx = 0;
+  const leftPage = (p) => (g, w, h) => {
+    g.fillStyle = '#f4efe2'; g.fillRect(0, 0, w, h);
+    g.strokeStyle = '#e2d8c2'; g.lineWidth = 2; for (let y = 60; y < h; y += 44) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
+    g.fillStyle = C.blue; g.font = '700 22px "Space Mono", monospace'; g.fillText('LESSON 4 · PAGE ' + (PAGES.indexOf(p) + 2) + ' OF 4', 40, 70);
+    g.font = '58px Anton, sans-serif'; let y = wrap(g, p.title, 40, 150, w - 80, 62);
+    g.fillStyle = C.ink; g.font = '26px "Space Mono", monospace'; y = wrap(g, p.body, 40, y + 20, w - 80, 40);
+    g.fillStyle = '#d61f8a'; g.font = '700 34px Kalam, cursive'; g.fillText(p.note, 40, y + 40);
+  };
+  const rightPage = (p) => (g, w, h) => {
+    g.fillStyle = '#f4efe2'; g.fillRect(0, 0, w, h);
+    g.save(); g.translate(w / 2, 330); g.rotate(.02);
+    g.fillStyle = '#ffffff'; g.fillRect(-230, -250, 460, 480); g.strokeStyle = C.ink; g.lineWidth = 4; g.strokeRect(-230, -250, 460, 480);
+    g.fillStyle = 'rgba(255,72,176,.45)'; g.fillRect(-50, -268, 110, 34);
+    g.fillStyle = '#5a5566'; g.font = '700 22px "Space Mono", monospace'; g.fillText('TRY IT', -200, -200);
+    const res = (y, label) => { g.fillStyle = '#f5c14b'; g.beginPath(); g.roundRect ? g.roundRect(-150, y, 44, 110, 22) : g.rect(-150, y, 44, 110); g.fill(); g.stroke(); g.fillStyle = C.ink; g.font = '700 26px "Space Mono", monospace'; g.fillText(label, -90, y + 64); };
+    g.lineWidth = 4; g.beginPath(); g.moveTo(-128, -170); g.lineTo(-128, 200); g.stroke();
+    res(-150, p.r1); res(40, p.r2);
+    g.fillStyle = '#ffd84d'; g.beginPath(); g.arc(-128, 10, 16, 0, 7); g.fill(); g.stroke();
+    g.fillStyle = '#fff3fa'; g.fillRect(20, -40, 190, 100); g.strokeStyle = C.pink; g.strokeRect(20, -40, 190, 100);
+    g.fillStyle = C.ink; g.font = '700 20px "Space Mono", monospace'; g.fillText('middle point', 34, -8);
+    g.fillStyle = '#d61f8a'; g.font = '50px Anton, sans-serif'; g.fillText(p.out, 34, 46);
+    g.restore();
+  };
+  const meterTex = (mode) => (g, w, h) => {
+    g.fillStyle = '#f0c02f'; g.fillRect(0, 0, w, h);
+    g.fillStyle = '#2a2a2a'; g.fillRect(24, 24, w - 48, h - 48);
+    g.fillStyle = '#b9c7a3'; g.fillRect(52, 60, w - 104, 170);
+    g.fillStyle = '#20241c';
+    if (mode === 'practice') { g.font = '64px Anton, sans-serif'; g.fillText('PRACTICE', 72, 150); g.font = '700 26px "Space Mono", monospace'; g.fillText('5 quick questions', 76, 200); }
+    else { g.font = '700 110px "Space Mono", monospace'; g.fillText('3.00', 80, 190); }
+    g.fillStyle = '#444'; g.beginPath(); g.arc(w / 2, 420, 110, 0, 7); g.fill();
+    g.fillStyle = '#ddd'; g.save(); g.translate(w / 2, 420); g.rotate(-.5); g.fillRect(-10, -104, 20, 80); g.restore();
+    g.fillStyle = '#ccc'; g.font = '700 22px "Space Mono", monospace'; g.fillText('V', w / 2 - 8, 290); g.fillText('A', w / 2 + 120, 400); g.fillText('Ω', w / 2 - 140, 400);
+    g.fillStyle = '#c0392b'; g.beginPath(); g.arc(w / 2 + 70, 610, 26, 0, 7); g.fill(); g.fillStyle = '#111'; g.beginPath(); g.arc(w / 2 - 70, 610, 26, 0, 7); g.fill();
+  };
+
+  // ---------- materials & helpers ----------
+  const std = (o) => new THREE.MeshStandardMaterial(Object.assign({ roughness: .7, metalness: 0 }, o));
+  function mesh(geo, mat, x, y, z) { const m = new THREE.Mesh(geo, mat); m.position.set(x || 0, y || 0, z || 0); m.castShadow = true; m.receiveShadow = true; return m; }
+  function tube(points, r, color) { const curve = new THREE.CatmullRomCurve3(points.map((p) => new THREE.Vector3(...p))); return mesh(new THREE.TubeGeometry(curve, 48, r, 10, false), std({ color, roughness: .45 })); }
+
+  const DESK_Y = 0.78;
+  const interactive = [];
+
+  function build() {
+    const wall = mesh(new THREE.PlaneGeometry(6, 3), std({ map: wallTex(), roughness: .95 }), 0, 1.3, -0.6);
+    wall.material.map.wrapS = wall.material.map.wrapT = THREE.RepeatWrapping; wall.material.map.repeat.set(4, 2); wall.castShadow = false; scene.add(wall);
+    const floor = mesh(new THREE.PlaneGeometry(6, 6), std({ color: '#1d1813', roughness: 1 }), 0, 0, 0); floor.rotation.x = -Math.PI / 2; scene.add(floor);
+
+    const desk = mesh(new THREE.BoxGeometry(2.4, 0.05, 1.15), std({ map: woodTex(), roughness: .6 }), 0, DESK_Y - 0.025, 0);
+    scene.add(desk);
+    const edge = mesh(new THREE.BoxGeometry(2.4, 0.02, 0.02), std({ color: '#5e3c22' }), 0, DESK_Y - 0.04, 0.575); scene.add(edge);
+
+    // wall: poster and corkboard with the level map
+    const poster = mesh(new THREE.PlaneGeometry(0.3, 0.4), std({ map: posterTex(), roughness: .9 }), -0.62, 1.28, -0.595); poster.rotation.z = .03; scene.add(poster);
+    const board = new THREE.Group(); board.position.set(0.28, 1.3, -0.585);
+    board.add(mesh(new THREE.BoxGeometry(0.62, 0.42, 0.02), std({ color: '#5a3b22' })));
+    const cork = mesh(new THREE.PlaneGeometry(0.58, 0.38), std({ map: corkTex(), roughness: 1 }), 0, 0, 0.011); board.add(cork);
+    const map = mesh(new THREE.PlaneGeometry(0.4, 0.285), std({ map: mapTex(), roughness: .9 }), -0.04, 0, 0.014); map.rotation.z = -0.03; board.add(map);
+    const pin = mesh(new THREE.SphereGeometry(0.012, 16, 12), std({ color: C.pink, roughness: .3 }), -0.04, 0.13, 0.024); board.add(pin);
+    const sticky = mesh(new THREE.PlaneGeometry(0.09, 0.09), std({ color: '#f2df6b' }), 0.22, -0.1, 0.013); sticky.rotation.z = .08; board.add(sticky);
+    scene.add(board);
+    register(board, 'map', { label: 'Level map', sub: 'Play · pick a level' });
+
+    // lamp
+    const lamp = new THREE.Group(); lamp.position.set(-0.78, DESK_Y, -0.3);
+    const dark = std({ color: '#2b2b2b', roughness: .4, metalness: .3 });
+    lamp.add(mesh(new THREE.CylinderGeometry(0.09, 0.1, 0.02, 32), dark, 0, 0.01, 0));
+    const a1 = mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.42, 12), dark, 0.06, 0.2, 0); a1.rotation.z = -0.35; lamp.add(a1);
+    const a2 = mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.36, 12), dark, 0.25, 0.44, 0.04); a2.rotation.z = -1.25; a2.rotation.y = -.3; lamp.add(a2);
+    const head = mesh(new THREE.ConeGeometry(0.07, 0.12, 32, 1, true), std({ color: '#2b2b2b', side: THREE.DoubleSide, roughness: .4 }), 0.42, 0.47, 0.1); head.rotation.z = -0.7; head.rotation.x = .25; lamp.add(head);
+    const bulb = mesh(new THREE.SphereGeometry(0.025, 16, 12), new THREE.MeshBasicMaterial({ color: '#fff1d0' }), 0.455, 0.43, 0.11); lamp.add(bulb);
+    scene.add(lamp);
+
+    // lights
+    scene.add(new THREE.HemisphereLight('#9aa8b8', '#2a1c10', 0.35));
+    const spot = new THREE.SpotLight('#ffd9a8', 2.6, 3.2, 0.75, 0.55, 1.6);
+    spot.position.set(-0.36, DESK_Y + 0.44, -0.17); spot.target.position.set(0.05, DESK_Y, 0.05);
+    spot.castShadow = true; spot.shadow.mapSize.set(2048, 2048); spot.shadow.bias = -0.0004; spot.shadow.radius = 4;
+    scene.add(spot, spot.target);
+    const fill = new THREE.PointLight('#8fb3ff', 0.35, 4); fill.position.set(0.8, 1.9, 1.2); scene.add(fill);
+
+    // breadboard with a resistor, an LED and two wires
+    const bb = new THREE.Group(); bb.position.set(0, DESK_Y, 0.08);
+    const bbMat = [std({ color: '#e4e1d9' }), std({ color: '#e4e1d9' }), std({ map: boardTex(), roughness: .8 }), std({ color: '#d8d4ca' }), std({ color: '#e4e1d9' }), std({ color: '#e4e1d9' })];
+    bb.add(mesh(new THREE.BoxGeometry(0.45, 0.014, 0.15), bbMat, 0, 0.007, 0));
+    const legMat = std({ color: '#b8bcc2', metalness: .8, roughness: .3 });
+    const res = new THREE.Group(); res.position.set(-0.06, 0.024, -0.012);
+    const body = mesh(new THREE.CylinderGeometry(0.0055, 0.0055, 0.03, 20), std({ color: '#e7b863', roughness: .5 })); body.rotation.z = Math.PI / 2; res.add(body);
+    [-0.008, -0.002, 0.004].forEach((x, i) => { const band = mesh(new THREE.CylinderGeometry(0.0058, 0.0058, 0.003, 20), std({ color: ['#e67e22', '#e67e22', '#c0392b'][i] })); band.rotation.z = Math.PI / 2; band.position.x = x; res.add(band); });
+    const leg = (x) => { const l = mesh(new THREE.CylinderGeometry(0.0008, 0.0008, 0.03, 6), legMat, x, -0.008, 0); res.add(l); };
+    leg(-0.024); leg(0.024);
+    const lh = mesh(new THREE.CylinderGeometry(0.0008, 0.0008, 0.048, 6), legMat, 0, 0, 0); lh.rotation.z = Math.PI / 2; res.add(lh);
+    bb.add(res);
+    const led = new THREE.Group(); led.position.set(0.05, 0.014, -0.012);
+    const ledMat = std({ color: '#ff2a3a', emissive: '#ff1030', emissiveIntensity: 1.4, roughness: .2, transparent: true, opacity: .92 });
+    led.add(mesh(new THREE.CylinderGeometry(0.0055, 0.0055, 0.008, 24), ledMat, 0, 0.018, 0));
+    led.add(mesh(new THREE.SphereGeometry(0.0055, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), ledMat, 0, 0.022, 0));
+    led.add(mesh(new THREE.CylinderGeometry(0.0007, 0.0007, 0.016, 6), legMat, -0.0025, 0.007, 0));
+    led.add(mesh(new THREE.CylinderGeometry(0.0007, 0.0007, 0.02, 6), legMat, 0.0025, 0.005, 0));
+    bb.add(led);
+    const glow = new THREE.PointLight('#ff3040', 0.25, 0.25); glow.position.set(0.05, 0.05, -0.01); bb.add(glow);
+    bb.add(tube([[-0.13, 0.016, -0.063], [-0.125, 0.04, -0.045], [-0.1, 0.03, -0.02], [-0.085, 0.016, -0.012]], 0.0022, '#d23b2a'));
+    bb.add(tube([[0.07, 0.016, -0.012], [0.09, 0.045, 0.02], [0.12, 0.03, 0.05], [0.13, 0.016, 0.063]], 0.0022, '#2c5aa0'));
+    bb.add(tube([[-0.2, 0.016, -0.063], [-0.26, 0.02, -0.1], [-0.3, 0.004, -0.14], [-0.34, 0.004, -0.16]], 0.0025, '#d23b2a'));
+    scene.add(bb);
+    register(bb, 'breadboard', { label: 'Breadboard', sub: 'Continue · level 4, Split the difference' });
+
+    // 9 V battery and parts box behind the breadboard
+    const bat = new THREE.Group(); bat.position.set(-0.36, DESK_Y, -0.16); bat.rotation.y = .5;
+    bat.add(mesh(new THREE.BoxGeometry(0.026, 0.048, 0.017), std({ color: '#1e1e1e', roughness: .5 }), 0, 0.024, 0));
+    bat.add(mesh(new THREE.BoxGeometry(0.0262, 0.02, 0.0172), std({ color: '#e57b23' }), 0, 0.03, 0));
+    scene.add(bat);
+    const pbox = new THREE.Group(); pbox.position.set(0.3, DESK_Y, -0.22); pbox.rotation.y = -.25;
+    const grey = std({ color: '#8d9296', roughness: .5 });
+    pbox.add(mesh(new THREE.BoxGeometry(0.26, 0.004, 0.16), grey, 0, 0.002, 0));
+    [[0, 0.02, -0.08, 0.26, 0.04, 0.004], [0, 0.02, 0.08, 0.26, 0.04, 0.004], [-0.13, 0.02, 0, 0.004, 0.04, 0.16], [0.13, 0.02, 0, 0.004, 0.04, 0.16], [0, 0.02, 0, 0.004, 0.04, 0.16], [0, 0.02, 0, 0.26, 0.04, 0.004]].forEach(([x, y, z, w, h, d]) => pbox.add(mesh(new THREE.BoxGeometry(w, h, d), grey, x, y, z)));
+    for (let i = 0; i < 5; i++) { const r = mesh(new THREE.CylinderGeometry(0.005, 0.005, 0.028, 12), std({ color: '#e7b863' }), -0.07 + (i % 2) * 0.01, 0.01, -0.05 + i * 0.008); r.rotation.z = Math.PI / 2; pbox.add(r); }
+    for (let i = 0; i < 4; i++) pbox.add(mesh(new THREE.SphereGeometry(0.006, 12, 8), std({ color: '#ff2a3a', roughness: .3 }), 0.05 + i * 0.012, 0.008, -0.04 + (i % 2) * 0.012));
+    for (let i = 0; i < 3; i++) pbox.add(mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.02, 12), std({ color: '#2f6fc0' }), -0.06 + i * 0.016, 0.012, 0.045));
+    scene.add(pbox);
+
+    // mug
+    const mug = new THREE.Group(); mug.position.set(0.72, DESK_Y, -0.1);
+    mug.add(mesh(new THREE.CylinderGeometry(0.042, 0.038, 0.1, 32), std({ color: '#e9e2d2', roughness: .35 }), 0, 0.05, 0));
+    mug.add(mesh(new THREE.CylinderGeometry(0.037, 0.037, 0.005, 32), std({ color: '#3b2415', roughness: .2 }), 0, 0.09, 0));
+    const handle = mesh(new THREE.TorusGeometry(0.025, 0.006, 12, 24, Math.PI), std({ color: '#e9e2d2', roughness: .35 }), 0.045, 0.05, 0); handle.rotation.z = -Math.PI / 2; mug.add(handle);
+    scene.add(mug);
+
+    // notebook: pages block + cover on a hinge along its left edge
+    const NW = 0.2, ND = 0.27;
+    nb.group = new THREE.Group();
+    nb.left = tex(560, 760, leftPage(PAGES[0])); nb.right = tex(560, 760, rightPage(PAGES[0]));
+    const paperSide = std({ color: '#efe8d8' });
+    nb.group.add(mesh(new THREE.BoxGeometry(NW, 0.012, ND), [paperSide, paperSide, std({ map: nb.right, roughness: .9 }), std({ color: '#23406e' }), paperSide, paperSide], 0, 0.006, 0));
+    nb.hinge = new THREE.Group(); nb.hinge.position.set(-NW / 2, 0.0135, 0);
+    nb.left.wrapS = THREE.RepeatWrapping; nb.left.repeat.x = -1;
+    const cover = mesh(new THREE.BoxGeometry(NW, 0.003, ND), [std({ color: '#1a2e4d' }), std({ color: '#1a2e4d' }), std({ map: coverTex(), roughness: .8 }), std({ map: nb.left, roughness: .9 }), std({ color: '#1a2e4d' }), std({ color: '#1a2e4d' })], NW / 2, 0, 0);
+    nb.hinge.add(cover); nb.group.add(nb.hinge);
+    for (let i = 0; i < 11; i++) { const ring = mesh(new THREE.TorusGeometry(0.006, 0.0012, 8, 16), std({ color: '#c9ccd2', metalness: .8, roughness: .3 }), -NW / 2, 0.009, -ND / 2 + 0.02 + i * 0.023); ring.rotation.y = Math.PI / 2; nb.group.add(ring); }
+    nb.rest = { pos: new THREE.Vector3(-0.47, DESK_Y, 0.14), rot: new THREE.Euler(0, 0.32, 0) };
+    nb.focus = { pos: new THREE.Vector3(0.1, 1.05, 0.5), rot: new THREE.Euler(1.02, 0, 0) };
+    nb.group.position.copy(nb.rest.pos); nb.group.rotation.copy(nb.rest.rot);
+    scene.add(nb.group);
+    register(nb.group, 'notebook', { label: 'Notebook', sub: 'Learn · 3 of 5 lessons' });
+
+    // multimeter with leads
+    mm.group = new THREE.Group();
+    mm.face = tex(420, 700, meterTex('volts'));
+    const yellow = std({ color: '#f0c02f', roughness: .5 });
+    mm.group.add(mesh(new THREE.BoxGeometry(0.1, 0.03, 0.166), [yellow, yellow, std({ map: mm.face, roughness: .5 }), yellow, yellow, yellow], 0, 0.015, 0));
+    mm.rest = { pos: new THREE.Vector3(0.45, DESK_Y, 0.12), rot: new THREE.Euler(0, -0.35, 0) };
+    mm.focus = { pos: new THREE.Vector3(0, 1.02, 0.56), rot: new THREE.Euler(1.02, 0, 0) };
+    mm.group.position.copy(mm.rest.pos); mm.group.rotation.copy(mm.rest.rot);
+    scene.add(mm.group);
+    scene.add(tube([[0.47, DESK_Y + 0.005, 0.2], [0.44, DESK_Y + 0.004, 0.3], [0.3, DESK_Y + 0.004, 0.32], [0.2, DESK_Y + 0.004, 0.24]], 0.003, '#c0392b'));
+    scene.add(tube([[0.43, DESK_Y + 0.005, 0.2], [0.38, DESK_Y + 0.004, 0.26], [0.26, DESK_Y + 0.004, 0.2], [0.21, DESK_Y + 0.004, 0.14]], 0.003, '#1a1a1a'));
+    register(mm.group, 'meter', { label: 'Multimeter', sub: 'Practice · quick questions' });
+  }
+  const nb = {}, mm = {};
+
+  // ---------- interaction ----------
+  function register(obj, role, info) {
+    obj.userData.role = role; obj.userData.info = info;
+    obj.traverse((m) => { if (m.isMesh) { m.userData.owner = obj; interactive.push(m); } });
+  }
+  function highlight(obj, on) {
+    if (!obj) return;
+    obj.traverse((m) => {
+      if (!m.isMesh) return;
+      (Array.isArray(m.material) ? m.material : [m.material]).forEach((mat) => {
+        if (!mat.emissive) return;
+        if (mat.userData.baseEmissive === undefined) { mat.userData.baseEmissive = mat.emissive.clone(); mat.userData.baseI = mat.emissiveIntensity; }
+        if (on) { mat.emissive.set(C.pink); mat.emissiveIntensity = 0.22; } else { mat.emissive.copy(mat.userData.baseEmissive); mat.emissiveIntensity = mat.userData.baseI; }
+      });
+    });
+  }
+
+  const SEAT = { pos: new THREE.Vector3(0, 1.28, 0.95), look: new THREE.Vector3(0, 0.96, -0.2) };
+  const VIEWS = {
+    desk: SEAT,
+    notebook: SEAT,
+    meter: SEAT,
+    breadboard: { pos: new THREE.Vector3(0, 1.04, 0.44), look: new THREE.Vector3(0, 0.78, 0.04) },
+    map: { pos: new THREE.Vector3(0.2, 1.32, 0.35), look: new THREE.Vector3(0.28, 1.3, -0.6) },
+  };
+  const PANELS = {
+    notebook: { title: 'Lesson 4 · Voltage dividers', text: 'The notebook slides over and opens. Read the page, try the numbers on the right, then turn the page.', main: 'Turn the page' },
+    breadboard: { title: 'Level 4 · Split the difference', text: 'You lean in over the board. Make the middle point sit at 3 V using two resistors from the parts box.', main: 'Start building' },
+    meter: { title: 'Practice', text: 'The meter slides over. Five quick questions, answered by reading the meter.', main: 'Start' },
+    map: { title: 'World 0 · Foundations', text: 'Three levels done, you are on level 4. Level 5 opens when you pass it.', main: 'Play level 4' },
+  };
+
+  let mode = 'desk';
+  const cam = { pos: SEAT.pos.clone(), look: SEAT.look.clone(), fromPos: SEAT.pos.clone(), fromLook: SEAT.look.clone(), t: 1 };
+  const anim = { t: 1, dur: 0.9 };
+  const objFrom = new Map();
+  const ease = (x) => 1 - Math.pow(1 - x, 3);
+
+  function go(next) {
+    if (next === mode) return;
+    const prev = mode; mode = next;
+    cam.fromPos.copy(cam.pos); cam.fromLook.copy(cam.look); cam.t = 0;
+    [nb, mm].forEach((o) => objFrom.set(o, { pos: o.group.position.clone(), q: o.group.quaternion.clone(), hinge: o.hinge ? o.hinge.rotation.z : 0 }));
+    anim.t = reduced ? 1 : 0;
+    if (reduced) cam.t = 1;
+    hoverOff();
+    hint.hidden = next !== 'desk';
+    if (next === 'desk') { panel.hidden = true; mm.faceMode('volts'); stage.focus(); return; }
+    const p = PANELS[next]; pTitle.textContent = p.title; pText.textContent = p.text; pMain.textContent = p.main; panel.hidden = false;
+    if (next === 'meter') mm.faceMode('practice');
+    pMain.focus({ preventScroll: true });
+    void prev;
+  }
+  mm.faceMode = (m) => redraw(mm.face, meterTex(m));
+  pBack.addEventListener('click', () => go('desk'));
+  pMain.addEventListener('click', () => {
+    if (mode === 'notebook') {
+      pageIdx = (pageIdx + 1) % PAGES.length;
+      redraw(nb.left, leftPage(PAGES[pageIdx])); redraw(nb.right, rightPage(PAGES[pageIdx]));
+      pText.textContent = pageIdx ? 'Page 3: what a divider costs. The same numbers, now with the current it wastes.' : PANELS.notebook.text;
+    } else {
+      pText.textContent = 'In the game this opens the real ' + (mode === 'breadboard' ? 'level on the breadboard.' : mode === 'map' ? 'level map.' : 'practice questions.') + ' This prototype stops here.';
+    }
+  });
+  window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && mode !== 'desk') go('desk'); });
+
+  const ray = new THREE.Raycaster(); const ndc = new THREE.Vector2(); let hovered = null; const mouse = { x: 0, y: 0, has: false };
+  function pick(clientX, clientY) {
+    const r = renderer.domElement.getBoundingClientRect();
+    ndc.set(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    const hit = ray.intersectObjects(interactive, false)[0];
+    return hit ? hit.object.userData.owner : null;
+  }
+  function hoverOff() { highlight(hovered, false); hovered = null; tip.hidden = true; renderer.domElement.style.cursor = ''; }
+  renderer.domElement.addEventListener('pointermove', (e) => {
+    mouse.x = e.clientX / window.innerWidth - .5; mouse.y = e.clientY / window.innerHeight - .5; mouse.has = true;
+    if (mode !== 'desk' || cam.t < 1) return;
+    const o = pick(e.clientX, e.clientY);
+    if (o !== hovered) { highlight(hovered, false); hovered = o; highlight(o, true); }
+    if (o) { tip.innerHTML = '<b>' + o.userData.info.label + '</b>' + o.userData.info.sub; tip.style.left = e.clientX + 'px'; tip.style.top = (e.clientY - 18) + 'px'; tip.hidden = false; renderer.domElement.style.cursor = 'pointer'; }
+    else { tip.hidden = true; renderer.domElement.style.cursor = ''; }
+  });
+  renderer.domElement.addEventListener('pointerleave', () => { if (mode === 'desk') hoverOff(); });
+  renderer.domElement.addEventListener('click', (e) => {
+    if (mode !== 'desk') { if (!pick(e.clientX, e.clientY)) go('desk'); return; }
+    const o = pick(e.clientX, e.clientY); if (o) go(o.userData.role);
+  });
+
+  function resize() {
+    const w = window.innerWidth, h = window.innerHeight;
+    renderer.setSize(w, h, false); camera.aspect = w / h;
+    camera.fov = w / h < 1 ? 68 : 50; camera.updateProjectionMatrix();
+  }
+  window.addEventListener('resize', resize);
+
+  const clock = new THREE.Clock();
+  const tmpQ = new THREE.Quaternion();
+  function frame() {
+    const dt = Math.min(0.05, clock.getDelta());
+    const v = VIEWS[mode];
+    cam.t = Math.min(1, cam.t + dt / anim.dur);
+    const k = ease(cam.t);
+    cam.pos.lerpVectors(cam.fromPos, v.pos, k); cam.look.lerpVectors(cam.fromLook, v.look, k);
+    const sway = reduced || !mouse.has ? 0 : 1;
+    camera.position.set(cam.pos.x + mouse.x * 0.03 * sway, cam.pos.y - mouse.y * 0.02 * sway, cam.pos.z);
+    camera.lookAt(cam.look);
+
+    anim.t = Math.min(1, anim.t + dt / anim.dur); const a = ease(anim.t);
+    [[nb, mode === 'notebook'], [mm, mode === 'meter']].forEach(([o, active]) => {
+      const from = objFrom.get(o); if (!from) return;
+      const target = active ? o.focus : o.rest;
+      o.group.position.lerpVectors(from.pos, target.pos, a);
+      tmpQ.setFromEuler(target.rot); o.group.quaternion.copy(from.q).slerp(tmpQ, a);
+      if (o.group.position.y > DESK_Y + 0.001) o.group.position.y += Math.sin(a * Math.PI) * 0.06;
+      if (o.hinge) { const open = active ? Math.PI * 0.985 : 0; const h = active ? Math.max(0, (a - .45) / .55) : Math.min(1, a / .5); o.hinge.rotation.z = from.hinge + (open - from.hinge) * ease(h); }
+    });
+    renderer.render(scene, camera);
+    requestAnimationFrame(frame);
+  }
+
+  const fontsReady = document.fonts && document.fonts.load ? Promise.race([
+    Promise.all(['64px Anton', '700 20px "Space Mono"', '20px "Space Mono"', '700 30px Kalam'].map((f) => document.fonts.load(f))),
+    new Promise((r) => setTimeout(r, 2500)),
+  ]) : Promise.resolve();
+  fontsReady.then(() => { build(); resize(); stage.tabIndex = -1; frame(); });
+})();
+</script>
+</body></html>

@@ -7,11 +7,11 @@ import { WORLD0_CLASSES } from '../learn/classes';
 import { WORLD0, WORLD0_PLAN } from '../levels';
 import type { LevelRecord } from '../levels/progress';
 
-export type Tab = 'home' | 'play' | 'learn' | 'drills' | 'breadboard' | 'bench';
+export type Tab = 'home' | 'desk' | 'play' | 'learn' | 'drills' | 'breadboard' | 'bench';
 
 export interface MenuItem {
   key: string;
-  tab: Exclude<Tab, 'home'>;
+  tab: Exclude<Tab, 'home' | 'desk'>;
   title: string;
   sub: string;
   /** Not built yet: shown, but can't be opened. */
