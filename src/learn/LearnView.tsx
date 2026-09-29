@@ -127,7 +127,7 @@ function ClassReader({ cls }: { cls: LearnClass }) {
   );
 }
 
-type Answer = { choice?: number; text?: string; verdict?: Verdict | 'right' | 'wrong' };
+export type Answer = { choice?: number; text?: string; verdict?: Verdict | 'right' | 'wrong' };
 
 function ClassCheck({ cls }: { cls: LearnClass }) {
   const finish = useLearnProgress((s) => s.finish);
@@ -192,12 +192,12 @@ function ClassCheck({ cls }: { cls: LearnClass }) {
   );
 }
 
-function grade(q: Question, a: Answer): 'right' | 'wrong' {
+export function grade(q: Question, a: Answer): 'right' | 'wrong' {
   if (q.kind === 'choice') return a.choice === q.correct ? 'right' : 'wrong';
   return gradeNumber(q.answer, q.tolerancePct, a.text ?? '').kind === 'correct' ? 'right' : 'wrong';
 }
 
-function Feedback({ q, a, ok }: { q: Question; a: Answer; ok: boolean }): ReactNode {
+export function Feedback({ q, a, ok }: { q: Question; a: Answer; ok: boolean }): ReactNode {
   let extra = '';
   if (!ok && q.kind === 'number') {
     const v = gradeNumber(q.answer, q.tolerancePct, a.text ?? '');

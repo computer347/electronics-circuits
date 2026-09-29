@@ -64,7 +64,7 @@ export function App() {
 
   // The front page (riso poster); Continue sits you at the desk.
   if (tab === 'home') return <FrontPage onChoose={choose} />;
-  if (tab === 'desk') return <DeskView onMenu={() => { leaveDesk(); setTab('home'); }} onLearn={(id) => { leaveDesk(); useNav.getState().openClass(id); }} />;
+  if (tab === 'desk') return <DeskView onMenu={() => { leaveDesk(); setTab('home'); }} />;
 
   return (
     <div className="app">

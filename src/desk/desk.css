@@ -190,3 +190,74 @@
   .desk-print, .desk-dive, .cw-landing { display: none; }
   .desk-vignette, .cw-bar-fill { transition: none; }
 }
+
+/* ------------------------------------------------------------ notebook pages (Theory, Math) */
+.nb { position: fixed; z-index: 11; color: var(--r-ink); font-family: var(--r-mono); pointer-events: none; }
+.nb-spread { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; pointer-events: auto; perspective: 1600px; }
+.nb-page {
+  position: relative; overflow: auto; padding: 5% 6% 9%; line-height: 1.45;
+  background: #f7f3e8 repeating-linear-gradient(to bottom, transparent 0 1.9em, rgba(0, 120, 191, 0.12) 1.9em calc(1.9em + 1px));
+  scrollbar-width: thin;
+}
+.nb-page.left { box-shadow: inset -2.2em 0 2em -2em rgba(60, 40, 20, 0.35); }
+.nb-page.right { box-shadow: inset 2.2em 0 2em -2em rgba(60, 40, 20, 0.35); transform-origin: left center; animation: nb-turn 0.55s cubic-bezier(0.3, 0.7, 0.3, 1); }
+.nb-page.left { animation: nb-fade 0.4s ease-out; }
+@keyframes nb-turn { from { transform: rotateY(-75deg); opacity: 0.4; } to { transform: none; opacity: 1; } }
+@keyframes nb-fade { from { opacity: 0; } to { opacity: 1; } }
+.nb-page h2 { margin: 0.2em 0 0.5em; font-family: var(--r-display); font-weight: 400; font-size: 2.1em; line-height: 1.05; color: var(--r-blue); letter-spacing: 0.02em; }
+.nb-page p { margin: 0 0 0.7em; }
+.nb-kicker { margin: 0; font-size: 0.8em; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--r-pink); }
+.nb-lead { font-weight: 700; font-size: 1.1em; }
+.nb-facts { padding-left: 1.4em; margin: 0.6em 0 0; }
+.nb-facts li { margin-bottom: 0.6em; }
+.nb-facts li::marker { font-family: var(--r-display); color: var(--r-pink); }
+.nb-facts b { display: block; }
+.nb-model { padding: 0; }
+.nb-model .part-model { position: absolute !important; inset: 0; }
+.callout { display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px 2px 2px; background: var(--r-paper); color: var(--r-ink); font-family: var(--r-mono); font-size: 12px; font-weight: 700; white-space: nowrap; box-shadow: 2px 2px 0 var(--r-blue); }
+.callout i { font-style: normal; display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--r-pink); color: var(--r-paper); font-family: var(--r-display); font-size: 12px; }
+.nb-lab, .nb-schematic { margin: 0.5em 0; padding: 0.6em; background: #07100a; border-radius: 4px; color: #d8f5e3; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; box-shadow: 3px 3px 0 var(--r-blue); }
+.nb-lab svg, .nb-schematic svg { max-width: 100%; height: auto; }
+.nb-try { font-weight: 700; padding: 0.5em 0.7em; background: rgba(255, 232, 0, 0.55); }
+.nb-q { font-weight: 700; margin-bottom: 0.4em; }
+.nb-check { padding-left: 1.3em; margin: 0.5em 0; }
+.nb-check li { margin-bottom: 1em; }
+.nb-check li.right .nb-q { color: #0b7a3b; } .nb-check li.wrong .nb-q { color: #c2185b; }
+.nb-options { display: flex; flex-wrap: wrap; gap: 0.4em; }
+.nb-options button, .nb-button, .nb-link, .nb-nav button, .nb-tab { font-family: var(--r-mono); cursor: pointer; }
+.nb-options button { border: 1.5px solid var(--r-ink); border-radius: 0; background: transparent; color: var(--r-ink); font-size: 0.85em; padding: 0.25em 0.6em; }
+.nb-options button.picked { background: var(--r-yellow); }
+.nb-options button.correct { outline: 2px solid #0b7a3b; }
+.nb-options button:hover { border-color: var(--r-pink); color: var(--r-ink); }
+.nb-number { display: inline-flex; align-items: center; gap: 0.4em; }
+.nb-number input { width: 7em; font: inherit; padding: 0.3em 0.4em; border: 1.5px solid var(--r-ink); background: #fffdf6; color: var(--r-ink); }
+.nb-number.big input { width: 9em; font-size: 1.4em; }
+.nb-button { border: 0; border-radius: 0; background: var(--r-blue); color: var(--r-paper); font-family: var(--r-display); font-size: 1.15em; letter-spacing: 0.03em; padding: 0.35em 0.9em; box-shadow: 3px 3px 0 var(--r-pink); }
+.nb-button:disabled { opacity: 0.4; }
+.nb-button:hover { color: var(--r-paper); border: 0; }
+.nb-link { border: 0; background: none; color: var(--r-ink); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; font-size: 0.9em; padding: 0.3em 0.2em; }
+.nb-link:hover { color: var(--r-pink); border: 0; }
+.nb-row { display: flex; flex-wrap: wrap; gap: 0.6em; align-items: center; margin: 0.6em 0; }
+.nb-hint { font-size: 0.8em; opacity: 0.7; }
+.nb .verdict { font-weight: 700; margin: 0.4em 0; }
+.nb .verdict.good { color: #0b7a3b; } .nb .verdict.bad { color: #c2185b; }
+.nb-result { position: relative; margin-top: 0.6em; }
+.nb-stamp { position: absolute; right: 0; top: -0.4em; padding: 0.1em 0.5em; border: 3px solid var(--r-pink); color: var(--r-pink); font-family: var(--r-display); font-size: 1.6em; transform: rotate(-12deg); opacity: 0.85; mix-blend-mode: multiply; }
+.nb-formula { margin-bottom: 1em; }
+.nb-expr { margin: 0.3em 0 0.5em !important; font-family: var(--r-display); font-size: 2.2em; line-height: 1.1; color: var(--r-ink); }
+.nb-formula table { width: 100%; font-size: 0.9em; }
+.nb-formula td { padding: 0.2em 0; border-bottom: 1px solid rgba(28, 10, 58, 0.15); color: var(--r-ink); vertical-align: top; }
+.nb-formula td:first-child { font-weight: 700; width: 5.5em; }
+.nb-when { margin-top: 0.6em !important; font-weight: 700; background: rgba(255, 232, 0, 0.55); padding: 0.4em 0.6em; }
+.nb-solution { padding-left: 1.3em; margin: 0.4em 0; }
+.nb-solution li { margin-bottom: 0.45em; }
+.nb-answer { font-size: 1.2em; }
+.nb-nav { position: absolute; right: 3%; bottom: 3%; display: flex; align-items: center; gap: 0.6em; font-weight: 700; font-size: 0.9em; }
+.nb-nav button { width: 2em; height: 2em; border: 0; border-radius: 0; background: var(--r-blue); color: var(--r-paper); font-size: 1.1em; line-height: 1; }
+.nb-nav button:disabled { opacity: 0.3; }
+.nb-tabs { position: absolute; left: 100%; top: 8%; display: grid; gap: 0.5em; pointer-events: auto; }
+.nb-tab { border: 0; border-radius: 0 6px 6px 0; padding: 0.6em 0.9em 0.6em 0.7em; font-weight: 700; font-size: 0.9em; color: var(--r-ink); box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35); text-align: left; }
+.nb-tab.task { background: #f7f3e8; } .nb-tab.theory { background: #ffd0ea; } .nb-tab.math { background: #cfe3f2; }
+.nb-tab.on { transform: translateX(0.4em); box-shadow: 3px 3px 0 var(--r-pink); }
+.nb-tab:hover { color: var(--r-ink); border: 0; transform: translateX(0.3em); }
+@media (prefers-reduced-motion: reduce) { .nb-page.right, .nb-page.left { animation: none; } }

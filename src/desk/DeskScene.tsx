@@ -24,6 +24,7 @@ import { HelpingHands, SolderingStation, SolderSpool } from './assets/Soldering'
 import { Corkboard, Desk, DESK, Mug, Poster, Wall } from './assets/Room';
 import { useHover } from './hover';
 import type { Reading } from './meter';
+import { useNotebookRect } from './notebookRect';
 import { partInfo } from './partInfo';
 import type { TaskPage } from './taskPages';
 import type { DeskObject } from './steps';
@@ -194,7 +195,7 @@ function NotebookOnDesk({ page, glow }: { page: TaskPage; glow: boolean }) {
   const g = useRef<THREE.Group>(null);
   const k = useEased(focused ? 1 : 0);
   const open = useEased(focused ? 1 : 0, 0.8, easeInOutCubic);
-  const { camera } = useThree();
+  const { camera, size, gl } = useThree();
   const restQ = useMemo(() => new THREE.Quaternion().setFromEuler(new THREE.Euler(0, REST.notebook.rotY, 0)), []);
   useFrame(() => {
     if (!g.current) return;
@@ -203,6 +204,16 @@ function NotebookOnDesk({ page, glow }: { page: TaskPage; glow: boolean }) {
     const p = presentPose(camera as THREE.PerspectiveCamera, NOTEBOOK.w * 2, NOTEBOOK.d, 0.8);
     g.current.position.lerpVectors(rest, p.pos, k.value);
     g.current.quaternion.slerpQuaternions(restQ, p.quat, k.value);
+    // Once it's open in front of you, report where the pages are so the HTML pages can sit on them.
+    if (focused && open.value > 0.98) {
+      g.current.updateMatrixWorld();
+      const y = NOTEBOOK.pages + NOTEBOOK.cover;
+      const pts = [[-NOTEBOOK.w, -NOTEBOOK.d / 2], [NOTEBOOK.w, -NOTEBOOK.d / 2], [NOTEBOOK.w, NOTEBOOK.d / 2], [-NOTEBOOK.w, NOTEBOOK.d / 2]]
+        .map(([x, z]) => g.current!.localToWorld(new THREE.Vector3(x, y, z)).project(camera));
+      const xs = pts.map((q) => ((q.x + 1) / 2) * size.width), ys = pts.map((q) => ((1 - q.y) / 2) * size.height);
+      const r = gl.domElement.getBoundingClientRect();
+      useNotebookRect.getState().set({ left: r.left + Math.min(...xs), top: r.top + Math.min(...ys), width: Math.max(...xs) - Math.min(...xs), height: Math.max(...ys) - Math.min(...ys) });
+    } else if (useNotebookRect.getState().rect) useNotebookRect.getState().set(null);
   });
   return (
     <group ref={g}>

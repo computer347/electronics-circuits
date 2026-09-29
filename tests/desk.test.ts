@@ -4,7 +4,9 @@ import { useBench } from '../src/breadboard/store';
 import { buildMap } from '../src/circuitworld/map';
 import { followingLevel, isUnlocked, nextLevel } from '../src/desk/levelPick';
 import { meteredBoard, nextMode, readMeter, type MeterMode } from '../src/desk/meter';
+import { PARTS, spreads } from '../src/desk/notebook';
 import { partInfo } from '../src/desk/partInfo';
+import { makeDrill } from '../src/drills/generators';
 import { taskPage } from '../src/desk/taskPages';
 import { measurementsNow, useDesk } from '../src/desk/store';
 import { canSubmit, currentStep, FRESH, glowing, mainAction, railStates } from '../src/desk/steps';
@@ -252,5 +254,33 @@ describe('meter dial and part cards', () => {
     const lit = partInfo(fixed.parts.find((p) => p.id === 'LED1')!, analyzeBoard(fixed));
     expect(lit.state).toBe('lit');
     expect(lit.rows.find(([k]) => k === 'Current through')?.[1]).toBe('20 mA');
+  });
+});
+
+describe('notebook sections', () => {
+  it('gives every level parts, theory steps and a check, then formulas, worked examples and practice', () => {
+    for (const l of WORLD0) {
+      const theory = spreads(l, 'theory');
+      expect(theory[0]?.kind).toBe('part');
+      expect(theory.some((s) => s.kind === 'step')).toBe(true);
+      expect(theory.at(-1)?.kind).toBe('check');
+      const math = spreads(l, 'math');
+      expect(math[0]?.kind).toBe('formulas');
+      expect(math.at(-1)?.kind).toBe('practice');
+      for (const s of math) {
+        if (s.kind === 'formulas') expect(s.formulas.length).toBeGreaterThan(0);
+        // Worked examples are real drills: they build, and the solver agrees with the formula.
+        if (s.kind === 'worked') {
+          const d = makeDrill(s.generator, s.seed);
+          expect(d.solution.length).toBeGreaterThan(1);
+          expect(d.answer.value).toBeCloseTo(d.expected, 6);
+        }
+      }
+      expect(spreads(l, 'task')).toEqual([]);
+    }
+  });
+
+  it('explains each part with at least two callouts', () => {
+    for (const p of Object.values(PARTS)) expect(p.facts.length).toBeGreaterThanOrEqual(2);
   });
 });

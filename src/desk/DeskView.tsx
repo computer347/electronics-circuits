@@ -15,6 +15,7 @@ import { useSession } from '../levels/session';
 import { reducedMotion } from './anim';
 import { isUnlocked, followingLevel, nextLevel } from './levelPick';
 import { DIAL, meteredBoard, readMeter } from './meter';
+import { NotebookPages } from './NotebookPages';
 import { PartsTray } from './PartsTray';
 import { taskPage } from './taskPages';
 import type { BoxItem } from './assets/PartsBox';
@@ -67,7 +68,7 @@ function Stars({ n }: { n: number }) {
   return <div className="desk-stars" aria-label={`${n} of 3 stars`}>{[1, 2, 3].map((i) => <span key={i} className={i <= n ? 'on' : ''}>★</span>)}</div>;
 }
 
-export function DeskView({ onMenu, onLearn }: { onMenu: () => void; onLearn: (classId: string) => void }) {
+export function DeskView({ onMenu }: { onMenu: () => void }) {
   const desk = useDesk();
   const loop = useLoop();
   const parts = useBench((s) => s.parts);
@@ -226,9 +227,10 @@ export function DeskView({ onMenu, onLearn }: { onMenu: () => void; onLearn: (cl
       </button>
       <HoverTag />
 
-      {desk.phase === 'desk' && desk.focus === 'notebook' && cls && (
-        <button className="desk-link" onClick={() => onLearn(cls.id)}>
-          Learn this first: {cls.title}
+      {desk.phase === 'desk' && desk.focus === 'notebook' && <NotebookPages level={level} />}
+      {desk.phase === 'desk' && desk.focus === 'notebook' && desk.nbSection === 'task' && cls && (
+        <button className="desk-link" onClick={() => desk.openNotebook('theory')}>
+          Learn this first: {cls.title} →
         </button>
       )}
       {desk.phase === 'desk' && desk.focus === 'breadboard' && <PartsTray level={level} />}

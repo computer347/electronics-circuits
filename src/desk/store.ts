@@ -7,6 +7,7 @@ import { create } from 'zustand';
 import { useBench } from '../breadboard/store';
 import { useSession, type Attempt } from '../levels/session';
 import { nextMode, type MeterMode } from './meter';
+import type { Section } from './notebook';
 import { canSubmit, FRESH, type DeskObject, type LoopProgress } from './steps';
 
 /** Desk = at the bench; power = switch flipped, LED fading; dive = shrinking into the hole; clear = inside. */
@@ -23,6 +24,11 @@ interface DeskStore {
   zoom: number;
   zoomAt: [number, number];
   setZoom: (zoom: number, at?: [number, number]) => void;
+  /** The notebook's open section and page (a page is a two-page spread). */
+  nbSection: Section;
+  nbPage: number;
+  openNotebook: (section: Section, page?: number) => void;
+  setNbPage: (page: number) => void;
   /** Open the desk on the level map (Play on the front page). */
   startOnMap: boolean;
   /** Where the multimeter's dial points. */
@@ -58,6 +64,10 @@ export const useDesk = create<DeskStore>((set, get) => ({
   result: null,
   meterMode: 'V',
   startOnMap: false,
+  nbSection: 'task',
+  nbPage: 0,
+  openNotebook: (nbSection, nbPage = 0) => { if (get().focus !== 'notebook') get().focusOn('notebook'); set({ nbSection, nbPage }); },
+  setNbPage: (nbPage) => set({ nbPage }),
   zoom: 1,
   zoomAt: [0, 0],
   setZoom: (zoom, at) => set((s) => ({ zoom: Math.max(1, Math.min(MAX_ZOOM, zoom)), zoomAt: at ?? s.zoomAt })),
@@ -67,7 +77,7 @@ export const useDesk = create<DeskStore>((set, get) => ({
   enter: (levelId) => {
     useSession.getState().start(levelId);
     useBench.getState().setTool('select');
-    set({ levelId, focus: null, phase: 'desk', flags: FRESH_FLAGS, result: null, meterMode: 'V' });
+    set({ levelId, focus: null, phase: 'desk', flags: FRESH_FLAGS, result: null, meterMode: 'V', nbSection: 'task', nbPage: 0 });
   },
   focusOn: (focus) => {
     const bench = useBench.getState();
