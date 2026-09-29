@@ -35,6 +35,10 @@ export interface Room {
   lit?: boolean;
   /** For doors (LEDs): true when the door opens the way the current goes round. */
   forward?: boolean;
+  /** The nets it joins: where the current comes in, and where it leaves (h1, h2 for side rooms). */
+  nets: [string, string];
+  /** The board part, for its value and state (undefined for the supply). */
+  part?: BoardPart;
 }
 
 export interface CircuitMap {
@@ -43,7 +47,9 @@ export interface CircuitMap {
   /** Parts on the board that aren't on the main loop. */
   side: Room[];
   /** Voltage of the corridor after each loop room (index i joins loop[i] to loop[i + 1]). */
-  corridors: { v: number | undefined }[];
+  corridors: { v: number | undefined; net: string | null }[];
+  /** The ground net (the supply's − terminal). */
+  ground: string;
   /** The loop is closed: you can walk from + back to − through parts. */
   closed: boolean;
   /** Current round the loop, in amperes. */
@@ -76,13 +82,14 @@ export function buildMap(board: BoardState, analysis: BoardAnalysis): CircuitMap
   const loop: Room[] = [{
     id: SUPPLY_ID, kind: 'source', label: `Supply · ${board.supply.volts} V`,
     vIn: 0, vOut: board.supply.on ? board.supply.volts : 0, amps: tidy(-(r.currents[SUPPLY_ID] ?? 0)),
+    nets: [ground, plus],
   }];
-  const corridors: { v: number | undefined }[] = [];
+  const corridors: { v: number | undefined; net: string | null }[] = [];
   let at = plus;
   let closed = false;
   let entryVolts = board.supply.on ? board.supply.volts : undefined;
   for (let guard = 0; guard < rooms.length + 1; guard++) {
-    corridors.push({ v: entryVolts });
+    corridors.push({ v: entryVolts, net: at });
     if (at === ground) { closed = true; break; }
     const next = rooms.find((p) => !used.has(p.id) && (net(p.h1) === at || net(p.h2) === at));
     if (!next) break;
@@ -91,7 +98,7 @@ export function buildMap(board: BoardState, analysis: BoardAnalysis): CircuitMap
     const outLeg = inLeg === 'h1' ? 'h2' : 'h1';
     // Currents from the solver run h1 → h2; flip the sign when we walk it h2 → h1.
     const amps = tidy((r.currents[next.id] ?? 0) * (inLeg === 'h1' ? 1 : -1));
-    const room = describe(next, v(next[inLeg]), v(next[outLeg]), amps);
+    const room = describe(next, v(next[inLeg]), v(next[outLeg]), amps, [net(next[inLeg]), net(next[outLeg])]);
     if (next.kind === 'led') {
       // The door opens from anode (h1) to cathode (h2): forward if we come in at the anode.
       room.forward = inLeg === 'h1';
@@ -102,17 +109,17 @@ export function buildMap(board: BoardState, analysis: BoardAnalysis): CircuitMap
     entryVolts = v(next[outLeg]);
   }
   // The last corridor runs back to the supply's − terminal.
-  if (!closed) corridors.push({ v: undefined });
+  if (!closed) corridors.push({ v: undefined, net: null });
 
-  const side = rooms.filter((p) => !used.has(p.id)).map((p) => describe(p, v(p.h1), v(p.h2), tidy(r.currents[p.id] ?? 0)));
+  const side = rooms.filter((p) => !used.has(p.id)).map((p) => describe(p, v(p.h1), v(p.h2), tidy(r.currents[p.id] ?? 0), [net(p.h1), net(p.h2)]));
   const faults = [...loop, ...side].filter((x) => x.fault).map((x) => x.id);
   const amps = closed ? Math.min(...loop.slice(1).map((x) => Math.abs(x.amps))) : 0;
-  return { loop, side, corridors, closed, amps: tidy(amps), faults };
+  return { loop, side, corridors, closed, amps: tidy(amps), faults, ground };
 }
 
-function describe(p: BoardPart, vIn: number | undefined, vOut: number | undefined, amps: number): Room {
+function describe(p: BoardPart, vIn: number | undefined, vOut: number | undefined, amps: number, nets: [string, string]): Room {
   const kind = KIND[p.kind]!;
-  const room: Room = { id: p.id, kind, label: p.id, vIn, vOut, amps };
+  const room: Room = { id: p.id, kind, label: p.id, vIn, vOut, amps, nets, part: p };
   if (p.kind === 'resistor') room.label = `${p.id} · ${fmtOhms(p.ohms ?? 1000)}`;
   if (p.kind === 'led') {
     room.label = `${p.id} · ${p.color ?? 'red'}`;
