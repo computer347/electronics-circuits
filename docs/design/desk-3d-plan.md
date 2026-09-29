@@ -31,11 +31,19 @@ Front page (riso poster) → Continue → desk → notebook (task) → breadboar
 
 `docs/design/shots/01–11` (front page to the first step inside), from headless Chrome driven over CDP (neither connected Chrome extension could reach this PC's dev server). 03 shows the notebook's left page upside down and burnt out by the lamp: both fixed after the shot. The run stopped at 11 because the walk was slower than the script waited (the loop is now smaller and faster). Then the dev server was stopped for low memory, so shots 12–19 (scan, door, fix, flow, stars, back at the desk) still need taking.
 
+### Session 2 (same day)
+
+- Fixed: probe and hole clicks on the desk board missed (the pick used world metres against board units).
+- Multimeter dial: OFF / V / Ω / A, twisted by clicking or dragging the knob, clicking a label, or M. A puts the meter in the circuit as a wire (a short across the supply blows the fuse); Ω takes the sources out and reads OL for no path, capacitors and diodes (`src/desk/meter.ts`).
+- Parts move like real ones (`src/breadboard/PartMotion.tsx`, also in the sandbox): placed parts drop in with a bounce, flipped parts lift, turn round and settle, moved parts glide.
+- All five World 0 levels on the desk: Continue picks the next level, Play opens the corkboard, cards open in order. Parts tray for build levels. Per-level notebook spread with the goal's numbers, story, datasheet and a tip; pages stay readable under the lamp.
+- Clear the circuit for every level: broken bridge for an open loop, alcoves for branches, scorched rooms, and "Back to the bench" with the check's diagnosis when the fix belongs on the board.
+- Not yet seen in a browser: everything from session 2 (the dev server was stopped for low memory and not restarted).
+
 ### Next
 
-1. Finish the screenshots 12–19 and look at the inside for real: door facing, dome, room lighting, how the flow reads.
-2. Desk polish: probe leads are straight sticks in the meter view (give them slack), the breadboard is small in the desk view, the corkboard is only just in frame, lamp head is off-screen.
-3. Breadboard step for build levels: parts box with the level's parts, parts lifting out and snapping in, valid holes and the whole strip lighting while carrying a part.
-4. Clear the circuit for other faults: open wire = broken bridge, short = flood, burnt = scorched room (the map already reports `burnt` and open loops); side rooms for parallel branches.
-5. The rest of World 0 on the desk (level picked from the corkboard), then retire the old tabs.
-6. Code-split three.js (the bundle is 1.4 MB) and sound.
+1. Browser pass over all five levels with screenshots, then tune what it shows (camera framing, lead slack, tray placement, the inside of each level).
+2. Level 0–5 on the desk has no oscilloscope yet: the charge-time check still runs, but you can't watch the curve. Put a small scope on the desk, or show the curve in the circuit world.
+3. Parts lifting out of the parts box on the way to the board, and the whole strip lighting while you carry a part.
+4. Short circuit as a flood in the circuit world.
+5. Retire the old tabs once Mike has played World 0 on the desk; code-split three.js; sound.
