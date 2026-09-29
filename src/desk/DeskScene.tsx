@@ -8,7 +8,8 @@ import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import * as THREE from 'three';
 import { BOARD, hole } from '../breadboard/layout';
-import type { BoardAnalysis } from '../breadboard/model';
+import { SUPPLY_ID, type BoardAnalysis } from '../breadboard/model';
+import { SUPPLY_HOLES } from '../breadboard/paths';
 import { BreadboardContents } from '../breadboard/Scene';
 import { useBench } from '../breadboard/store';
 import { easeInOutCubic, easeOutCubic, reducedMotion, useEased } from './anim';
@@ -16,25 +17,27 @@ import { Lamp } from './assets/Lamp';
 import { JACKS, Lead, METER, Multimeter } from './assets/Multimeter';
 import { Notebook, NOTEBOOK } from './assets/Notebook';
 import { PartsBox, type BoxItem } from './assets/PartsBox';
-import { PowerUnit } from './assets/PowerUnit';
+import { BenchSupply } from './assets/BenchSupply';
+import { Cutters, LedBag, PartsDrawers, ResistorTape, Tweezers } from './assets/Clutter';
+import { AntistaticMat } from './assets/Mat';
+import { HelpingHands, SolderingStation, SolderSpool } from './assets/Soldering';
 import { Corkboard, Desk, DESK, Mug, Poster, Wall } from './assets/Room';
 import { useHover } from './hover';
 import type { Reading } from './meter';
 import { partInfo } from './partInfo';
 import type { TaskPage } from './taskPages';
 import type { DeskObject } from './steps';
+import { LAYOUT, MAT_T } from './layout';
 import { useDesk, type DeskPhase } from './store';
 
 /** Breadboard units → metres: the board is about 30 cm across on the desk. */
 export const S = 0.0095;
-const BOARD_POS = new THREE.Vector3(0, BOARD.thickness * S, -0.03);
+// The board sits on the antistatic mat.
+const BOARD_POS = new THREE.Vector3(0, BOARD.thickness * S + MAT_T, -0.03);
 export const boardToWorld = (x: number, y: number, z: number) => new THREE.Vector3(x * S, y * S, z * S).add(BOARD_POS);
 
-const REST = {
-  notebook: { pos: new THREE.Vector3(-0.37, 0, 0.04), rotY: 0.16 },
-  meter: { pos: new THREE.Vector3(0.33, 0, 0.04), rotY: -0.22 },
-};
-const LAMP = { base: new THREE.Vector3(0.6, 0, -0.32), head: new THREE.Vector3(0.36, 0.5, -0.12), aim: new THREE.Vector3(0.02, 0, 0.0) };
+const REST = { notebook: LAYOUT.notebook, meter: LAYOUT.meter };
+const LAMP = LAYOUT.lamp;
 
 // ---------------------------------------------------------------- camera
 
@@ -49,7 +52,7 @@ function framePose(center: THREE.Vector3, w: number, d: number, elevation: numbe
   return { pos: center.clone().add(new THREE.Vector3(0, Math.sin(el), Math.cos(el)).multiplyScalar(dist)), target: center.clone() };
 }
 
-const DESK_CENTER = new THREE.Vector3(0, 0, -0.07);
+const DESK_CENTER = new THREE.Vector3(0, 0, -0.06);
 const BOARD_CENTER = new THREE.Vector3(-0.01, 0, -0.045);
 const METER_VIEW_CENTER = new THREE.Vector3(0.05, 0, -0.035);
 
@@ -59,7 +62,7 @@ function poseFor(focus: DeskObject | null, phase: DeskPhase, cam: THREE.Perspect
   if (focus === 'meter') return framePose(METER_VIEW_CENTER, 0.5, 0.28, 64, cam);
   if (focus === 'corkboard') return { pos: new THREE.Vector3(-0.18, 0.3, 0.22), target: new THREE.Vector3(-0.18, 0.2, DESK.wallZ) };
   // Seated at the desk (also while the notebook is presented: it comes to you).
-  return framePose(DESK_CENTER, 1.0, 0.7, 60, cam, 0.8);
+  return framePose(DESK_CENTER, 1.2, 0.72, 60, cam, 0.86);
 }
 
 function CameraRig({ diveAt }: { diveAt: THREE.Vector3 }) {
@@ -248,7 +251,7 @@ function MeterOnDesk({ reading, glow }: { reading: Reading; glow: boolean }) {
   );
 }
 
-function BreadboardOnDesk({ analysis, glow, flipped }: { analysis: BoardAnalysis; glow: boolean; flipped: boolean }) {
+function BreadboardOnDesk({ analysis, glow }: { analysis: BoardAnalysis; glow: boolean }) {
   const focus = useDesk((s) => s.focus);
   const phase = useDesk((s) => s.phase);
   const working = (focus === 'breadboard' || focus === 'meter') && phase === 'desk';
@@ -264,7 +267,6 @@ function BreadboardOnDesk({ analysis, glow, flipped }: { analysis: BoardAnalysis
     <group onWheel={onWheel}>
       <group position={BOARD_POS} scale={S}>
         <BreadboardContents analysis={analysis} dynamic={false} look="desk" supplyBox={false} />
-        <PowerUnit flipped={flipped} glow={false} />
         {working && <PartLabels analysis={analysis} />}
       </group>
       <group position={[BOARD_POS.x, 0, BOARD_POS.z]}>
@@ -345,6 +347,12 @@ export function DeskScene(p: DeskSceneProps) {
   const key = useRef<THREE.PointLight>(null);
   const { scene } = useThree();
   const diveAt = useMemo(() => { const h = hole(p.diveHole); return boardToWorld(h.x, 0, h.z); }, [p.diveHole]);
+  const supply = useBench((s) => s.supply);
+  // The supply's leads plug into the first holes of the top rails.
+  const { railPlus, railMinus } = useMemo(() => {
+    const at = (id: string) => { const h = hole(id); return boardToWorld(h.x, 0, h.z); };
+    return { railPlus: at(SUPPLY_HOLES.plus), railMinus: at(SUPPLY_HOLES.minus) };
+  }, []);
 
   useEffect(() => { scene.background = new THREE.Color('#15110d'); }, [scene]);
   useFrame(() => {
@@ -365,19 +373,30 @@ export function DeskScene(p: DeskSceneProps) {
 
       <Desk />
       <Wall />
-      <group position={[-0.18, 0.2, DESK.wallZ + 0.012]}>
+      <group position={LAYOUT.corkboard.pos}>
         <Interactive id="corkboard" lift={0}>
           <Glow w={0.3} d={0.15} on={p.glow === 'corkboard'} />
           <Corkboard current={p.levelNumber} passed={p.passed} unlocked={p.unlocked} onPick={focus === 'corkboard' ? p.onPickLevel : undefined} />
         </Interactive>
       </group>
-      <group position={[0.36, 0.22, DESK.wallZ + 0.003]} rotation={[0, 0, -0.03]}><Poster /></group>
+      <group position={LAYOUT.poster.pos} rotation={[0, 0, -0.03]}><Poster /></group>
 
-      <BreadboardOnDesk analysis={p.analysis} glow={p.glow === 'breadboard'} flipped={submitted} />
+      <group position={LAYOUT.mat.pos}><AntistaticMat w={LAYOUT.mat.w} d={LAYOUT.mat.d} cordTo={new THREE.Vector3(-0.1, 0.002, -0.2)} /></group>
+      <BreadboardOnDesk analysis={p.analysis} glow={p.glow === 'breadboard'} />
+      <BenchSupply position={LAYOUT.supply.pos} rotY={LAYOUT.supply.rotY} volts={supply.volts} on={supply.on}
+        amps={Math.max(0, -(p.analysis.result.currents[SUPPLY_ID] ?? 0))} pressed={submitted} plusTo={railPlus} minusTo={railMinus} />
       <NotebookOnDesk page={p.page} glow={p.glow === 'notebook'} />
       <MeterOnDesk reading={p.reading} glow={p.glow === 'meter'} />
-      <group position={[-0.3, 0, -0.3]} rotation={[0, 0.1, 0]}><PartsBox items={p.boxItems} /></group>
-      <group position={[0.66, 0, 0.12]}><Mug /></group>
+      <group position={LAYOUT.partsBox.pos} rotation={[0, LAYOUT.partsBox.rotY, 0]}><PartsBox items={p.boxItems} /></group>
+      <group position={LAYOUT.drawers.pos} rotation={[0, LAYOUT.drawers.rotY, 0]}><PartsDrawers /></group>
+      <group position={LAYOUT.station.pos} rotation={[0, LAYOUT.station.rotY, 0]}><SolderingStation /></group>
+      <group position={LAYOUT.spool.pos}><SolderSpool /></group>
+      <group position={LAYOUT.helpingHands.pos} rotation={[0, LAYOUT.helpingHands.rotY, 0]}><HelpingHands /></group>
+      <group position={LAYOUT.cutters.pos} rotation={[0, LAYOUT.cutters.rotY, 0]}><Cutters /></group>
+      <group position={LAYOUT.tweezers.pos} rotation={[0, LAYOUT.tweezers.rotY, 0]}><Tweezers /></group>
+      <group position={LAYOUT.resistorTape.pos} rotation={[0, LAYOUT.resistorTape.rotY, 0]}><ResistorTape /></group>
+      <group position={LAYOUT.ledBag.pos} rotation={[0, LAYOUT.ledBag.rotY, 0]}><LedBag /></group>
+      <group position={LAYOUT.mug.pos}><Mug /></group>
 
       {/* A click on the dimmed desk goes back. */}
       <mesh position={[0, 0.0005, 0]} rotation={[-Math.PI / 2, 0, 0]} onClick={() => { const d = useDesk.getState(); if (d.focus && d.phase === 'desk') d.focusOn(null); }}>

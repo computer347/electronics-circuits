@@ -19,8 +19,9 @@ function half(t: THREE.Texture, right: boolean) {
 }
 
 /**
- * Printed pages light themselves a little (emissive) and take less from the lamp, so the text
- * stays even and readable instead of burning out under the spotlight.
+ * Printed pages. On the desk they take the room's light like paper; as the book opens in front
+ * of you they switch to lighting themselves evenly (emissive only), so the lamp's hot spot never
+ * lands in the middle of the text.
  */
 function pageMaterial(map: THREE.Texture) {
   return new THREE.MeshStandardMaterial({ map, color: '#8c8c8c', emissive: '#ffffff', emissiveMap: map, emissiveIntensity: 0.5, roughness: 1, metalness: 0 });
@@ -43,7 +44,13 @@ export function Notebook({ open, page }: { open: { value: number }; page: TaskPa
   const pageMats = useMemo(() => [paperSide, paperSide, pageMaterial(tex.right), blue, paperSide, paperSide], [paperSide, blue, tex]);
   const coverMats = useMemo(() => [blue, blue, new THREE.MeshStandardMaterial({ map: tex.cover, roughness: 0.8 }), pageMaterial(tex.left), blue, blue], [blue, tex]);
 
+  const lit = useMemo(() => [pageMats[2] as THREE.MeshStandardMaterial, coverMats[3] as THREE.MeshStandardMaterial], [pageMats, coverMats]);
+  const shade = useMemo(() => new THREE.Color(), []);
   useFrame(() => {
+    for (const m of lit) {
+      m.color.copy(shade.setScalar(0.55 * (1 - open.value)));
+      m.emissiveIntensity = 0.5 + 0.46 * open.value;
+    }
     // The cover rises over the spine and lands flat on the left, at pages height.
     if (pivot.current) pivot.current.rotation.z = open.value * Math.PI;
     if (under.current) under.current.visible = open.value > 0.5;
