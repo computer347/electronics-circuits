@@ -153,9 +153,64 @@ Badges are saved with the level and shown on its corkboard card as small stamps.
 - An **Easy passage** setting: atoms still move (it's the teaching) but can't knock you back, and gremlins don't drain. Reduced motion turns atom vibration down to a slow sway.
 - Enemies are silly, not scary: riso creatures that fizz and blink, no gore, no jump scares.
 
+## Stakes: parts have limits, and they fail like real ones
+
+The challenge above is about getting through. This is about the circuit itself: a wrong part doesn't just fail the check, it **breaks things**, the way it would on a real bench, and one failure can take others with it.
+
+### Every part has ratings
+
+Shown on its datasheet card in the notebook and when you scan it:
+
+| Part | Limit | What happens past it |
+|---|---|---|
+| LED | 30 mA forward, 5 V reverse | burns out almost at once and goes open (dark, no current) |
+| Resistor | 0.25 W (the small breadboard kind) | overheats over a few seconds: glows, smokes, then **burns open** |
+| Electrolytic capacitor | its voltage, and the right way round | reversed or over-voltage: bulges, hisses, then vents |
+| Sensor input (0–4) | 3.6 V absolute maximum | fried: its room goes dark for good |
+| Bench supply | its current limit | holds the current down and drops the voltage (see below) |
+
+**What "wrong" looks like depends on the circuit, and the world shows the true version:**
+- **A resistor in series with an LED** always takes the supply minus the LED's 2 V (7 V on 9 V), whatever its value, so its ramp always drops 7 m. What a too-small resistor changes is the **current**: its passage is wide and short, the water through it is a torrent, and the LED behind it gets far more than 30 mA. The height is the same, and the flood is the problem.
+- **A divider** (0–4) has no fixed-drop part, so a wrong resistor really does move the voltage: the tap plaza sits too high, and the sensor room at the top of it is over its 3.6 V limit.
+
+**Scanning before power shows the stakes.** At full power, each part's scan tag gets a stress bar, as a percentage of its rating (green, amber, red): "LED1 · would carry 70 mA · 233 % of its limit". The careful player sees the red bar, goes back to the bench and never fries anything. The notebook's Math pages already teach the sums; this is where they pay off.
+
+### The moment of truth: power on
+
+Switching the power on at the lift is where the consequences play out, inside the circuit, in front of you.
+
+- **Overstressed parts heat up visibly**: their rooms glow orange to white, the lattice in a resistor passage shakes itself apart, smoke rolls out, a stress ring fills over the part.
+- **Failure times follow real life, scaled so you can see them.** An LED dies almost instantly (under half a second: it's true, and it's why you check first). A resistor takes seconds (4–10 s at twice its wattage, less when worse). A reversed electrolytic takes a few seconds to vent.
+- **Failures change the circuit, so they cascade.** Each failure is applied to the board, and the solver runs again:
+  - a resistor that burns open is a new **broken bridge**, and everything downstream goes dark;
+  - in parallel (0–3), when one LED fails open, its partner suddenly gets the whole current and goes next: a **domino** you watch happen;
+  - a part that fails can also *save* another, by cutting the current before it reaches it.
+- **The breaker.** A big red mushroom button on the lift's panel cuts the power (Use, or Space in this moment). Slow failures (resistors, capacitors) can be saved if you hit it in time; an LED can't, because it's too fast, as in real life. There's one main action on screen during a surge, "**Cut the power!**", with the time left as a bar.
+- **What it costs.** A burnt LED uses one of the level's spare LEDs, and a burnt part costs the second star, as on the bench now. Resistors and capacitors are free to replace, but the result card lists them. Then it's back to the bench, with the fried parts on the board, blackened, to swap.
+
+### Protecting the bench: the supply's current limit
+
+A real bench supply has a **current limit** knob, and good practice is to set it low while building. The desk gets one:
+
+- While you build and measure on the bench, the supply is limited (level default 30 mA; a knob on the supply). If the circuit tries to draw more, the supply's **CC** lamp lights, the current stays at the limit and the voltage sags. So a wrong resistor on the bench doesn't burn the LED while you're testing: the meter shows the sagging voltage and the lamp shows why.
+- **Submit** switches the supply to full power (the OUTPUT button), and that's what you meet inside. So the consequences happen at the moment of truth, where you can watch them, not in the middle of building.
+- The solver needs one addition for this: a supply that switches to a current source at its limit (solve once as a voltage source; if the current is over the limit, solve again with the supply as a current source of the limit value). It's a small, testable change to `src/sim/`.
+
+This replaces today's "an overloaded LED burns the moment you place the resistor". Building gets friendlier, and the drama moves inside.
+
+### Level by level
+
+| Level | A wrong choice… | …and what you see inside |
+|---|---|---|
+| 0–1 First light | 100 Ω (or less) | torrent through a wide, short passage: LED1 flashes and dies at once; the resistor (0.49 W) starts smoking: the breaker saves the resistor, not the LED |
+| 0–2 Wrong way round | (turning it round is the fix) | on a 9 V variant: 9 V in reverse is over the 5 V limit, and the door cracks and burns (a harder bonus level later) |
+| 0–3 Side by side | parallel LEDs | over the 20 mA budget the supply's limit holds, and both LEDs sit dim; with small resistors and no limit, one LED fails first (real LEDs are never quite equal, and the game gives each a small spread), then its partner takes the whole current: the domino |
+| 0–4 Split the difference | tap too high | the sensor room overheats past 3.6 V; too-small resistors also cook themselves (a 100 Ω / 47 Ω divider on 9 V is over 0.25 W) |
+| 0–5 Slow blink | electrolytic in backwards | the reservoir bulges and vents after a few seconds of charging: the breaker saves it |
+
 ## Power on and the end of the level
 
-At the lift's panel, **Use** switches the power on. Water pours from the top of the lift, runs down every ramp in turn, through each door (the LED rooms light in their own colour), and pools at the floor, then back to the lift. Speed and width follow the real current. Then the level is checked (`checkLevel`), and the stars appear in the world before the camera rises back out of the board to the bench.
+At the lift's panel, **Use** switches the power on (and anything over its limit starts to fail: see Stakes). Water pours from the top of the lift, runs down every ramp in turn, through each door (the LED rooms light in their own colour), and pools at the floor, then back to the lift. Speed and width follow the real current. Then the level is checked (`checkLevel`), and the stars appear in the world before the camera rises back out of the board to the bench.
 
 Stars stay as they are on the bench (spec, no hints / nothing burnt, par); the run badges (above) are the inside's own score. There's no fail state: running out of spark sends you back to the lift, nothing more.
 
@@ -180,6 +235,7 @@ Stars stay as they are on the bench (spec, no hints / nothing burnt, par); the r
 - `buildWorld`: heights equal node voltages; around every closed loop the lift's rise equals the sum of drops (KVL); a reversed LED gives a blocking door with the supply voltage across it; an open loop gives a chasm; branches become forks between the right two plazas.
 - Controller: can walk the whole loop of a clear circuit; can't pass a closed door, a raised bridge or a chasm; walking off a ledge lands on the lower plaza; can't climb a ledge; sliding along walls never lets you through a corner.
 - Level scripts: each World 0 level can be cleared from spawn by a scripted walker (walk to the fault, Use, walk to the lift, Use).
+- Stakes: ratings per part; stress bars match the solver at full power; LED failure is near-instant and can't be saved, resistor and capacitor failures can be stopped by the breaker in time; a failure is applied to the board and re-solved (burnt resistor goes open, parallel domino); the current-limited supply switches to a current source at its limit and the voltage sags.
 - Challenge: passage width falls as R rises; lattice vibration follows the solver's power; the height after a resistor is the solver's, whatever the collisions; running out of spark respawns at the lift without changing the board; Easy passage removes knock-back and drain.
 
 ## Build plan
@@ -190,7 +246,8 @@ Stars stay as they are on the bench (spec, no hints / nothing burnt, par); the r
 4. **Power on**: the water, rooms lighting in order, the check and the stars in the world, rising back out to the bench.
 5. **Map and onboarding**: Tab schematic map with click-to-walk, the first-time controls card, touch controls, settings.
 6. **The challenge**: resistor passages sized by R with the vibrating lattice and heat wisps, the spark meter, gremlins, respawn at the lift, run badges.
-7. **Set pieces for every level**: the flood, smoke in burnt rooms, the reservoir platform (0–5), the divider ledge (0–4), Easy passage.
+7. **Stakes**: part ratings and stress bars in scans, the current-limited bench supply (solver change + CC lamp + knob), failures on power-on with heating, cascades and the breaker; bench keeps the blackened parts to swap.
+8. **Set pieces for every level**: the flood, smoke in burnt rooms, the reservoir platform (0–5), the divider ledge (0–4), Easy passage.
 
 Each step is playable and committed on its own.
 
@@ -203,3 +260,5 @@ Each step is playable and committed on its own.
 5. **Free bench**: the same free-roam world for your own circuits (no scoring), as now?
 6. **Enemies**: stray static in World 0 growing into interference (EMI) and ground bounce later, as specced? And do they chase, or only patrol? (Recommended: patrol in World 0, chase from World 1.)
 7. **Run badges**: separate from the stars as specced (recommended, so the challenge never blocks learning), or fold the run into the third star?
+8. **Current limit on the bench**: move the burning from the bench to the moment of truth inside, as specced (recommended), or keep LEDs burning on the bench the moment a wrong resistor goes in?
+9. **Failure timing**: real-life order (LED instant, resistor seconds, capacitor seconds) scaled so it's watchable, as specced, or slow everything down so every part can be saved?
