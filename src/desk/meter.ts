@@ -13,7 +13,7 @@
  */
 import type { HoleId } from '../breadboard/layout';
 import { boardToCircuit, type BoardPart, type BoardState } from '../breadboard/model';
-import { solve } from '../sim';
+import { GROUND_NAMES, solve, type Component } from '../sim';
 
 export type MeterMode = 'off' | 'V' | 'Ω' | 'diode' | 'A';
 /** Dial order, clockwise. */
@@ -59,7 +59,7 @@ function fixed(v: number, digits = 4) {
 }
 
 /** Pick a unit prefix so the number fits the display: 0.0213 A → "21.30 mA". */
-function scaled(v: number, unit: string): { text: string; unit: string } {
+export function scaled(v: number, unit: string): { text: string; unit: string } {
   const a = Math.abs(v);
   if (unit === 'Ω') {
     if (a >= 1e6) return { text: fixed(v / 1e6), unit: 'MΩ' };
@@ -75,35 +75,49 @@ function scaled(v: number, unit: string): { text: string; unit: string } {
   return { text: fixed(Math.abs(v) < 5e-4 ? 0 : v), unit };
 }
 
+/**
+ * The two meter measurements that need the meter's own source, on any circuit: sources are
+ * zeroed, then a test current goes in at `a` and out at `b`. Node names as the circuit uses them.
+ */
+function testCurrent(components: Component[], a: string, b: string, amps: number): number | null {
+  // Sources are zeroed; an unpowered regulator passes nothing, so it's left out.
+  const zeroed = components.filter((c) => c.kind !== 'regulator').map((c) => (c.kind === 'vsource' ? { ...c, volts: 0, wave: undefined } : c));
+  zeroed.push({ kind: 'isource', id: '__TEST', a: b, b: a, amps });
+  const r = solve({ components: zeroed });
+  if (!r.ok) return null;
+  return (r.nodeVoltages[a] ?? 0) - (r.nodeVoltages[b] ?? 0);
+}
+const sameNode = (a: string, b: string) => a === b || (GROUND_NAMES.has(a) && GROUND_NAMES.has(b));
+
+/** Resistance between two nodes as a meter's Ω range sees it; null for OL. */
+export function ohmsAcross(components: Component[], a: string, b: string): number | null {
+  if (sameNode(a, b)) return 0;
+  // Try a strong test current first, then weaker ones for big resistances.
+  for (const amps of [1e-3, 1e-5, 1e-7]) {
+    const v = testCurrent(components, a, b, amps);
+    if (v === null) return null;
+    if (Math.abs(v) <= OHM_COMPLIANCE) return v >= 0 ? v / amps : null;
+  }
+  return null;
+}
+
+/** Forward voltage between two nodes at the diode test's 1 mA; null for OL. */
+export function diodeAcross(components: Component[], a: string, b: string): number | null {
+  if (sameNode(a, b)) return 0;
+  const v = testCurrent(components, a, b, 1e-3);
+  return v !== null && v >= 0 && v <= DIODE_COMPLIANCE ? v : null;
+}
+
 /** Forward voltage between two holes at the diode test's 1 mA, sources off; null for OL. */
 export function diodeDrop(board: BoardState, red: HoleId, black: HoleId): number | null {
   const { circuit, nodeOf } = boardToCircuit({ supply: { ...board.supply, on: false }, parts: board.parts });
-  const a = nodeOf(red), b = nodeOf(black);
-  if (a === b) return 0;
-  const components = circuit.components.map((c) => (c.kind === 'vsource' ? { ...c, volts: 0, wave: undefined } : c));
-  components.push({ kind: 'isource', id: '__TEST', a: b, b: a, amps: 1e-3 });
-  const r = solve({ components });
-  if (!r.ok) return null;
-  const v = (r.nodeVoltages[a] ?? 0) - (r.nodeVoltages[b] ?? 0);
-  return v >= 0 && v <= DIODE_COMPLIANCE ? v : null;
+  return diodeAcross(circuit.components, nodeOf(red), nodeOf(black));
 }
 
 /** Resistance between two holes with every source switched off. */
 export function ohmsBetween(board: BoardState, red: HoleId, black: HoleId): number | null {
   const { circuit, nodeOf } = boardToCircuit({ supply: { ...board.supply, on: false }, parts: board.parts });
-  const a = nodeOf(red), b = nodeOf(black);
-  if (a === b) return 0;
-  const components = circuit.components.map((c) => (c.kind === 'vsource' ? { ...c, volts: 0, wave: undefined } : c));
-  // Try a strong test current first, then weaker ones for big resistances.
-  for (const amps of [1e-3, 1e-5, 1e-7]) {
-    components.push({ kind: 'isource', id: '__TEST', a: b, b: a, amps });
-    const r = solve({ components });
-    components.pop();
-    if (!r.ok) return null;
-    const v = (r.nodeVoltages[a] ?? 0) - (r.nodeVoltages[b] ?? 0);
-    if (Math.abs(v) <= OHM_COMPLIANCE) return v / amps;
-  }
-  return null;
+  return ohmsAcross(circuit.components, nodeOf(red), nodeOf(black));
 }
 
 /**
@@ -134,6 +148,6 @@ export function readMeter(
     return { ...scaled(i, 'A'), value: i };
   }
   const r = ohmsBetween(board, probes.red, probes.black);
-  if (r === null || r < 0) return { text: 'OL', unit: 'Ω', note: 'OL: no path the meter can push its test current through.' };
+  if (r === null) return { text: 'OL', unit: 'Ω', note: 'OL: no path the meter can push its test current through.' };
   return { ...scaled(r, 'Ω'), value: r };
 }

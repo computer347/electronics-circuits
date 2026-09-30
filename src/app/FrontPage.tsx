@@ -1,18 +1,19 @@
 /**
  * The front page, as a risograph poster: paper, fluoro pink, blue and riso yellow overprinted
  * (multiply), a fine grain, Anton + Space Mono. One big Continue (to the desk), then three
- * choices only: Play, Learn, Practice. Keys: Enter continues, 1–3 open the others.
+ * choices: Play, Learn, Practice, and the Workshop's jobs. Keys: Enter continues, 1–4 open the others.
  */
 import { useEffect } from 'react';
 import '../desk/desk.css';
 import { useProgress, worldStars } from '../levels/progress';
 
-export type FrontChoice = 'continue' | 'play' | 'learn' | 'practice';
+export type FrontChoice = 'continue' | 'play' | 'learn' | 'practice' | 'workshop';
 
 const CHOICES: { id: Exclude<FrontChoice, 'continue'>; label: string; key: string }[] = [
   { id: 'play', label: 'Play', key: '1' },
   { id: 'learn', label: 'Learn', key: '2' },
   { id: 'practice', label: 'Practice', key: '3' },
+  { id: 'workshop', label: 'Workshop', key: '4' },
 ];
 
 export function FrontPage({ onChoose }: { onChoose: (c: FrontChoice) => void }) {

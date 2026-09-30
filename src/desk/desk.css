@@ -347,3 +347,37 @@
   .hotbar { flex-wrap: wrap; justify-content: center; max-width: calc(100vw - 32px); }
   .hotbar > button { width: 58px; font-size: 10px; }
 }
+
+/* ------------------------------------------------------------ workshop */
+.riso.workshop { grid-template-rows: auto auto auto 1fr; align-content: start; overflow: auto; }
+.workshop .desk-back { position: relative; top: 0; left: 0; justify-self: start; background: var(--r-ink); color: var(--r-paper); }
+.workshop-title { margin: 8px 0 0; font-family: var(--r-display); font-weight: 400; font-size: clamp(56px, 11vw, 140px); line-height: 0.9; color: var(--r-pink); text-shadow: 0.03em 0.03em 0 var(--r-blue); }
+.workshop-cards { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 18px; max-width: 1040px; align-content: start; }
+.workshop-cards button { position: relative; display: grid; gap: 6px; align-content: start; width: 100%; height: 100%; padding: 18px 16px 16px; border: 0; border-radius: 0; text-align: left; background: #fffdf6; color: var(--r-ink); font-family: var(--r-mono); font-size: 13px; line-height: 1.45; box-shadow: 5px 5px 0 var(--r-blue); cursor: pointer; }
+.workshop-cards button:hover:not(:disabled) { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 var(--r-pink); }
+.workshop-cards b { font-family: var(--r-display); font-weight: 400; font-size: 28px; line-height: 1; }
+.workshop-cards kbd { position: absolute; top: 8px; right: 10px; font-family: var(--r-mono); font-weight: 700; color: rgba(28, 10, 58, 0.45); }
+.workshop-cards button.later { cursor: default; opacity: 0.6; box-shadow: 5px 5px 0 rgba(28, 10, 58, 0.2); }
+.workshop-cards em { font-style: normal; font-weight: 700; color: var(--r-pink); }
+
+/* ------------------------------------------------------------ repair mat */
+.repair { position: fixed; inset: 0; background: #4a5553; font-family: var(--r-mono); }
+.repair-card { position: fixed; top: 70px; left: 20px; z-index: 10; width: min(360px, calc(100vw - 32px)); max-height: calc(100vh - 260px); overflow: auto; padding: 14px 16px; background: var(--r-paper); color: var(--r-ink); font-size: 13px; line-height: 1.45; box-shadow: 5px 5px 0 var(--r-blue); }
+.repair-card h2 { margin: 2px 0 6px; font-family: var(--r-display); font-weight: 400; font-size: 32px; line-height: 1; }
+.repair-card p { margin: 0 0 8px; }
+.repair-goal { font-weight: 700; }
+.repair-story { font-style: italic; color: #4b4058; }
+.repair-hints { margin: 6px 0 0; padding-left: 1.3em; }
+.repair-hints li { margin-bottom: 6px; padding: 4px 6px; background: #fff27a; }
+.repair-power { position: fixed; top: 20px; right: 20px; z-index: 10; display: grid; gap: 6px; justify-items: end; }
+.repair-power .desk-chip.on { background: var(--r-pink); color: var(--r-paper); }
+.repair-status { padding: 3px 8px; background: rgba(28, 10, 58, 0.6); color: var(--r-paper); font-size: 12px; font-weight: 700; }
+.repair-tip { max-width: min(460px, calc(100vw - 32px)); white-space: normal; font-family: var(--r-mono); font-size: 12px; }
+.repair-notice, .repair-note { margin: 0; max-width: min(640px, calc(100vw - 32px)); padding: 6px 10px; color: var(--r-ink); font-size: 13px; font-weight: 700; line-height: 1.4; }
+.repair-notice { background: var(--r-yellow); box-shadow: 3px 3px 0 var(--r-pink); }
+.repair-note { background: var(--r-paper); box-shadow: 3px 3px 0 var(--r-blue); font-weight: 400; }
+.repair-hold { width: 64px; height: 9px; background: rgba(28, 10, 58, 0.6); box-shadow: 2px 2px 0 var(--r-pink); }
+.repair-hold i { display: block; height: 100%; background: var(--r-yellow); }
+@media (max-width: 720px) {
+  .repair-card { top: 64px; max-height: 34vh; }
+}

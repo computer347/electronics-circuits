@@ -176,7 +176,7 @@ export const ARDUINO_UNO: BoardDef = {
   holes: [[-20.3, 24.1], [30.5, 24.1], [31.8, -21.6], [-19.1, -24.1]],
   silk: (g, px, w, d) => {
     const T = toCanvas(w, d);
-    g.save(); g.font = `bold ${6 * px}px 'Anton', sans-serif`; g.fillText('UNO', T.x(-4) * px, T.z(-7) * px); g.restore();
+    g.save(); g.font = `bold ${6 * px}px 'Anton', sans-serif`; g.fillText('UNO', T.x(8) * px, T.z(-10.5) * px); g.restore();
     g.font = `bold ${1.8 * px}px 'Space Mono', monospace`;
     g.fillText('DIGITAL (PWM~)', T.x(2) * px, T.z(-19) * px);
     g.fillText('POWER', T.x(-5) * px, T.z(20) * px);
@@ -184,9 +184,9 @@ export const ARDUINO_UNO: BoardDef = {
     g.fillText('ON', T.x(22.5) * px, T.z(9.5) * px);
     g.fillText('L', T.x(-6) * px, T.z(-13.5) * px);
     g.fillText('TX', T.x(-6) * px, T.z(-9.5) * px); g.fillText('RX', T.x(-6) * px, T.z(-7) * px);
-    pinLabels(g, px, ['AREF', 'GND', '13', '12', '~11', '~10', '~9', '8'], T.x(-13.3), T.z(-22.5), 2.54, 1.1, true);
+    pinLabels(g, px, ['SCL', 'SDA', 'AREF', 'GND', '13', '12', '~11', '~10', '~9', '8'], T.x(-13.3), T.z(-22.5), 2.54, 1.1, true);
     pinLabels(g, px, ['7', '~6', '~5', '4', '~3', '2', 'TX1', 'RX0'], T.x(13.6), T.z(-22.5), 2.54, 1.1, true);
-    pinLabels(g, px, ['IOREF', 'RESET', '3.3V', '5V', 'GND', 'GND', 'VIN'], T.x(-9.1), T.z(22.5), 2.54, 1.0, true);
+    pinLabels(g, px, ['', 'IOREF', 'RESET', '3.3V', '5V', 'GND', 'GND', 'VIN'], T.x(-9.1), T.z(22.5), 2.54, 1.0, true);
     pinLabels(g, px, ['A0', 'A1', 'A2', 'A3', 'A4', 'A5'], T.x(11.7), T.z(22.5), 2.54, 1.1, true);
     g.beginPath(); g.arc(T.x(-14) * px, T.z(2) * px, 3 * px, 0, Math.PI * 2); g.stroke();
   },

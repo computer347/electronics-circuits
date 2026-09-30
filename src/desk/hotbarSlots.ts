@@ -76,7 +76,7 @@ export function activeSlot(slots: Slot[], tool: Tool, focus: string | null): str
 }
 
 /** The slot a key press picks, if any ("1" … "8"). */
-export function slotForKey(slots: Slot[], key: string): Slot | undefined {
+export function slotForKey<T extends { key: number }>(slots: T[], key: string): T | undefined {
   const n = Number(key);
   return Number.isInteger(n) ? slots.find((s) => s.key === n) : undefined;
 }
