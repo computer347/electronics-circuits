@@ -316,11 +316,16 @@ export const OLED_096: BoardDef = {
 
 export const DHT11: BoardDef = {
   id: 'dht11', name: 'DHT11 temperature & humidity', w: 28, d: 14, color: '#1d4fb3',
-  silk: (g, px, w, d) => { const T = toCanvas(w, d); g.font = `bold ${1.4 * px}px 'Space Mono', monospace`; g.fillText('+  OUT  −', T.x(8) * px, T.z(5.5) * px); },
+  // The pins stick out of the short edge: + (VCC), OUT (data), − (GND), each labelled beside it.
+  silk: (g, px, w, d) => {
+    const T = toCanvas(w, d);
+    g.font = `bold ${1.5 * px}px 'Space Mono', monospace`; g.textAlign = 'right'; g.textBaseline = 'middle';
+    [['+', -2.54], ['OUT', 0], ['−', 2.54]].forEach(([l, z]) => g.fillText(l as string, T.x(9.6) * px, T.z(z as number) * px));
+  },
   parts: [
     { id: 'SENSOR', kind: 'dhtBody', at: [-4, 0], rot: 90, name: 'DHT11 sensor' },
-    r0603('R_PULL', [5.5, -3], 10000, '103', 90, 'Pull-up resistor 0603'),
-    { id: 'H1', kind: 'header', at: [9, -2.54], rot: 90, name: 'Pins +, OUT, −', props: { n: 3 } },
+    r0603('R_PULL', [3.5, 5], 10000, '103', 0, 'Pull-up resistor 0603 · DATA to +'),
+    { id: 'H1', kind: 'header', at: [11.5, -2.54], rot: -90, name: 'Pins +, OUT, −', props: { n: 3 } },
   ],
 };
 

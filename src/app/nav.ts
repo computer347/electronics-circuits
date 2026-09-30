@@ -5,7 +5,7 @@
  */
 import { create } from 'zustand';
 
-export type Screen = 'home' | 'desk' | 'workshop' | 'repair' | 'coding';
+export type Screen = 'home' | 'desk' | 'workshop' | 'repair' | 'coding' | 'wiring';
 
 export const useNav = create<{ screen: Screen; job: string | null; go: (screen: Screen, job?: string) => void }>((set) => ({
   screen: 'home',

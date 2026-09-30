@@ -106,7 +106,7 @@ export function boardComponents(boardId: string, power: boolean, fitted: Record<
   const out: Component[] = [];
   for (const [id, e] of Object.entries(b.net.parts)) out.push(...stamp(id, e, fitted[id]));
   for (const [id, e] of Object.entries(b.fixed ?? {})) out.push(...stamp(id, e, undefined));
-  if (power) out.push({ kind: 'vsource', id: 'POWER', a: b.net.power.net, b: 'GND', volts: b.net.power.volts });
+  if (power && b.net.power) out.push({ kind: 'vsource', id: 'POWER', a: b.net.power.net, b: 'GND', volts: b.net.power.volts });
   return out;
 }
 
@@ -176,7 +176,7 @@ export function act(job: RepairJob, s: RepairState, a: RepairAction): ActResult 
     }
     case 'desolder': {
       if (!f) return { state: s, notice: 'That part can’t be taken off in this job.' };
-      if (s.power) return { state: s, notice: `Unplug the ${net.power.cable} first: never solder a live board.` };
+      if (s.power) return { state: s, notice: `Unplug the ${net.power?.cable ?? 'power'} first: never solder a live board.` };
       if (!f.present) return { state: s, notice: `${a.part} is already off: its pads are empty.` };
       return { state: log({ kind: 'desolder', part: a.part }, { fitted: { ...s.fitted, [a.part]: { present: false, soldered: false } } }) };
     }
@@ -191,7 +191,7 @@ export function act(job: RepairJob, s: RepairState, a: RepairAction): ActResult 
     }
     case 'solder': {
       if (!f) return { state: s, notice: 'Nothing to solder there.' };
-      if (s.power) return { state: s, notice: `Unplug the ${net.power.cable} first: never solder a live board.` };
+      if (s.power) return { state: s, notice: `Unplug the ${net.power?.cable ?? 'power'} first: never solder a live board.` };
       if (!f.present) return { state: s, notice: 'Put a part on the pads first.' };
       if (f.soldered) return { state: s, notice: `${a.part} is already soldered.` };
       return { state: log({ kind: 'solder', part: a.part }, { fitted: { ...s.fitted, [a.part]: { ...f, soldered: true } } }) };

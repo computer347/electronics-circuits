@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import '../desk/desk.css';
 import { CODING_JOBS } from '../coding/jobs';
 import { REPAIR_JOBS } from '../repair/jobs';
+import { WIRING_JOBS } from '../wiring/wiring';
 
 export interface WorkshopCard {
   id: string;
@@ -15,13 +16,13 @@ export interface WorkshopCard {
   /** What you do, in one line. */
   what: string;
   /** Where it opens, or null while it's being built. */
-  open: { screen: 'repair' | 'coding'; job: string } | null;
+  open: { screen: 'repair' | 'coding' | 'wiring'; job: string } | null;
 }
 
 export const WORKSHOP: WorkshopCard[] = [
   ...REPAIR_JOBS.map((j): WorkshopCard => ({ id: j.id, activity: 'Board repair', title: j.title, what: j.goal, open: { screen: 'repair', job: j.id } })),
   ...CODING_JOBS.map((j): WorkshopCard => ({ id: j.id, activity: 'Node coding', title: j.title, what: j.goal, open: { screen: 'coding', job: j.id } })),
-  { id: 'wiring-dht11', activity: 'Wiring', title: 'Hook up the sensor', what: 'Wire a DHT11 temperature sensor to an Arduino by its pin names.', open: null },
+  ...WIRING_JOBS.map((j): WorkshopCard => ({ id: j.id, activity: 'Wiring', title: j.title, what: j.goal, open: { screen: 'wiring', job: j.id } })),
   { id: 'job-dead-torch', activity: 'Client job', title: 'The dead torch', what: 'A client’s torch won’t light. Take the job, fix it, get paid.', open: null },
 ];
 

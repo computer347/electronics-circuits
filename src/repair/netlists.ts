@@ -8,7 +8,7 @@
  * Pads: two-pad parts have pad 1 at their local −x end and pad 2 at +x (an LED's anode is pad 1).
  */
 import type { LedColor } from '../sim';
-import { ARDUINO_UNO, type BoardDef, type Placed } from '../parts3d/boards';
+import { ARDUINO_UNO, DHT11, type BoardDef, type Placed } from '../parts3d/boards';
 
 export type ElectricalPart =
   | { kind: 'resistor'; nets: [string, string]; ohms: number }
@@ -28,8 +28,8 @@ export interface HeaderPin {
 
 export interface BoardNetlist {
   board: string;
-  /** Where the power comes in when the cable's plugged in. */
-  power: { net: string; volts: number; cable: string };
+  /** Where the power comes in when the cable's plugged in (modules have none: they're powered by wires). */
+  power?: { net: string; volts: number; cable: string };
   parts: Record<string, ElectricalPart>;
   pins: HeaderPin[];
 }
@@ -71,8 +71,20 @@ export const UNO_NETLIST: BoardNetlist = {
 /** The 3.3 V pin's LDO, always fitted: in, gnd, out. */
 export const UNO_LDO: ElectricalPart = { kind: 'regulator', nets: ['5V', 'GND', '3V3'], vout: 3.3, dropout: 1 };
 
+/**
+ * DHT11 module: the sensor between + and −, drawing about 1 mA, and the 10 kΩ pull-up the data
+ * line needs, from OUT to +. Its nets are its own (M_…) until wires join them to a board.
+ */
+export const DHT11_NETLIST: BoardNetlist = {
+  board: 'dht11',
+  parts: { R_PULL: { kind: 'resistor', nets: ['M_VCC', 'M_DATA'], ohms: 10000 } },
+  pins: pins('H1', ['+', 'OUT', '−'], (l) => (l === '+' ? 'M_VCC' : l === 'OUT' ? 'M_DATA' : 'M_GND')),
+};
+export const DHT11_SENSOR: ElectricalPart = { kind: 'resistor', nets: ['M_VCC', 'M_GND'], ohms: 5000 };
+
 export const NETLISTS: Record<string, { def: BoardDef; net: BoardNetlist; fixed?: Record<string, ElectricalPart> }> = {
   'arduino-uno': { def: ARDUINO_UNO, net: UNO_NETLIST, fixed: { U_LDO: UNO_LDO } },
+  dht11: { def: DHT11, net: DHT11_NETLIST, fixed: { SENSOR: DHT11_SENSOR } },
 };
 
 // ---------------------------------------------------------------- where the pads are
