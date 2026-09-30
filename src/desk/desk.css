@@ -321,3 +321,17 @@
 .cw-map-volts { font-family: var(--r-mono); font-size: 2.4px; font-weight: 700; fill: var(--r-blue); pointer-events: none; }
 .cw-map-place { cursor: pointer; }
 .cw-map-place:hover circle { fill: var(--r-yellow); }
+
+/* ------------------------------------------------------------ parts gallery (?gallery) */
+.gallery { position: fixed; inset: 0; background: #5a6570; font-family: var(--r-mono); }
+.gallery-head { position: fixed; left: 16px; top: 12px; margin: 0; padding: 6px 10px; background: var(--r-paper); color: var(--r-ink); font-size: 13px; font-weight: 700; box-shadow: 3px 3px 0 var(--r-blue); }
+.gallery .part-tag { font-size: 10px; padding: 1px 4px; max-width: 70px; overflow: hidden; text-overflow: ellipsis; }
+.gallery-card { position: fixed; z-index: 20; right: 16px; top: 16px; width: min(380px, calc(100% - 32px)); max-height: calc(100% - 32px); overflow: auto; padding: 14px 16px; background: var(--r-paper); color: var(--r-ink); box-shadow: 6px 6px 0 var(--r-pink); }
+.gallery-card h2 { margin: 2px 0 6px; font-family: var(--r-display); font-weight: 400; font-size: 28px; color: var(--r-blue); }
+.gallery-card p, .gallery-card li { font-size: 13px; line-height: 1.5; }
+.gallery-card ul { padding-left: 1.1em; }
+.gallery-card b { display: block; }
+.gallery-pins { font-weight: 700; }
+.gallery-board { margin-top: 8px; }
+.gallery-board canvas { width: 100% !important; height: 240px !important; display: block; }
+.gallery-tip { margin: 6px 0 0; padding: 6px 8px; background: var(--r-yellow); font-weight: 700; font-size: 12px; }
