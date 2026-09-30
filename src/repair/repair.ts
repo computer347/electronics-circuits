@@ -95,16 +95,23 @@ function stamp(id: string, e: ElectricalPart, f: Fitted | undefined): Component[
   }
 }
 
-/** The board as the solver sees it right now. */
-export function repairCircuit(job: RepairJob, s: RepairState): Component[] {
-  const { net, fixed } = boardOf(job);
+/**
+ * A board's circuit: its parts as fitted (all good if `fitted` is left out), and its power
+ * when plugged in. Unplugged, the cable isn't there at all: an open, not a 0 V source (which
+ * would be a short).
+ */
+export function boardComponents(boardId: string, power: boolean, fitted: Record<string, Fitted> = {}): Component[] {
+  const b = NETLISTS[boardId];
+  if (!b) throw new Error(`no netlist for board ${boardId}`);
   const out: Component[] = [];
-  for (const [id, e] of Object.entries(net.parts)) out.push(...stamp(id, e, s.fitted[id]));
-  for (const [id, e] of Object.entries(fixed ?? {})) out.push(...stamp(id, e, undefined));
-  // Unplugged, the cable isn't there at all: an open, not a 0 V source (which would be a short).
-  if (s.power) out.push({ kind: 'vsource', id: 'POWER', a: net.power.net, b: 'GND', volts: net.power.volts });
+  for (const [id, e] of Object.entries(b.net.parts)) out.push(...stamp(id, e, fitted[id]));
+  for (const [id, e] of Object.entries(b.fixed ?? {})) out.push(...stamp(id, e, undefined));
+  if (power) out.push({ kind: 'vsource', id: 'POWER', a: b.net.power.net, b: 'GND', volts: b.net.power.volts });
   return out;
 }
+
+/** The board as the solver sees it right now. */
+export const repairCircuit = (job: RepairJob, s: RepairState): Component[] => boardComponents(job.board, s.power, s.fitted);
 
 export const solveRepair = (job: RepairJob, s: RepairState): SolveResult => solve({ components: repairCircuit(job, s) });
 

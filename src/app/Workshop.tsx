@@ -5,6 +5,7 @@
  */
 import { useEffect } from 'react';
 import '../desk/desk.css';
+import { CODING_JOBS } from '../coding/jobs';
 import { REPAIR_JOBS } from '../repair/jobs';
 
 export interface WorkshopCard {
@@ -14,13 +15,13 @@ export interface WorkshopCard {
   /** What you do, in one line. */
   what: string;
   /** Where it opens, or null while it's being built. */
-  open: { screen: 'repair'; job: string } | null;
+  open: { screen: 'repair' | 'coding'; job: string } | null;
 }
 
 export const WORKSHOP: WorkshopCard[] = [
   ...REPAIR_JOBS.map((j): WorkshopCard => ({ id: j.id, activity: 'Board repair', title: j.title, what: j.goal, open: { screen: 'repair', job: j.id } })),
+  ...CODING_JOBS.map((j): WorkshopCard => ({ id: j.id, activity: 'Node coding', title: j.title, what: j.goal, open: { screen: 'coding', job: j.id } })),
   { id: 'wiring-dht11', activity: 'Wiring', title: 'Hook up the sensor', what: 'Wire a DHT11 temperature sensor to an Arduino by its pin names.', open: null },
-  { id: 'coding-blink', activity: 'Node coding', title: 'Blink', what: 'Program the Arduino with nodes to blink its pin 13 LED.', open: null },
   { id: 'job-dead-torch', activity: 'Client job', title: 'The dead torch', what: 'A client’s torch won’t light. Take the job, fix it, get paid.', open: null },
 ];
 

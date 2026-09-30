@@ -1,5 +1,6 @@
 import { DeskView } from '../desk/DeskView';
 import { useDesk } from '../desk/store';
+import { CodingBench } from '../coding/CodingBench';
 import { RepairBench } from '../repair/RepairBench';
 import { FrontPage, type FrontChoice } from './FrontPage';
 import { useNav } from './nav';
@@ -22,6 +23,7 @@ export function App() {
   };
   if (screen === 'workshop') return <Workshop onBack={() => go('home')} onOpen={(c) => c.open && go(c.open.screen, c.open.job)} />;
   if (screen === 'repair' && job) return <RepairBench jobId={job} onExit={() => go('workshop')} />;
+  if (screen === 'coding' && job) return <CodingBench jobId={job} onExit={() => go('workshop')} />;
   if (screen === 'desk') return <DeskView onMenu={() => { useDesk.getState().leave(); go('home'); }} />;
   return <FrontPage onChoose={choose} />;
 }
