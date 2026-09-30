@@ -10,6 +10,9 @@
  *   S1   a   b   closed     switch: closed | open
  *   D1   a   k   vf=0.7     diode: anode, cathode
  *   LED1 a   k   red        LED: colour sets vf; optional imax=20m vrmax=5 vf=...
+ *   Q1   c   b   e          NPN transistor: collector, base, emitter; beta=100 vbe=0.7 vcesat=0.2
+ *   M1   d   g   s          N-channel MOSFET: drain, gate, source; vth=2 ron=0.03
+ *   U1   in  gnd out 5      regulator: input, ground, output, volts; dropout=2
  *
  * Value suffixes: p n u (or µ) m k M/meg G. Note: unlike SPICE, "M" means mega here,
  * because that's how students write 1M ohm. An exporter will translate for ngspice.
@@ -125,8 +128,30 @@ export function parseNetlist(text: string): Circuit {
         });
         break;
       }
+      case 'Q': {
+        // SPICE order: collector, base, emitter.
+        const e = positional[0];
+        if (!e) throw new NetlistError(lineNo, `${id} needs collector, base and emitter nodes`);
+        components.push({ kind: 'npn', id, a, b: e, base: b, beta: param('beta') ?? 100, vbe: param('vbe') ?? 0.7, vcesat: param('vcesat') ?? 0.2 });
+        break;
+      }
+      case 'M': {
+        const src = positional[0];
+        if (!src) throw new NetlistError(lineNo, `${id} needs drain, gate and source nodes`);
+        components.push({ kind: 'nmos', id, a, b: src, gate: b, vth: param('vth') ?? 2, ron: param('ron') ?? 0.03 });
+        break;
+      }
+      case 'U': {
+        const out = positional[0];
+        const volts = positional[1];
+        if (!out || !volts) throw new NetlistError(lineNo, `${id} needs input, ground and output nodes and a voltage`);
+        let vout: number;
+        try { vout = parseValue(volts); } catch (err) { throw new NetlistError(lineNo, (err as Error).message); }
+        components.push({ kind: 'regulator', id, a, b, out, vout, dropout: param('dropout') ?? 2 });
+        break;
+      }
       default:
-        throw new NetlistError(lineNo, `unknown component type "${id}" (use R, V, I, C, W, S, D or LED)`);
+        throw new NetlistError(lineNo, `unknown component type "${id}" (use R, V, I, C, W, S, D, LED, Q, M or U)`);
     }
   });
 

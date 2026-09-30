@@ -62,6 +62,20 @@ export interface Diode extends Base {
 }
 export interface Capacitor extends Base { kind: 'capacitor'; farads: number; initialVolts?: number }
 
+/**
+ * NPN transistor, as a switch-friendly piecewise model: a base-emitter junction that turns on
+ * at `vbe`, then either the active region (collector current = beta × base current) or
+ * saturation (`vcesat` from collector to emitter). `a` is the collector, `b` the emitter.
+ */
+export interface Npn extends Base { kind: 'npn'; base: NodeId; beta: number; vbe: number; vcesat: number }
+/** N-channel MOSFET as a switch: on (`ron` from drain to source) while Vgs is above `vth`. `a` drain, `b` source. */
+export interface Nmos extends Base { kind: 'nmos'; gate: NodeId; vth: number; ron: number }
+/**
+ * Linear regulator: holds `out` at `vout` above `b` (its ground), taking the same current from
+ * `a` (its input); below `vout + dropout` in, the output follows the input down by `dropout`.
+ */
+export interface Regulator extends Base { kind: 'regulator'; out: NodeId; vout: number; dropout: number }
+
 export type Component =
   | Resistor
   | VoltageSource
@@ -69,7 +83,14 @@ export type Component =
   | Wire
   | Switch
   | Diode
-  | Capacitor;
+  | Capacitor
+  | Npn
+  | Nmos
+  | Regulator;
+
+/** The third terminal of a three-legged component, if it has one. */
+export const thirdNode = (c: Component): NodeId | undefined =>
+  c.kind === 'npn' ? c.base : c.kind === 'nmos' ? c.gate : c.kind === 'regulator' ? c.out : undefined;
 
 export type ComponentKind = Component['kind'];
 
@@ -105,6 +126,8 @@ export interface Fault {
 }
 
 export type DiodeState = 'on' | 'off';
+/** States of the three-legged parts: transistor off / active / saturated; MOSFET off / on; regulator regulating / in dropout. */
+export type ActiveState = 'off' | 'active' | 'sat' | 'on' | 'reg' | 'dropout';
 
 export interface SolveResult {
   /** False when the equations had no unique solution (see faults). */
@@ -117,5 +140,7 @@ export interface SolveResult {
   /** Power absorbed by each component, in watts. */
   power: Record<string, number>;
   diodeStates: Record<string, DiodeState>;
+  /** States of transistors, MOSFETs and regulators. */
+  activeStates: Record<string, ActiveState>;
   faults: Fault[];
 }

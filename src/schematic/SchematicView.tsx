@@ -30,6 +30,9 @@ function valueText(p: SchPart): string {
     case 'diode': return p.led ? `${p.led.color} LED` : `${p.vf} V`;
     case 'switch': return p.closed ? 'closed' : 'open';
     case 'wire': return '';
+    case 'npn': return `β ${p.beta}`;
+    case 'nmos': return `Vth ${p.vth} V`;
+    case 'regulator': return `${p.vout} V`;
   }
 }
 

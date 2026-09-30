@@ -10,6 +10,8 @@
  *  - Diodes use an ideal constant-drop model: ON = vf in series with R_ON, OFF = open.
  *    States are found by iterating: solve, flip the worst-violating diode, repeat.
  *  - Capacitors are open in DC and use a backward-Euler companion model in transient.
+ *  - Transistors, MOSFETs and regulators are piecewise too (off / active / saturated, off / on,
+ *    regulating / dropout), found by the same iteration as the diodes.
  *  - A tiny GMIN conductance from every node to ground keeps unconnected nodes solvable;
  *    such nodes are reported as floating instead of breaking the solve.
  */
@@ -17,6 +19,8 @@
 import { solveLinear, SingularMatrixError } from './linear';
 import {
   GROUND_NAMES,
+  thirdNode,
+  type ActiveState,
   type Circuit,
   type Component,
   type Diode,
@@ -39,6 +43,8 @@ export const R_WIRE = 1e-3;
 export const R_DIODE_ON = 1e-3;
 export const GMIN = 1e-11;
 const DIODE_TOL = 1e-9;
+/** Base-emitter on-resistance: soft enough that beta × its conductance stays well conditioned. */
+export const R_BE_ON = 1;
 
 export interface SolveOptions {
   /** Transient step in seconds. Omit for a DC operating point (capacitors open). */
@@ -54,6 +60,8 @@ export interface SolveOptions {
   fixedDiodeStates?: Record<string, DiodeState>;
   /** Superposition: drop the diodes' forward-voltage offsets (keep their on-resistance). */
   zeroDiodeOffsets?: boolean;
+  /** States of transistors, MOSFETs and regulators to start from. */
+  activeGuess?: Record<string, ActiveState>;
 }
 
 const isGround = (n: NodeId) => GROUND_NAMES.has(n);
@@ -77,7 +85,8 @@ function indexNodes(components: Component[]): { nodes: NodeId[]; index: Map<Node
   const nodes: NodeId[] = [];
   const index = new Map<NodeId, number>();
   for (const c of components) {
-    for (const n of [c.a, c.b]) {
+    for (const n of [c.a, c.b, thirdNode(c)]) {
+      if (n === undefined) continue;
       if (!isGround(n) && !index.has(n)) {
         index.set(n, nodes.length);
         nodes.push(n);
@@ -124,12 +133,15 @@ function structuralFaults(components: Component[]): Fault[] {
   for (const c of components) {
     if (c.kind === 'isource' || (c.kind === 'switch' && !c.closed)) continue;
     conn.union(canon(c.a), canon(c.b));
+    // A transistor's base and a regulator's output connect through the part; a MOSFET's gate doesn't.
+    if (c.kind === 'npn') conn.union(canon(c.base), canon(c.b));
+    if (c.kind === 'regulator') conn.union(canon(c.out), canon(c.b));
   }
   const groundRoot = conn.find('0');
   const seen = new Set<string>();
   for (const c of components) {
-    for (const n of [c.a, c.b]) {
-      if (isGround(n) || seen.has(n)) continue;
+    for (const n of [c.a, c.b, thirdNode(c)]) {
+      if (n === undefined || isGround(n) || seen.has(n)) continue;
       seen.add(n);
       if (conn.find(n) !== groundRoot) {
         faults.push({
@@ -157,9 +169,11 @@ function build(
   index: Map<NodeId, number>,
   diodeStates: Record<string, DiodeState>,
   opts: SolveOptions,
+  active: Record<string, ActiveState> = {},
 ): Built {
   const nNodes = index.size;
-  const vsources = components.filter((c) => c.kind === 'vsource');
+  // Regulators need a branch-current unknown too (their output is a voltage source).
+  const vsources = components.filter((c) => c.kind === 'vsource' || c.kind === 'regulator');
   const size = nNodes + vsources.length;
   const A = new Float64Array(size * size);
   const rhs = new Float64Array(size);
@@ -223,6 +237,48 @@ function build(
           currentAB(a, b, -g * vPrev);
         }
         break;
+      case 'npn': {
+        const s = active[c.id] ?? 'off';
+        if (s === 'off') break;
+        const base = idx(c.base);
+        // Base-emitter junction: ib = (Vbe - vbe) / R_BE_ON.
+        const gb = 1 / R_BE_ON;
+        conductance(base, b, gb);
+        currentAB(base, b, -c.vbe * gb);
+        if (s === 'active') {
+          // Collector current = beta × ib: a voltage-controlled current from collector to emitter.
+          const gm = c.beta * gb;
+          addA(a, base, gm); addA(a, b, -gm);
+          addA(b, base, -gm); addA(b, b, gm);
+          addRhs(a, gm * c.vbe); addRhs(b, -gm * c.vbe);
+        } else {
+          // Saturated: a small constant drop from collector to emitter.
+          const g = 1 / R_DIODE_ON;
+          conductance(a, b, g);
+          currentAB(a, b, -c.vcesat * g);
+        }
+        break;
+      }
+      case 'nmos':
+        if ((active[c.id] ?? 'off') === 'on') conductance(a, b, 1 / c.ron);
+        break;
+      case 'regulator': {
+        const k = vsrcCol.get(c.id)!;
+        const out = idx(c.out);
+        if ((active[c.id] ?? 'reg') === 'reg') {
+          // out − gnd = vout, and the current it delivers is drawn from the input, not from ground.
+          addA(out, k, 1); addA(b, k, -1);
+          addA(k, out, 1); addA(k, b, -1);
+          rhs[k] = c.vout;
+          addA(a, k, -1); addA(b, k, 1);
+        } else {
+          // Dropout: the output follows the input down by `dropout`.
+          addA(a, k, 1); addA(out, k, -1);
+          addA(k, a, 1); addA(k, out, -1);
+          rhs[k] = c.dropout;
+        }
+        break;
+      }
     }
   }
   return { A, rhs, size, vsrcCol };
@@ -235,6 +291,7 @@ function componentCurrent(
   built: Built,
   diodeStates: Record<string, DiodeState>,
   opts: SolveOptions,
+  active: Record<string, ActiveState> = {},
 ): number {
   const vd = v(c.a) - v(c.b);
   switch (c.kind) {
@@ -249,7 +306,43 @@ function componentCurrent(
       const vPrev = opts.capVoltages?.[c.id] ?? c.initialVolts ?? 0;
       return (c.farads / opts.dt) * (vd - vPrev);
     }
+    case 'npn': {
+      const s = active[c.id] ?? 'off';
+      if (s === 'off') return 0;
+      const ib = (v(c.base) - v(c.b) - c.vbe) / R_BE_ON;
+      return s === 'active' ? c.beta * ib : (vd - c.vcesat) / R_DIODE_ON;
+    }
+    case 'nmos': return (active[c.id] ?? 'off') === 'on' ? vd / c.ron : 0;
+    case 'regulator': {
+      // The regulator's current is what it draws from its input (= what it delivers).
+      const k = built.vsrcCol.get(c.id)!;
+      return (active[c.id] ?? 'reg') === 'reg' ? -x[k]! : x[k]!;
+    }
   }
+}
+
+/** The state a three-legged part should be in, given a solution (undefined when it's consistent). */
+function wantedState(c: Component, s: ActiveState, v: (n: NodeId) => number, cur: (c: Component) => number): ActiveState | undefined {
+  if (c.kind === 'npn') {
+    const vbe = v(c.base) - v(c.b);
+    const ib = (vbe - c.vbe) / R_BE_ON;
+    const vce = v(c.a) - v(c.b);
+    if (s === 'off') return vbe > c.vbe + DIODE_TOL ? 'active' : undefined;
+    if (ib < -DIODE_TOL) return 'off';
+    if (s === 'active') return vce < c.vcesat - 1e-6 ? 'sat' : undefined;
+    // Saturated, but the base can't supply what the collector is taking: back to active.
+    return cur(c) > c.beta * ib + 1e-9 ? 'active' : undefined;
+  }
+  if (c.kind === 'nmos') {
+    const on = v(c.gate) - v(c.b) > c.vth;
+    return on !== (s === 'on') ? (on ? 'on' : 'off') : undefined;
+  }
+  if (c.kind === 'regulator') {
+    const headroom = v(c.a) - v(c.b) - c.vout;
+    if (s === 'reg') return headroom < c.dropout - 1e-9 ? 'dropout' : undefined;
+    return headroom > c.dropout + 1e-9 ? 'reg' : undefined;
+  }
+  return undefined;
 }
 
 /** Solves the circuit once: a DC operating point, or one transient step if `opts.dt` is set. */
@@ -258,7 +351,7 @@ export function solve(circuit: Circuit, opts: SolveOptions = {}): SolveResult {
   const time = opts.time ?? 0;
   const faults = structuralFaults(components);
   const empty = (): SolveResult => ({
-    ok: false, time, nodeVoltages: {}, currents: {}, power: {}, diodeStates: {}, faults,
+    ok: false, time, nodeVoltages: {}, currents: {}, power: {}, diodeStates: {}, activeStates: {}, faults,
   });
   if (faults.some((f) => f.kind === 'short-circuit')) return empty();
 
@@ -266,13 +359,16 @@ export function solve(circuit: Circuit, opts: SolveOptions = {}): SolveResult {
   const diodes = components.filter((c): c is Diode => c.kind === 'diode');
   const states: Record<string, DiodeState> = {};
   for (const d of diodes) states[d.id] = opts.fixedDiodeStates?.[d.id] ?? opts.diodeGuess?.[d.id] ?? 'off';
+  const actives = components.filter((c) => c.kind === 'npn' || c.kind === 'nmos' || c.kind === 'regulator');
+  const aStates: Record<string, ActiveState> = {};
+  for (const c of actives) aStates[c.id] = opts.activeGuess?.[c.id] ?? (c.kind === 'regulator' ? 'reg' : 'off');
 
-  const maxIter = opts.fixedDiodeStates ? 1 : 4 * diodes.length + 10;
+  const maxIter = opts.fixedDiodeStates ? 1 : 4 * (diodes.length + actives.length) + 10;
   let x: Float64Array | null = null;
   let built: Built | null = null;
 
   for (let iter = 0; iter < maxIter; iter++) {
-    built = build(components, index, states, opts);
+    built = build(components, index, states, opts, aStates);
     try {
       x = solveLinear(built.A, built.rhs, built.size);
     } catch (e) {
@@ -295,6 +391,11 @@ export function solve(circuit: Circuit, opts: SolveOptions = {}): SolveResult {
       const violation = states[d.id] === 'on' ? -(vd - d.vf) / R_DIODE_ON : vd - d.vf;
       if (violation > worstBy) { worstBy = violation; worst = d; }
     }
+    // Then the transistors, MOSFETs and regulators: fix the first one that's inconsistent.
+    const b = built;
+    const cur = (c: Component) => componentCurrent(c, volt, sol, b, states, opts, aStates);
+    const moved = !worst ? actives.find((c) => wantedState(c, aStates[c.id]!, volt, cur) !== undefined) : undefined;
+    if (moved) { aStates[moved.id] = wantedState(moved, aStates[moved.id]!, volt, cur)!; continue; }
     if (!worst || opts.fixedDiodeStates) break;
     states[worst.id] = states[worst.id] === 'on' ? 'off' : 'on';
     if (iter === maxIter - 1) {
@@ -314,9 +415,19 @@ export function solve(circuit: Circuit, opts: SolveOptions = {}): SolveResult {
   const currents: Record<string, number> = {};
   const power: Record<string, number> = {};
   for (const c of components) {
-    const i = componentCurrent(c, volt, sol, built!, states, opts);
+    const i = componentCurrent(c, volt, sol, built!, states, opts, aStates);
     currents[c.id] = i;
     power[c.id] = (volt(c.a) - volt(c.b)) * i;
+    if (c.kind === 'npn' && aStates[c.id] !== 'off') {
+      // Base current, and its share of the power.
+      const ib = (volt(c.base) - volt(c.b) - c.vbe) / R_BE_ON;
+      currents[`${c.id}.base`] = ib;
+      power[c.id] = power[c.id]! + (volt(c.base) - volt(c.b)) * ib;
+    }
+    if (c.kind === 'regulator') {
+      // It burns the headroom: (Vin − Vout) × I.
+      power[c.id] = (volt(c.a) - volt(c.out)) * i;
+    }
   }
 
   for (const d of diodes) {
@@ -340,7 +451,7 @@ export function solve(circuit: Circuit, opts: SolveOptions = {}): SolveResult {
     }
   }
 
-  return { ok: true, time, nodeVoltages, currents, power, diodeStates: { ...states }, faults };
+  return { ok: true, time, nodeVoltages, currents, power, diodeStates: { ...states }, activeStates: { ...aStates }, faults };
 }
 
 /** Capacitor voltages V(a) - V(b) from a result, for feeding the next transient step. */
