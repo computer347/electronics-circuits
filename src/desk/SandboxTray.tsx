@@ -1,17 +1,14 @@
 /**
- * The free bench's parts tray: every part, but never more than four at a glance. The common
- * ones sit on the first page (hand, wire, resistor, LED); three more pages hold the rest,
- * grouped the way a parts drawer is: passives, semiconductors, sources. The part in hand shows its value picker; a selected part
+ * The free bench's part controls, above the hotbar (which holds the parts, in drawers). The part in hand shows its value picker; a selected part
  * can be changed, turned round or taken out. Example circuits and the supply voltage live in
  * a small row underneath.
  */
-import { useEffect, useState } from 'react';
 import { isElectrolytic, type BoardPart } from '../breadboard/model';
 import { BENCH_PRESETS, useBench, type Tool } from '../breadboard/store';
 import { useScope } from '../instruments/scopeStore';
 import { formatSI } from '../lib/units';
 import type { LedColor, WaveShape } from '../sim';
-import { OhmsStepper, ToolIcon, TOOL_LABEL } from './PartsTray';
+import { OhmsStepper } from './PartsTray';
 
 const E12 = [1.0, 1.2, 1.5, 1.8, 2.2, 2.7, 3.3, 3.9, 4.7, 5.6, 6.8, 8.2];
 const OHMS = [10, 100, 1000, 10000, 100000].flatMap((d) => E12.map((m) => Number((m * d).toPrecision(2)))).concat(1_000_000);
@@ -22,12 +19,6 @@ const FREQS = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000];
 const LEDS: LedColor[] = ['red', 'yellow', 'green', 'blue', 'white'];
 const LED_HEX: Record<LedColor, string> = { red: '#ff3b30', yellow: '#ffd60a', green: '#39d86a', blue: '#3a8bff', white: '#f5f5ff' };
 const SHAPES: WaveShape[] = ['square', 'sine', 'triangle'];
-const PAGES: { name: string; tools: Tool[] }[] = [
-  { name: 'Basics', tools: ['select', 'wire', 'resistor', 'led'] },
-  { name: 'Passives', tools: ['button', 'capacitor', 'pot'] },
-  { name: 'Semis', tools: ['diode', 'npn', 'nmos'] },
-  { name: 'Sources', tools: ['battery', 'generator', 'regulator'] },
-];
 const POT_OHMS = [1000, 10000, 100000];
 const POSITIONS = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1];
 /** Regulators you can buy, by output voltage. */
@@ -98,24 +89,11 @@ export function SandboxTray() {
   const parts = useBench((s) => s.parts);
   const supply = useBench((s) => s.supply);
   const bench = useBench.getState();
-  const [page, setPage] = useState(Math.max(0, PAGES.findIndex((p) => p.tools.includes(tool))));
-  // Keep the drawer that holds the part in hand open, however it was picked up.
-  useEffect(() => { const i = PAGES.findIndex((p) => p.tools.includes(tool)); if (i > 0) setPage(i); }, [tool]);
   const part = parts.find((p) => p.id === selected);
   const flippable = !!part && (part.kind === 'led' || part.kind === 'battery' || part.kind === 'diode' || !!part.h3 || isElectrolytic(part));
 
   return (
-    <div className="tray">
-      <div className="tray-tools" role="toolbar" aria-label="Parts">
-        {PAGES[page]!.tools.map((t) => (
-          <button key={t} className={tool === t ? 'on' : ''} onClick={() => bench.setTool(t)} title={TOOL_LABEL[t]}>
-            <ToolIcon tool={t} /><span>{TOOL_LABEL[t]}</span>
-          </button>
-        ))}
-        <span className="tray-pages" role="tablist" aria-label="Part drawers">
-          {PAGES.map((p, i) => <button key={p.name} role="tab" aria-selected={i === page} className={i === page ? 'on' : ''} onClick={() => setPage(i)}>{p.name}</button>)}
-        </span>
-      </div>
+    <>
       <div className="tray-context">
         {tool !== 'select' && tool !== 'probe' && tool !== 'scope' && (
           <>
@@ -144,6 +122,6 @@ export function SandboxTray() {
           </span>
         )}
       </div>
-    </div>
+    </>
   );
 }

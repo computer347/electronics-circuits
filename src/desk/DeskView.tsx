@@ -23,6 +23,8 @@ import { DIAL, DIAL_LABEL, meteredBoard, readMeter } from './meter';
 import { spreads } from './notebook';
 import { NotebookPages } from './NotebookPages';
 import { PartsTray } from './PartsTray';
+import { Hotbar } from './Hotbar';
+import { benchSlots, drawerOf, levelSlots } from './hotbarSlots';
 import { taskPage } from './taskPages';
 import { HintNote, SpareLeds } from './HintNote';
 import { starRules } from './starRules';
@@ -114,6 +116,10 @@ export function DeskView({ onMenu }: { onMenu: () => void }) {
   const [fonts, setFonts] = useState(false);
   const labelLayer = useRef<HTMLDivElement>(null);
   const [printed, setPrinted] = useState(false);
+  // The free bench's open drawer; it follows the part in hand, however it was picked up.
+  const [drawer, setDrawer] = useState(0);
+  const benchTool = useBench((s) => s.tool);
+  useEffect(() => { const i = drawerOf(benchTool); if (i >= 0) setDrawer(i); }, [benchTool]);
 
   useEffect(() => {
     // A fresh visit starts a level: the one you were on, else the next one not passed yet.
@@ -221,6 +227,8 @@ export function DeskView({ onMenu }: { onMenu: () => void }) {
   const start = startingBoard(level);
   const diveHole = sandbox ? (parts.find((p) => p.kind === 'led' || p.kind === 'capacitor') ?? parts[0])?.h1 ?? 'e15' : (start.parts.find((p) => level.pinned?.includes(p.id)) ?? start.parts.find((p) => p.kind === 'led' || p.kind === 'capacitor') ?? start.parts[0])?.h1 ?? 'e15';
   const step = currentStep(loop);
+  const atBench = desk.focus === 'breadboard' || desk.focus === 'meter' || desk.focus === 'scope';
+  const slots = useMemo(() => (sandbox ? benchSlots(drawer) : levelSlots(level)), [sandbox, drawer, level]);
 
   if (desk.phase === 'clear') {
     const r = desk.result;
@@ -317,7 +325,25 @@ export function DeskView({ onMenu }: { onMenu: () => void }) {
           Learn this first: {cls.title} →
         </button>
       )}
-      {desk.phase === 'desk' && desk.focus === 'breadboard' && (sandbox ? <SandboxTray /> : <PartsTray level={level} />)}
+      {desk.phase === 'desk' && atBench && (
+        <div className="tray">
+          {desk.focus === 'breadboard' && (sandbox ? <SandboxTray /> : <PartsTray level={level} />)}
+          {desk.focus === 'meter' && (
+            <div className="tray-context">
+              <span className="desk-pict"><span className="dot red" /> a point <span className="dot black" /> − rail</span>
+              <span className={`desk-reading ${meterMode}`}>{meterMode === 'off' ? 'OFF' : `${reading.text} ${reading.unit}`}</span>
+              <span className="meter-modes" role="radiogroup" aria-label="Meter dial">
+                {DIAL.map((m) => (
+                  <button key={m} role="radio" aria-checked={meterMode === m} className={meterMode === m ? 'on' : ''} onClick={() => desk.setMeterMode(m)}>
+                    {DIAL_LABEL[m]}
+                  </button>
+                ))}
+              </span>
+            </div>
+          )}
+          <Hotbar slots={slots} drawer={sandbox ? drawer : undefined} onDrawer={sandbox ? setDrawer : undefined} />
+        </div>
+      )}
       {desk.phase === 'desk' && desk.focus === 'scope' && <ScopeControls />}
       {sandbox && desk.phase === 'desk' && desk.focus === 'breadboard' && parts.length > 0 && (
         <button className="desk-link" onClick={() => { useBench.getState().setTool('select'); desk.setPhase('dive'); }}>Go inside your circuit →</button>
@@ -326,19 +352,6 @@ export function DeskView({ onMenu }: { onMenu: () => void }) {
         <div className="desk-zoom" aria-label="Zoom">
           <button onClick={() => desk.setZoom(desk.zoom * 1.4)} aria-label="Zoom in">+</button>
           <button onClick={() => desk.setZoom(desk.zoom / 1.4)} disabled={desk.zoom <= 1} aria-label="Zoom out">−</button>
-        </div>
-      )}
-      {desk.phase === 'desk' && desk.focus === 'meter' && (
-        <div className="desk-hint">
-          <span className="desk-pict"><span className="dot red" /> a point <span className="dot black" /> − rail</span>
-          <span className={`desk-reading ${meterMode}`}>{meterMode === 'off' ? 'OFF' : `${reading.text} ${reading.unit}`}</span>
-          <span className="meter-modes" role="radiogroup" aria-label="Meter dial">
-            {DIAL.map((m) => (
-              <button key={m} role="radio" aria-checked={meterMode === m} className={meterMode === m ? 'on' : ''} onClick={() => desk.setMeterMode(m)}>
-                {DIAL_LABEL[m]}
-              </button>
-            ))}
-          </span>
         </div>
       )}
       {desk.phase === 'desk' && desk.focus === 'corkboard' && (

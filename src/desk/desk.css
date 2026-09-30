@@ -102,11 +102,6 @@
 
 /* The breadboard's parts tray: at most three parts plus the hand, then what you can do with the selection. */
 .tray { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 12; display: grid; justify-items: center; gap: 10px; }
-.tray-tools { display: flex; gap: 6px; padding: 6px; background: rgba(241, 236, 225, 0.12); }
-.tray-tools button { display: grid; justify-items: center; gap: 2px; width: 76px; padding: 6px 4px; border: 0; border-radius: 0; background: rgba(241, 236, 225, 0.9); color: var(--r-ink); font-family: var(--r-mono); font-size: 11px; font-weight: 700; }
-.tray-tools button svg { width: 36px; height: 24px; }
-.tray-tools button.on { background: var(--r-yellow); box-shadow: 3px 3px 0 var(--r-pink); }
-.tray-tools button:hover { color: var(--r-ink); border: 0; transform: translateY(-2px); }
 .tray-context { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; }
 .tray-stepper { display: inline-flex; align-items: center; gap: 8px; padding: 6px 8px; background: var(--r-paper); color: var(--r-ink); box-shadow: 3px 3px 0 var(--r-blue); }
 .tray-stepper b { font-family: var(--r-mono); font-size: 18px; min-width: 70px; text-align: center; }
@@ -282,10 +277,6 @@
 .star-rules li.met .star-rule-stars { color: var(--r-pink); }
 
 /* ------------------------------------------------------------ free bench tray, scope controls */
-.tray-pages { display: inline-grid; grid-template-columns: 1fr 1fr; gap: 3px; margin-left: 6px; }
-.tray-tools .tray-pages button { width: auto; min-width: 0; padding: 3px 8px; font-size: 11px; background: rgba(28, 10, 58, 0.72); color: var(--r-paper); box-shadow: none; }
-.tray-tools .tray-pages button:hover { color: var(--r-yellow); }
-.tray-tools .tray-pages button.on { background: var(--r-blue); box-shadow: 2px 2px 0 var(--r-pink); }
 .tray-knob { display: inline-flex; align-items: center; gap: 6px; color: var(--r-paper); font-family: var(--r-mono); font-size: 12px; font-weight: 700; }
 .tray-colors { display: inline-flex; gap: 6px; padding: 6px 8px; background: var(--r-paper); box-shadow: 3px 3px 0 var(--r-blue); }
 .tray-colors button { width: 22px; height: 22px; border-radius: 50%; border: 2px solid rgba(28, 10, 58, 0.25); padding: 0; }
@@ -340,3 +331,19 @@
 .gallery-tip { margin: 6px 0 0; padding: 6px 8px; background: var(--r-yellow); font-weight: 700; font-size: 12px; }
 .desk-result-skill { padding: 10px 12px; background: rgba(0, 120, 191, 0.12); border-left: 4px solid var(--r-blue); }
 .desk-result-skill b { display: block; font-family: var(--r-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--r-blue); }
+
+/* ------------------------------------------------------------ hotbar */
+.hotbar { display: flex; align-items: stretch; gap: 6px; padding: 6px; background: rgba(28, 10, 58, 0.55); }
+.hotbar > button { position: relative; display: grid; justify-items: center; gap: 2px; width: 76px; padding: 8px 4px 6px; border: 0; border-radius: 0; background: rgba(241, 236, 225, 0.92); color: var(--r-ink); font-family: var(--r-mono); font-size: 11px; font-weight: 700; }
+.hotbar > button svg { width: 36px; height: 24px; }
+.hotbar > button kbd { position: absolute; left: 4px; top: 3px; font-family: var(--r-mono); font-size: 10px; font-weight: 700; color: rgba(28, 10, 58, 0.55); }
+.hotbar > button.on { background: var(--r-yellow); box-shadow: 3px 3px 0 var(--r-pink); }
+.hotbar > button.on kbd { color: var(--r-ink); }
+.hotbar > button:hover { color: var(--r-ink); border: 0; transform: translateY(-2px); }
+.hotbar .tray-pages { align-self: center; display: inline-grid; grid-template-columns: 1fr 1fr; gap: 3px; margin-left: 4px; }
+.hotbar .tray-pages button { width: auto; min-width: 0; padding: 3px 8px; border: 0; border-radius: 0; font-family: var(--r-mono); font-size: 11px; font-weight: 700; background: rgba(28, 10, 58, 0.72); color: var(--r-paper); }
+.hotbar .tray-pages button.on { background: var(--r-blue); box-shadow: 2px 2px 0 var(--r-pink); }
+@media (max-width: 720px) {
+  .hotbar { flex-wrap: wrap; justify-content: center; max-width: calc(100vw - 32px); }
+  .hotbar > button { width: 58px; font-size: 10px; }
+}
