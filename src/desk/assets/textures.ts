@@ -276,6 +276,55 @@ function drawPicture(g: CanvasRenderingContext2D, pic: TaskPicture) {
     g.font = `64px ${FONT_DISPLAY}`; g.fillText('3.0 V', right - 390, 170);
     g.restore();
   }
+  if (pic === 'fork') {
+    // One supply, two branches side by side, each with its own resistor and LED.
+    battery(g, left, 190, '9 V');
+    line(g, [[left, 190], [left, top], [right, top]]);
+    for (const x of [300, right]) {
+      line(g, [[x, top], [x, 60]]);
+      resistor(g, x, 60, true);
+      line(g, [[x, 190], [x, 230]]);
+      led(g, x, 230);
+      line(g, [[x, 294], [x, bot]]);
+    }
+    line(g, [[right, bot], [left, bot], [left, 220]]);
+    g.save(); g.fillStyle = INK.pink; g.font = `bold 30px ${FONT_MONO}`; g.fillText('I1 + I2', 120, top + 20); g.restore();
+  }
+  if (pic === 'button') {
+    battery(g, left, 190, '9 V');
+    line(g, [[left, 190], [left, top], [150, top]]);
+    // the push button: a bar held above the gap, with its knob
+    line(g, [[150, top], [175, top]]); line(g, [[245, top], [270, top]]);
+    g.save(); g.strokeStyle = INK.pink; line(g, [[165, top + 22], [255, top + 22]]); line(g, [[210, top + 22], [210, top + 56]]); g.restore();
+    resistor(g, 270, top);
+    line(g, [[400, top], [right, top], [right, 150]]);
+    led(g, right, 150);
+    line(g, [[right, 214], [right, bot], [left, bot], [left, 220]]);
+  }
+  if (pic === 'cells') {
+    // Three cells stacked, then the resistor and a blue LED.
+    const cell = (y: number) => { line(g, [[left - 34, y], [left + 34, y]]); g.lineWidth = 12; line(g, [[left - 18, y + 26], [left + 18, y + 26]]); g.lineWidth = 7; };
+    [60, 170, 280].forEach((y, i) => { cell(y); line(g, [[left, y + 26], [left, i < 2 ? y + 110 : bot]]); });
+    g.fillStyle = INK.ink; g.font = `bold 26px ${FONT_MONO}`; g.fillText('3 x 1.5 V', left + 50, 190);
+    line(g, [[left, 60], [left, top], [300, top]]);
+    resistor(g, 300, top);
+    line(g, [[430, top], [right, top], [right, 150]]);
+    g.save(); g.fillStyle = '#3a8bff'; g.beginPath(); g.moveTo(right - 38, 150); g.lineTo(right + 38, 150); g.lineTo(right, 214); g.closePath(); g.fill(); g.stroke(); g.restore();
+    line(g, [[right - 38, 214], [right + 38, 214]]);
+    line(g, [[right, 214], [right, bot], [left, bot]]);
+  }
+  if (pic === 'bridge') {
+    battery(g, left, 190, '9 V');
+    line(g, [[left, 190], [left, top], [right, top]]);
+    for (const x of [260, right]) { line(g, [[x, top], [x, 60]]); resistor(g, x, 60, true); line(g, [[x, 190], [x, 230]]); resistor(g, x, 230, true); line(g, [[x, 360], [x, bot]]); }
+    line(g, [[right, bot], [left, bot], [left, 220]]);
+    // the meter across the taps, reading zero
+    g.save(); g.strokeStyle = INK.pink; g.lineWidth = 6;
+    line(g, [[260, 210], [right, 210]]);
+    g.beginPath(); g.arc((260 + right) / 2, 210, 40, 0, Math.PI * 2); g.fillStyle = INK.paper; g.fill(); g.stroke();
+    g.fillStyle = INK.pink; g.font = `40px ${FONT_DISPLAY}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('0 V', (260 + right) / 2, 212); g.textAlign = 'left'; g.textBaseline = 'top';
+    g.restore();
+  }
   if (pic === 'rc') {
     battery(g, left, 190, '9 V');
     line(g, [[left, 190], [left, top], [140, top]]);

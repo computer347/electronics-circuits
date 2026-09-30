@@ -287,7 +287,177 @@ const c5: LearnClass = {
   ],
 };
 
-export const WORLD0_CLASSES: LearnClass[] = [c1, c2, c3, c4, c5];
+const c6: LearnClass = {
+  id: 'c0-06-currents-split',
+  world: 0, number: 6,
+  title: 'Currents split and join',
+  levelId: 'w0-06-fork-in-the-road',
+  minutes: 6,
+  goals: ["Use Kirchhoff's current law at a junction", 'Work out each parallel branch on its own', 'Find a current from the voltage across a resistor'],
+  steps: [
+    {
+      title: 'What flows in flows out',
+      body: [
+        'Current can\'t pile up anywhere or vanish, so at every junction **the current in equals the current out** (Kirchhoff\'s current law).',
+        'In level 0–6 the supply\'s current splits at column 3: part of it through R1 and LED1, the rest through R2 and LED2. The two join again at the − rail and go back to the supply together.',
+      ],
+      lab: { kind: 'pair', mode: 'parallel', ohms: 330 },
+      tryThis: 'Watch the supply current: it\'s always LED1\'s current plus LED2\'s.',
+    },
+    {
+      title: 'Each branch on its own',
+      body: [
+        'Every parallel branch sees the whole 9 V, so you can work each one out as if the other weren\'t there.',
+        'LED1 is red (2.0 V): `I_1 = (9 V − 2.0 V) / 330 Ω = 21.2 mA`. LED2 is green (2.2 V): `I_2 = (9 V − 2.2 V) / 330 Ω = 20.6 mA`.',
+        'The supply delivers the sum: `21.2 mA + 20.6 mA = 41.8 mA`.',
+      ],
+    },
+    {
+      title: 'Current, measured as a voltage',
+      body: [
+        'A meter on A has to go **in series**, so you\'d have to break the loop to put it in. For a resistor there\'s a shortcut: measure the voltage across it and use Ohm\'s law.',
+        'R2 drops 6.8 V either way. Across 330 Ω that\'s `6.8 V / 330 Ω = 20.6 mA`; across 3.3 kΩ it\'s only `6.8 V / 3300 Ω = 2.06 mA`. Same voltage, a tenth of the current: the value is wrong.',
+        'Colour codes are easy to misread: **orange orange brown** is 330 Ω, **orange orange red** is 3.3 kΩ.',
+      ],
+    },
+  ],
+  check: [
+    { kind: 'number', prompt: 'Two parallel branches carry 12 mA and 18 mA. How much current does the supply deliver?', answer: 0.03, unit: 'A', tolerancePct: 1,
+      explain: 'Currents add at a junction: 12 + 18 = 30 mA.' },
+    { kind: 'number', prompt: 'You measure 5 V across a 1 kΩ resistor. What current flows through it?', answer: 0.005, unit: 'A', tolerancePct: 1,
+      explain: 'I = V / R = 5 V / 1000 Ω = 5 mA.' },
+    { kind: 'choice', prompt: 'Which colours are a 3.3 kΩ resistor?', options: ['orange orange brown', 'orange orange red', 'red red orange', 'brown black red'], correct: 1,
+      explain: 'Orange = 3, orange = 3, red = two zeros: 3300 Ω. Orange orange brown has one zero: 330 Ω.' },
+  ],
+};
+
+const c7: LearnClass = {
+  id: 'c0-07-switches',
+  world: 0, number: 7,
+  title: 'Switches and complete loops',
+  levelId: 'w0-07-push-to-light',
+  minutes: 5,
+  goals: ['Explain why current needs a complete loop', 'Place a switch so it controls the whole series loop', 'Avoid the same-column mistake on a breadboard'],
+  steps: [
+    {
+      title: 'No loop, no current',
+      body: [
+        'Current only flows round a **complete loop**, from the supply\'s + back to its −. A switch is a gap you control: closed, the loop is complete; open, it\'s broken.',
+        'A push button is a switch you hold: closed while pressed, open when you let go. Held, the LED in level 0–7 gets `(9 V − 2.0 V) / 330 Ω = 21.2 mA`.',
+      ],
+      lab: { kind: 'led', volts: 9, ohms: 330 },
+      tryThis: 'Every part of the loop matters: take the resistor to its extremes and see the current follow.',
+    },
+    {
+      title: 'One gap stops everything',
+      body: [
+        'A series loop has only one path, so it doesn\'t matter where the switch sits: before the resistor or after the LED, opening it stops the current **everywhere** in the loop.',
+        'That\'s why one switch can turn off a whole circuit, and why a single broken wire can too.',
+      ],
+    },
+    {
+      title: 'Across the gap, not along it',
+      body: [
+        'On a breadboard, the five holes of a column are one strip. Two legs in the same column are already joined, so a button placed that way joins nothing and pressing it does nothing.',
+        'A switch, like any two-legged part, goes **across two different columns**: one leg each side of the gap it controls. And nothing else may bridge that gap, or the LED stays on whatever the button does.',
+      ],
+    },
+  ],
+  check: [
+    { kind: 'choice', prompt: 'Where in a single series loop does a switch have to go to turn the LED off?', options: ['Next to the + supply', 'Right after the LED', 'Anywhere in the loop', 'In parallel with the LED'], correct: 2,
+      explain: 'A series loop has one path: a gap anywhere in it stops the current everywhere.' },
+    { kind: 'number', prompt: 'A red LED (2.0 V) and 330 Ω on 9 V, switched by a button. What current flows while it\'s held?', answer: 7 / 330, unit: 'A', tolerancePct: 2,
+      explain: '(9 V − 2.0 V) / 330 Ω = 21.2 mA, the same as with no switch at all: a closed switch is just a wire.' },
+    { kind: 'choice', prompt: 'A button is pushed in with both legs in the same column. What happens when you press it?', options: ['The LED lights', 'Nothing: the button joins nothing new', 'The LED burns out', 'The supply shorts'], correct: 1,
+      explain: 'The column already joins its holes. The button has to span the gap between two columns.' },
+  ],
+};
+
+const c8: LearnClass = {
+  id: 'c0-08-cells-in-series',
+  world: 0, number: 8,
+  title: 'Cells in series',
+  levelId: 'w0-08-stack-them-up',
+  minutes: 5,
+  goals: ['Add up cells in series', 'Spot a backwards cell with the meter', "Use Kirchhoff's voltage law round a battery-powered loop"],
+  steps: [
+    {
+      title: 'Voltages stack up',
+      body: [
+        'Cells in series, each + to the next one\'s −, add their voltages: three 1.5 V AA cells make `1.5 + 1.5 + 1.5 = 4.5 V`.',
+        'That\'s how a torch gets enough push for a blue or white LED, which needs about **3.0 V** just to start conducting. One AA cell (1.5 V) can\'t light it at all.',
+      ],
+    },
+    {
+      title: 'One backwards cell subtracts',
+      body: [
+        'A cell put in the wrong way round pushes against the others: `1.5 − 1.5 + 1.5 = 1.5 V`. Three new cells, and only half what the LED needs.',
+        'Going round the loop, the pushes and the drops always balance (Kirchhoff\'s voltage law). With all three cells the right way: `4.5 V = 3.0 V (LED) + 1.5 V (resistor)`.',
+      ],
+    },
+    {
+      title: 'Walking the stack with the meter',
+      body: [
+        'Black probe on the − rail, red probe on each cell\'s + end in turn. A good stack climbs one cell at a time: **1.5 V, 3.0 V, 4.5 V**. A reading that falls back marks the backwards cell.',
+        'Turned round, the resistor gets 1.5 V and sets the current: `(4.5 V − 3.0 V) / 100 Ω = 15 mA`.',
+      ],
+    },
+  ],
+  check: [
+    { kind: 'number', prompt: 'Four 1.5 V cells in series, all the right way round. What voltage do they give?', answer: 6, unit: 'V', tolerancePct: 1,
+      explain: '1.5 × 4 = 6 V.' },
+    { kind: 'number', prompt: 'Three 1.5 V cells in series with one backwards. What voltage is left?', answer: 1.5, unit: 'V', tolerancePct: 1,
+      explain: '1.5 + 1.5 − 1.5 = 1.5 V: the backwards cell cancels one of the others.' },
+    { kind: 'choice', prompt: 'Can two AA cells (3.0 V) run a blue LED (3.0 V) through a resistor?', options: ['Yes, brightly', 'Barely, if at all: nothing is left for the resistor', 'Only without the resistor', 'Only in parallel'], correct: 1,
+      explain: 'The LED takes the whole 3.0 V before any current flows, leaving nothing to push current through the resistor.' },
+  ],
+};
+
+const c9: LearnClass = {
+  id: 'c0-09-bridges',
+  world: 0, number: 9,
+  title: 'Bridges',
+  levelId: 'w0-09-balance-the-bridge',
+  minutes: 6,
+  goals: ['See a bridge as two dividers', 'Balance it with equal ratios', 'Explain why sensors sit in bridges'],
+  steps: [
+    {
+      title: 'Two dividers side by side',
+      body: [
+        'Each side of a Wheatstone bridge is a divider across the same supply. The left tap in level 0–9: `9 V × 2.2 kΩ / (1 kΩ + 2.2 kΩ) = 6.19 V`.',
+        'The meter sits **between the two taps**, not from a tap to ground: it reads the difference between the two sides.',
+      ],
+      lab: { kind: 'divider', rTop: 1000, rBottom: 2200 },
+      tryThis: 'Note the tap voltage: the other side of the bridge has to match it.',
+    },
+    {
+      title: 'Balanced means equal ratios',
+      body: [
+        'The two taps sit at the same voltage when both sides divide the supply in the same ratio: `R2 / R1 = R4 / R3`.',
+        'Here `R2 / R1 = 2.2`, and R3 is 10 kΩ, so `R4 = 2.2 × 10 kΩ = 22 kΩ`. Then both taps are at 6.19 V and the meter reads 0 V.',
+      ],
+      lab: { kind: 'divider', rTop: 10000, rBottom: 22000 },
+      tryThis: 'Same tap voltage as the left side, from ten times bigger resistors.',
+    },
+    {
+      title: 'Why sensors use bridges',
+      body: [
+        'Swap one resistor for a sensor whose resistance changes with something real (a strain gauge, a thermistor). At balance the meter reads zero, so the smallest change shows up as a small voltage starting from zero, easy to amplify.',
+        'A lone divider would hide the same change as a tiny wobble on top of a 6 V reading.',
+      ],
+    },
+  ],
+  check: [
+    { kind: 'number', prompt: 'A divider of two equal resistors across 9 V. What does its tap read?', answer: 4.5, unit: 'V', tolerancePct: 1,
+      explain: 'Equal resistors split the supply in half: 9 V × 1 / 2 = 4.5 V.' },
+    { kind: 'number', prompt: 'A bridge has R1 = 2 kΩ, R2 = 6 kΩ and R3 = 5 kΩ. What R4 balances it?', answer: 15000, unit: 'Ω', tolerancePct: 1,
+      explain: 'R4 = R3 × R2 / R1 = 5 kΩ × 3 = 15 kΩ.' },
+    { kind: 'choice', prompt: 'What does the meter across a balanced bridge read?', options: ['The supply voltage', 'Half the supply', '0 V', 'It depends on the meter'], correct: 2,
+      explain: 'Balanced, both taps sit at the same voltage, so the difference between them is zero.' },
+  ],
+};
+
+export const WORLD0_CLASSES: LearnClass[] = [c1, c2, c3, c4, c5, c6, c7, c8, c9];
 
 export const classById = (id: string) => WORLD0_CLASSES.find((c) => c.id === id);
 export const classForLevel = (levelId: string) => WORLD0_CLASSES.find((c) => c.levelId === levelId);

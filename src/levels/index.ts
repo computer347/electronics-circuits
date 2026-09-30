@@ -10,6 +10,10 @@ import wrongWayRound from './world0/02-wrong-way-round.json';
 import sideBySide from './world0/03-side-by-side.json';
 import splitTheDifference from './world0/04-split-the-difference.json';
 import slowBlink from './world0/05-slow-blink.json';
+import forkInTheRoad from './world0/06-fork-in-the-road.json';
+import pushToLight from './world0/07-push-to-light.json';
+import stackThemUp from './world0/08-stack-them-up.json';
+import balanceTheBridge from './world0/09-balance-the-bridge.json';
 
 export class LevelError extends Error {}
 
@@ -29,8 +33,8 @@ export function parseLevel(raw: unknown): LevelDef {
   for (const id of [...(l.locked ?? []), ...(l.pinned ?? [])]) if (!ids.has(id)) fail(`locked part ${id} isn't on the board`);
   for (const t of l.tools) if (!TOOLS.has(t)) fail(`unknown tool ${t}`);
   for (const c of l.spec) {
-    if (c.kind === 'led-current' && !ids.has(c.part)) fail(`spec refers to missing part ${c.part}`);
-    if (c.kind === 'led-current' && !(c.min < c.max)) fail(`spec window for ${c.part} is empty`);
+    if ((c.kind === 'led-current' || c.kind === 'switched-led') && !ids.has(c.part)) fail(`spec refers to missing part ${c.part}`);
+    if ((c.kind === 'led-current' || c.kind === 'switched-led') && !(c.min < c.max)) fail(`spec window for ${c.part} is empty`);
     if (c.kind === 'voltage' && (!HOLE_BY_ID.has(c.hole) || (c.ref && !HOLE_BY_ID.has(c.ref)))) fail('spec refers to a missing hole');
     if (c.kind === 'charge-time' && !l.board.parts.some((p) => p.id === c.part && p.kind === 'capacitor')) fail(`charge-time refers to ${c.part}, which isn't a capacitor`);
   }
@@ -41,15 +45,22 @@ export function parseLevel(raw: unknown): LevelDef {
 }
 
 /** World 0, in order. */
-export const WORLD0: LevelDef[] = [firstLight, wrongWayRound, sideBySide, splitTheDifference, slowBlink].map(parseLevel);
+export const WORLD0: LevelDef[] = [
+  firstLight, wrongWayRound, sideBySide, splitTheDifference, slowBlink,
+  forkInTheRoad, pushToLight, stackThemUp, balanceTheBridge,
+].map(parseLevel);
 
-/** The five World 0 slots from the spec, so the map can show what's coming. */
+/** World 0's slots, so the level map can show what's coming. */
 export const WORLD0_PLAN = [
   { number: 1, title: 'First light', topic: 'LED + resistor' },
   { number: 2, title: 'Wrong way round', topic: 'Reversed diode' },
   { number: 3, title: 'Side by side', topic: 'Series vs parallel' },
   { number: 4, title: 'Split the difference', topic: 'Voltage divider' },
   { number: 5, title: 'Slow blink', topic: 'RC timing' },
+  { number: 6, title: 'Fork in the road', topic: 'Current splits (KCL)' },
+  { number: 7, title: 'Push to light', topic: 'Switches' },
+  { number: 8, title: 'Stack them up', topic: 'Batteries in series' },
+  { number: 9, title: 'Balance the bridge', topic: 'Wheatstone bridge' },
 ];
 
 export const levelById = (id: string) => WORLD0.find((l) => l.id === id);

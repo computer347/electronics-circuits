@@ -11,9 +11,9 @@ const W = (id: string, h1: string, h2: string): BoardPart => ({ id, kind: 'wire'
 const check = (n: number, b: BoardState) => checkLevel(L(n), b, analyzeBoard(b));
 
 describe('World 0', () => {
-  it('has all five levels, numbered in order', () => {
-    expect(WORLD0.map((l) => l.number)).toEqual([1, 2, 3, 4, 5]);
-    expect(new Set(WORLD0.map((l) => l.id)).size).toBe(5);
+  it('has all nine levels, numbered in order', () => {
+    expect(WORLD0.map((l) => l.number)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(new Set(WORLD0.map((l) => l.id)).size).toBe(9);
   });
 });
 
@@ -135,5 +135,75 @@ describe('level 5: Slow blink', () => {
     expect(fast.diagnosis?.message).toMatch(/Too fast: the time constant is τ = R × C/);
     const slow = check(5, timed(22000));
     expect(slow.diagnosis?.message).toMatch(/Too slow/);
+  });
+});
+
+describe('level 6: Fork in the road', () => {
+  const start = startingBoard(L(6));
+  it('starts with R2 ten times too big: LED2 dim, and the hint readings are right', () => {
+    const a = analyzeBoard(start);
+    expect(check(6, start).pass).toBe(false);
+    expect(Math.abs(a.result.currents.LED2!) * 1000).toBeCloseTo(6.8 / 3.3, 1);
+    // R2 takes the same 6.8 V as R1.
+    expect(a.voltageAt('f3')! - a.voltageAt('f16')!).toBeCloseTo(6.8, 2);
+    expect(a.voltageAt('g3')! - a.voltageAt('g10')!).toBeCloseTo(7, 2);
+  });
+  it('passes with R2 at 330 Ω: 21.2 + 20.6 = 41.8 mA from the supply', () => {
+    const fixed = edit(start, 'R2', { ohms: 330 });
+    const r = check(6, fixed);
+    expect(r.pass).toBe(true);
+    const a = analyzeBoard(fixed);
+    expect(Math.abs(a.result.currents.SUPPLY!) * 1000).toBeCloseTo(41.8, 1);
+  });
+});
+
+describe('level 7: Push to light', () => {
+  const b = L(7).board;
+  const btn = (h1: string, h2: string): BoardPart => ({ id: 'SW1', kind: 'button', h1, h2, pressed: false });
+  it('fails with nothing in the gap', () => {
+    expect(check(7, b).diagnosis?.message).toMatch(/no push button/);
+  });
+  it('passes with the button across the gap: 21.2 mA held, nothing let go', () => {
+    const r = check(7, add(b, btn('i3', 'i6')));
+    expect(r.pass).toBe(true);
+    expect(r.lines[0]!.measured).toMatch(/^21\.2 mA held/);
+  });
+  it('explains a button with both legs in one column', () => {
+    expect(check(7, add(b, btn('i3', 'h3'))).diagnosis?.message).toMatch(/same column/);
+  });
+  it('explains a wire that bridges the gap for good', () => {
+    expect(check(7, add(b, btn('i3', 'i6'), W('W3', 'f3', 'f6'))).diagnosis?.message).toMatch(/stays on/);
+  });
+});
+
+describe('level 8: Stack them up', () => {
+  const start = startingBoard(L(8));
+  it('starts dark, and the cells read 1.5, 0 and 1.5 V as the hint says', () => {
+    expect(check(8, start).pass).toBe(false);
+    const a = analyzeBoard(start);
+    expect(a.voltageAt('j2')).toBeCloseTo(1.5, 3);
+    expect(a.voltageAt('j5')).toBeCloseTo(0, 3);
+    expect(a.voltageAt('j8')).toBeCloseTo(1.5, 3);
+  });
+  it('passes with B2 turned round: (4.5 − 3.0) / 100 = 15 mA', () => {
+    const b2 = start.parts.find((p) => p.id === 'B2')!;
+    const fixed = edit(start, 'B2', { h1: b2.h2, h2: b2.h1 });
+    const r = check(8, fixed);
+    expect(r.pass).toBe(true);
+    expect(r.lines[0]!.measured).toBe('15 mA');
+  });
+});
+
+describe('level 9: Balance the bridge', () => {
+  const b = L(9).board;
+  it('balances with 22 kΩ (both taps at 6.19 V), and not with 15 kΩ or 33 kΩ', () => {
+    const with22 = add(b, R('R4', 'g16', 'T-:14', 22000));
+    expect(check(9, with22).pass).toBe(true);
+    expect(analyzeBoard(with22).voltageAt('i8')).toBeCloseTo(9 * 2.2 / 3.2, 2);
+    expect(check(9, add(b, R('R4', 'g16', 'T-:14', 15000))).pass).toBe(false);
+    expect(check(9, add(b, R('R4', 'g16', 'T-:14', 33000))).pass).toBe(false);
+  });
+  it('fails with R4 missing: the right tap floats up to 9 V', () => {
+    expect(check(9, b).pass).toBe(false);
   });
 });

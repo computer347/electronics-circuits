@@ -73,21 +73,37 @@ export function buildMap(board: BoardState, analysis: BoardAnalysis): CircuitMap
   const uf = new UnionFind();
   for (const p of board.parts) if (p.kind === 'wire') uf.union(hole(p.h1).strip, hole(p.h2).strip);
   const net = (h: string) => uf.find(hole(h).strip);
-  const plus = uf.find('T+'), ground = uf.find('T-');
   const r = analysis.result;
   const v = (h: string) => (r.ok ? r.nodeVoltages[analysis.nodeOf(h)] : undefined);
-
   const rooms = board.parts.filter((p) => KIND[p.kind]);
   const used = new Set<string>();
-  const loop: Room[] = [{
-    id: SUPPLY_ID, kind: 'source', label: `Supply · ${board.supply.volts} V`,
-    vIn: 0, vOut: board.supply.on ? board.supply.volts : 0, amps: tidy(-(r.currents[SUPPLY_ID] ?? 0)),
-    nets: [ground, plus],
-  }];
+
+  // The loop starts at the source: the bench supply when it's on, else the battery (or
+  // generator) whose − sits on ground, else the first one.
+  const cells = board.parts.filter((p) => p.kind === 'battery' || p.kind === 'generator');
+  const cell = board.supply.on ? undefined
+    : cells.find((p) => hole(p.h2).strip === 'T-' || uf.find(hole(p.h2).strip) === uf.find('T-')) ?? cells[0];
+  let plus: string, ground: string;
+  let loop: Room[];
+  let entryVolts: number | undefined;
+  if (cell) {
+    used.add(cell.id);
+    plus = net(cell.h1); ground = net(cell.h2);
+    const room = describe(cell, v(cell.h2), v(cell.h1), tidy(-(r.currents[cell.id] ?? 0)), [ground, plus]);
+    loop = [room];
+    entryVolts = v(cell.h1);
+  } else {
+    plus = uf.find('T+'); ground = uf.find('T-');
+    loop = [{
+      id: SUPPLY_ID, kind: 'source', label: `Supply · ${board.supply.volts} V`,
+      vIn: 0, vOut: board.supply.on ? board.supply.volts : 0, amps: tidy(-(r.currents[SUPPLY_ID] ?? 0)),
+      nets: [ground, plus],
+    }];
+    entryVolts = board.supply.on ? board.supply.volts : undefined;
+  }
   const corridors: { v: number | undefined; net: string | null }[] = [];
   let at = plus;
   let closed = false;
-  let entryVolts = board.supply.on ? board.supply.volts : undefined;
   for (let guard = 0; guard < rooms.length + 1; guard++) {
     corridors.push({ v: entryVolts, net: at });
     if (at === ground) { closed = true; break; }
@@ -104,6 +120,8 @@ export function buildMap(board: BoardState, analysis: BoardAnalysis): CircuitMap
       room.forward = inLeg === 'h1';
       if (!room.forward && !next.burnt) room.fault = 'reversed';
     }
+    // A cell pushes the loop along when it's met − first. Met + first, it pushes against it.
+    if (next.kind === 'battery' && inLeg === 'h1') { room.fault = 'reversed'; room.forward = false; }
     loop.push(room);
     at = net(next[outLeg]);
     entryVolts = v(next[outLeg]);

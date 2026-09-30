@@ -31,8 +31,11 @@ function scanText(l: Link): string {
   const amps = Math.abs(r?.amps ?? 0);
   const drop = l.h0 - l.h1;
   if (l.kind === 'chasm') return 'No path: nothing connects here';
+  if (l.kind === 'stair' && r?.fault === 'reversed') return `${l.id} · backwards: takes ${Math.abs(l.h1 - l.h0).toFixed(1)} V away`;
   if (l.kind === 'stair') return `${l.id === 'SUPPLY' ? 'Supply' : l.id} · lifts ${(l.h1 - l.h0).toFixed(1)} V · ${formatSI(amps, 'A')}`;
-  if (l.kind === 'door') return r?.fault === 'reversed' ? `${l.id} · blocking · ${Math.abs(drop).toFixed(1)} V across it, nothing flows` : `${l.id} · drops ${drop.toFixed(1)} V · ${formatSI(amps, 'A')}${r?.lit ? ' · lit' : ''}`;
+  if (l.kind === 'door') return r?.fault === 'reversed' ? `${l.id} · blocking · ${Math.abs(drop).toFixed(1)} V across it, nothing flows`
+    : !r?.lit ? `${l.id} · dark: only ${Math.max(0, drop).toFixed(1)} V across it, not enough to open`
+      : `${l.id} · drops ${drop.toFixed(1)} V · ${formatSI(amps, 'A')} · lit`;
   if (l.kind === 'bridge') return `${l.id} · ${r?.part?.pressed ? 'closed' : 'open: hold it down'}`;
   if (l.kind === 'reservoir') return `${l.id} · charged to ${Math.abs(drop).toFixed(1)} V · no path through`;
   return `${l.id} · ${formatSI(r?.part?.ohms ?? 0, 'Ω')} · drops ${drop.toFixed(1)} V · ${formatSI(amps, 'A')}`;
@@ -332,10 +335,12 @@ export function CircuitWorld({ onCleared, onGiveUp, rail }: {
   });
 
   // One sentence: what to do now.
-  const doorFault = world.links.find((l) => l.kind === 'door' && l.room?.fault === 'reversed');
+  const doorFault = world.links.find((l) => (l.kind === 'door' || l.kind === 'stair') && l.room?.fault === 'reversed');
+  const shutDoor = world.links.find((l) => l.kind === 'door' && !l.passable && !l.room?.fault && l.id === blockedNear);
   const objective = flowing ? 'The current is going round: watch it flow downhill.'
     : clear ? 'The way is clear: switch the power on at the panel by the top of the stair.'
       : doorFault && blockedNear === doorFault.id ? `${doorFault.id}'s door faces you: it only opens the other way. Turn it round (E).`
+        : shutDoor ? `${shutDoor.id} won't open: not enough voltage reaches it. Scan the way back to the source.`
         : benchOnly && blockedNear ? 'The way is broken here: this has to be fixed on the bench.'
           : benchOnly ? 'Find where the current can’t get round.'
             : 'Find why the current can’t get round. Hold Q to scan.';

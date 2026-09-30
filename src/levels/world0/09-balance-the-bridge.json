@@ -1,0 +1,44 @@
+{
+  "id": "w0-09-balance-the-bridge",
+  "world": 0,
+  "number": 9,
+  "title": "Balance the bridge",
+  "format": "build",
+  "skills": ["divider", "wheatstone-bridge", "multimeter.voltage"],
+  "brief": {
+    "story": "Two dividers side by side make a bridge: a sensor circuit that reads zero when its two sides agree. The left side is built. The right side is missing its bottom resistor.",
+    "goal": "Pick R4 so the two taps (column 8 and column 16) are within 0.1 V of each other: the meter across the bridge reads zero.",
+    "datasheet": {
+      "title": "The bridge",
+      "rows": [
+        ["R1 (left, top)", "1 kΩ"],
+        ["R2 (left, bottom)", "2.2 kΩ"],
+        ["R3 (right, top)", "10 kΩ"],
+        ["R4 (right, bottom)", "you pick"]
+      ]
+    }
+  },
+  "hints": [
+    "Each side is a divider. The left tap sits at 9 V × 2.2 kΩ ÷ (1 kΩ + 2.2 kΩ) = 6.19 V.",
+    "The right tap reaches the same voltage when its ratio matches: R4 ÷ R3 = R2 ÷ R1 = 2.2.",
+    "10 kΩ × 2.2 = 22 kΩ. Put it from column 16 to the − rail."
+  ],
+  "board": {
+    "supply": { "volts": 9, "on": true },
+    "parts": [
+      { "id": "W1", "kind": "wire", "h1": "T+:3", "h2": "j3", "wireColor": "#e8413c" },
+      { "id": "R1", "kind": "resistor", "h1": "g3", "h2": "g8", "ohms": 1000 },
+      { "id": "R2", "kind": "resistor", "h1": "h8", "h2": "T-:7", "ohms": 2200 },
+      { "id": "R3", "kind": "resistor", "h1": "f3", "h2": "f16", "ohms": 10000 }
+    ]
+  },
+  "locked": ["W1", "R1", "R2", "R3"],
+  "tools": ["resistor", "probe"],
+  "resistorValues": [4700, 6800, 10000, 15000, 22000, 33000, 47000],
+  "spec": [
+    { "kind": "voltage", "hole": "i8", "ref": "i16", "min": -0.1, "max": 0.1, "label": "Across the bridge (column 8 vs column 16)" },
+    { "kind": "no-burnt" }
+  ],
+  "par": { "checks": 1, "partsAdded": 1, "measurements": 2 },
+  "debrief": "A bridge balances when both sides divide the supply in the same ratio: R2 ÷ R1 = R4 ÷ R3, so both taps sit at 9 V × 2.2 ÷ 3.2 = 6.19 V and the meter between them reads 0 V. That's why bridges are used for sensors: swap R4 for a strain gauge or a thermistor, and the tiniest change in it unbalances the bridge, showing up as a voltage that started from zero."
+}

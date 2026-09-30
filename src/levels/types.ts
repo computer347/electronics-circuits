@@ -37,6 +37,11 @@ export type SpecCheck = (
   | { kind: 'charge-time'; part: string; min: number; max: number }
   /** No LED burnt out on the board at check time. */
   | { kind: 'no-burnt' }
+  /**
+   * An LED switched by the push buttons: in its current window with every button held,
+   * and dark (under 0.1 mA) with every button let go.
+   */
+  | { kind: 'switched-led'; part: string; min: number; max: number }
 ) & { explain?: string };
 
 export interface DatasheetCard {

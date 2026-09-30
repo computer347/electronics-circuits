@@ -3,7 +3,7 @@
  * actually wrong in the circuit ("LED1 is in backwards"), never just "wrong".
  */
 import { hole, type HoleId } from '../breadboard/layout';
-import { boardToCircuit, SUPPLY_ID, type BoardAnalysis, type BoardPart, type BoardState } from '../breadboard/model';
+import { analyzeBoard, boardToCircuit, SUPPLY_ID, type BoardAnalysis, type BoardPart, type BoardState } from '../breadboard/model';
 import { Simulator, solve } from '../sim';
 import { formatSI } from '../lib/units';
 import type { LevelDef, SpecCheck } from './types';
@@ -248,6 +248,25 @@ function checkOne(c: SpecCheck, board: BoardState, analysis: BoardAnalysis, fixe
               : `${c.part} reaches 63 % of its final ${formatSI(t.final, 'V')} after ${sec(t.seconds)}. The target is ${range(c.min, c.max, 's')}. ${t.seconds < c.min ? 'Too fast' : 'Too slow'}: the time constant is τ = R × C.`,
           },
       };
+    }
+    case 'switched-led': {
+      const at = (pressed: boolean) => {
+        const b: BoardState = { ...board, parts: board.parts.map((p) => (p.kind === 'button' ? { ...p, pressed } : p)) };
+        const a = analyzeBoard(b);
+        return a.result.ok ? Math.abs(a.result.currents[c.part] ?? 0) : 0;
+      };
+      const on = at(true), off = at(false);
+      const hasButton = board.parts.some((p) => p.kind === 'button');
+      const okOn = on >= c.min && on <= c.max, okOff = off < 1e-4;
+      const ok = hasButton && okOn && okOff;
+      const btn = board.parts.find((p) => p.kind === 'button');
+      const why: Diagnosis | undefined = ok ? undefined
+        : !hasButton ? { message: `There's no push button on the board yet: ${c.part} should light only while one is held.` }
+          : !okOff ? { part: btn?.id, message: `${c.part} stays on when the button is let go (${mA(off)}): something else bridges the gap, so the button isn't in control.` }
+            : btn && hole(btn.h1).strip === hole(btn.h2).strip ? { part: btn.id, message: `${btn.id} has both legs in the same column, so pressing it joins nothing. Put it across the gap: one leg on each side.` }
+              : on < c.min ? { part: c.part, message: `With the button held, ${c.part} only gets ${mA(on)}. ${on < 1e-4 ? 'The button isn’t closing the loop: check it sits across the gap.' : 'More current needs less resistance.'}` }
+                : { part: c.part, message: `With the button held, ${c.part} takes ${mA(on)}, over its limit.` };
+      return { line: { ok, label: `${c.part} lit only while the button is held`, measured: `${mA(on)} held · ${mA(off)} let go` }, why };
     }
     case 'no-burnt': {
       const burnt = board.parts.filter((p) => p.burnt).map((p) => p.id);

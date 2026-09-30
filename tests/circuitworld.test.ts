@@ -137,3 +137,46 @@ describe('using things and finding the way', () => {
     expect(routeTo(open, spawnWalker(open), 2).length).toBeGreaterThan(2);
   });
 });
+
+describe('World 0 levels 6–9 as places', () => {
+  const L = (n: number) => WORLD0.find((l) => l.number === n)!;
+
+  it('runs a battery-powered loop from its first cell, with the backwards cell as a stair going down', () => {
+    const w = world(startingBoard(L(8)));
+    expect(w.map.loop[0]!.id).toBe('B1');
+    const b2 = w.links.find((l) => l.id === 'B2')!;
+    expect(b2.kind).toBe('stair');
+    expect(b2.room?.fault).toBe('reversed');
+    expect(b2.h1).toBeLessThan(b2.h0);
+    // The blue LED isn't backwards, but with 1.5 V it can't open.
+    const door = w.links.find((l) => l.id === 'LED1')!;
+    expect(door.room?.fault).toBeUndefined();
+    expect(door.passable).toBe(false);
+    // Turned round, the stack climbs 4.5 m and the door opens.
+    const fixed = world(flipped(startingBoard(L(8)), 'B2'));
+    expect(fixed.map.faults).toEqual([]);
+    expect(Math.max(...fixed.plazas.map((p) => p.height))).toBeCloseTo(4.5, 2);
+    expect(fixed.links.find((l) => l.id === 'LED1')!.passable).toBe(true);
+  });
+
+  it('gives a balanced bridge an inner plaza at the same height as the left tap', () => {
+    const b = L(9).board;
+    const with22: BoardState = { ...b, parts: [...b.parts, { id: 'R4', kind: 'resistor', h1: 'g16', h2: 'T-:14', ohms: 22000 }] };
+    const w = world(with22);
+    const heights = w.plazas.map((p) => p.height);
+    const taps = heights.filter((x) => Math.abs(x - 6.1875) < 0.01);
+    expect(taps.length).toBe(2);
+    expect(w.links.filter((l) => l.side).map((l) => l.id).sort()).toEqual(['R3', 'R4']);
+  });
+
+  it('keeps a push-button loop shut until the button is held', () => {
+    const b = L(7).board;
+    const withBtn = (pressed: boolean): BoardState => ({ ...b, parts: [...b.parts, { id: 'SW1', kind: 'button', h1: 'i3', h2: 'i6', pressed }] });
+    const open = world(withBtn(false));
+    expect(open.links.find((l) => l.id === 'SW1')!.passable).toBe(false);
+    expect(open.links.find((l) => l.id === 'LED1')!.passable).toBe(false);
+    const held = world(withBtn(true));
+    expect(held.links.find((l) => l.id === 'SW1')!.passable).toBe(true);
+    expect(held.links.find((l) => l.id === 'LED1')!.passable).toBe(true);
+  });
+});

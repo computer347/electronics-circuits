@@ -1,0 +1,50 @@
+{
+  "id": "w0-06-fork-in-the-road",
+  "world": 0,
+  "number": 6,
+  "title": "Fork in the road",
+  "format": "find-fault",
+  "skills": ["kcl", "parallel", "resistor.colour-code", "multimeter.voltage"],
+  "brief": {
+    "story": "Two status lights hang off the same 9 V column, each with its own resistor. The red one is bright, the green one barely glows. Someone sorted resistors by colour in bad light.",
+    "goal": "Light LED1 and LED2 at 10–25 mA each. Then the supply delivers both currents added together: between 30 and 50 mA.",
+    "datasheet": {
+      "title": "Reading R2's colour code",
+      "rows": [
+        ["330 Ω", "orange orange brown"],
+        ["3.3 kΩ", "orange orange red"],
+        ["LED2 (green)", "2.2 V forward"]
+      ]
+    }
+  },
+  "hints": [
+    "Measure across each resistor. Voltage ÷ resistance is the current through it, so you can compare the two branches without breaking the circuit.",
+    "R2 takes the same 6.8 V as R1 does, but its current is ten times smaller: its value is ten times too big. Orange-orange-red is 3.3 kΩ, not 330 Ω.",
+    "Click R2 and step its value down to 330 Ω."
+  ],
+  "board": {
+    "supply": { "volts": 9, "on": true },
+    "parts": [
+      { "id": "W1", "kind": "wire", "h1": "T+:3", "h2": "j3", "wireColor": "#e8413c" },
+      { "id": "R1", "kind": "resistor", "h1": "g3", "h2": "g10", "ohms": 330 },
+      { "id": "LED1", "kind": "led", "h1": "h10", "h2": "h12", "color": "red" },
+      { "id": "W2", "kind": "wire", "h1": "j12", "h2": "T-:10", "wireColor": "#2f6fe0" },
+      { "id": "R2", "kind": "resistor", "h1": "f3", "h2": "f16", "ohms": 330 },
+      { "id": "LED2", "kind": "led", "h1": "h16", "h2": "h18", "color": "green" },
+      { "id": "W3", "kind": "wire", "h1": "j18", "h2": "T-:15", "wireColor": "#2f6fe0" }
+    ]
+  },
+  "faults": [{ "kind": "value", "part": "R2", "ohms": 3300 }],
+  "locked": ["W1", "R1", "LED1", "W2", "LED2", "W3"],
+  "pinned": ["R2"],
+  "tools": ["probe"],
+  "resistorValues": [220, 330, 470, 1000, 2200, 3300],
+  "spec": [
+    { "kind": "led-current", "part": "LED1", "min": 0.01, "max": 0.025 },
+    { "kind": "led-current", "part": "LED2", "min": 0.01, "max": 0.025 },
+    { "kind": "supply-current", "min": 0.03, "max": 0.05, "explain": "The current splits at column 3 and joins again at the − rail, so the supply delivers the two branch currents added together." },
+    { "kind": "no-burnt" }
+  ],
+  "par": { "checks": 1, "partsAdded": 0, "measurements": 3 },
+  "debrief": "The current splits where the two branches leave column 3 and joins again at the − rail. What flows into a point flows out of it (Kirchhoff's current law), so the supply delivers 21.2 mA + 20.6 mA = 41.8 mA. Each branch gets the full 9 V, which is why each LED needs its own resistor. And a colour code read in bad light is a factor of ten: orange-orange-brown is 330 Ω, orange-orange-red is 3.3 kΩ."
+}

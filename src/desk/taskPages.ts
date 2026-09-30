@@ -5,7 +5,7 @@
  */
 import type { LevelDef } from '../levels/types';
 
-export type TaskPicture = 'led' | 'two-leds' | 'divider' | 'rc';
+export type TaskPicture = 'led' | 'two-leds' | 'divider' | 'rc' | 'fork' | 'button' | 'cells' | 'bridge';
 
 export interface TaskPage {
   label: string;
@@ -45,6 +45,26 @@ const EXTRA: Record<string, { headline: string; tip: string; picture: TaskPictur
     headline: 'Make the capacitor charge in about a second.',
     tip: 'The time constant is τ = R × C. C1 is 100 µF: which R makes R × C about 1 s?',
     picture: 'rc',
+  },
+  'w0-06-fork-in-the-road': {
+    headline: 'Get both LEDs properly lit.',
+    tip: 'Each branch gets the full 9 V. Measure across each resistor: V ÷ R is its current, no need to break the circuit.',
+    picture: 'fork',
+  },
+  'w0-07-push-to-light': {
+    headline: 'Light the LED only while the button is held.',
+    tip: 'A column of five holes is one strip. The button goes across the gap between two columns, never along one.',
+    picture: 'button',
+  },
+  'w0-08-stack-them-up': {
+    headline: 'Get the torch working on its batteries.',
+    tip: 'Walk the stack with the meter: black on the − rail, red on each cell’s + end. It should climb 1.5 V per cell.',
+    picture: 'cells',
+  },
+  'w0-09-balance-the-bridge': {
+    headline: 'Make the meter across the bridge read zero.',
+    tip: 'Both taps match when both sides divide in the same ratio: R2 ÷ R1 = R4 ÷ R3.',
+    picture: 'bridge',
   },
 };
 

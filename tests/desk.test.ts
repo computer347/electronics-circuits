@@ -187,7 +187,7 @@ describe('every World 0 level on the desk', () => {
       expect(p.headline.length).toBeLessThan(60);
       expect(p.goal).toBe(l.brief.goal);
       expect(p.tip.length).toBeGreaterThan(20);
-      expect(['led', 'two-leds', 'divider', 'rc']).toContain(p.picture);
+      expect(['led', 'two-leds', 'divider', 'rc', 'fork', 'button', 'cells', 'bridge']).toContain(p.picture);
     }
   });
 
@@ -358,9 +358,9 @@ describe('free bench', () => {
 });
 
 describe('front page star count', () => {
-  it('adds up World 0 stars out of 15', () => {
-    expect(worldStars({})).toEqual({ got: 0, max: 15 });
+  it('adds up World 0 stars, three per level', () => {
+    expect(worldStars({})).toEqual({ got: 0, max: WORLD0.length * 3 });
     const rec = { [WORLD0[0]!.id]: { stars: 3 as const, seconds: 20, firstPassed: '2026-09-29' }, [L2.id]: { stars: 1 as const, seconds: 50, firstPassed: '2026-09-29' } };
-    expect(worldStars(rec)).toEqual({ got: 4, max: 15 });
+    expect(worldStars(rec)).toEqual({ got: 4, max: WORLD0.length * 3 });
   });
 });

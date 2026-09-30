@@ -12,7 +12,7 @@ import type { LevelDef } from '../levels/types';
 export type Section = 'task' | 'theory' | 'math';
 export const SECTIONS: Section[] = ['task', 'theory', 'math'];
 
-export type PartId = 'led' | 'resistor' | 'breadboard' | 'multimeter' | 'capacitor' | 'button';
+export type PartId = 'led' | 'resistor' | 'breadboard' | 'multimeter' | 'capacitor' | 'button' | 'battery';
 
 export interface PartExplainer {
   id: PartId;
@@ -94,6 +94,14 @@ export const PARTS: Record<PartId, PartExplainer> = {
       { label: 'Let go', text: 'open: the circuit is broken' },
     ],
   },
+  battery: {
+    id: 'battery', name: 'AA cell', job: 'A small chemical pump: it lifts every charge that passes through it by 1.5 V.',
+    facts: [
+      { label: '+ end', text: 'the one with the bump: the higher voltage' },
+      { label: '− end', text: 'the flat end' },
+      { label: '1.5 V', text: 'each; in series, + to −, they add up' },
+    ],
+  },
 };
 
 export const FORMULAS: Record<string, Formula> = {
@@ -122,6 +130,16 @@ export const FORMULAS: Record<string, Formula> = {
     terms: [['R₁', 'top resistor (to the supply)'], ['R₂', 'bottom resistor (to ground)'], ['I', 'V_in ÷ (R₁ + R₂) flows through both']],
     when: 'The ratio sets the voltage; the size sets the current.',
   },
+  kcl: {
+    name: 'Currents at a junction', expr: 'I_in = I_1 + I_2 + …',
+    terms: [['I_in', 'the current arriving at a point'], ['I_1, I_2', 'the currents leaving it by each branch']],
+    when: 'Whatever flows into a point flows out again (Kirchhoff’s current law): parallel branch currents add up at the supply.',
+  },
+  bridge: {
+    name: 'Balanced bridge', expr: 'R2 ÷ R1 = R4 ÷ R3',
+    terms: [['R1, R2', 'the left divider (top, bottom)'], ['R3, R4', 'the right divider (top, bottom)']],
+    when: 'When the ratios match, both taps sit at the same voltage and the meter between them reads zero.',
+  },
   rc: {
     name: 'RC time constant', expr: 'τ = R × C',
     terms: [['τ', 'the time to reach 63 % of the final voltage (seconds)'], ['R', 'ohms'], ['C', 'farads (100 µF = 0.0001 F)'], ['V(t)', 'V × (1 − e^(−t/τ))']],
@@ -135,6 +153,10 @@ const LEVEL: Record<string, { parts: PartId[]; formulas: string[]; generators: s
   'w0-03-side-by-side': { parts: ['led', 'resistor'], formulas: ['series', 'led'], generators: ['series-voltage', 'parallel-total'] },
   'w0-04-split-the-difference': { parts: ['resistor', 'multimeter'], formulas: ['divider', 'ohm'], generators: ['divider'] },
   'w0-05-slow-blink': { parts: ['capacitor', 'button'], formulas: ['rc'], generators: ['rc-charge'] },
+  'w0-06-fork-in-the-road': { parts: ['resistor', 'led'], formulas: ['kcl', 'ohm'], generators: ['parallel-total', 'series-parallel'] },
+  'w0-07-push-to-light': { parts: ['button', 'breadboard'], formulas: ['ohm', 'led'], generators: ['led-resistor'] },
+  'w0-08-stack-them-up': { parts: ['battery', 'multimeter'], formulas: ['kvl', 'led'], generators: ['series-voltage'] },
+  'w0-09-balance-the-bridge': { parts: ['resistor', 'multimeter'], formulas: ['bridge', 'divider'], generators: ['bridge', 'divider'] },
 };
 
 /** A stable seed per level so the worked example is the same each time you open it. */

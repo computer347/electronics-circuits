@@ -28,7 +28,10 @@ export function labelTexture(text: string, bg: string, fg: string, w = 512, h = 
   c.width = w; c.height = h;
   const g = c.getContext('2d')!;
   g.fillStyle = bg; g.fillRect(0, 0, w, h);
-  g.fillStyle = fg; g.font = `${size}px 'Anton', 'Impact', sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillStyle = fg; g.textAlign = 'center'; g.textBaseline = 'middle';
+  // Shrink long text to fit the sign rather than clipping it.
+  let px = size;
+  do { g.font = `${px}px 'Anton', 'Impact', sans-serif`; px -= 4; } while (px > 24 && g.measureText(text).width > w - 36);
   g.fillText(text, w / 2, h / 2 + 4);
   t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
@@ -180,7 +183,9 @@ function Stair({ l }: { l: Link }) {
           </mesh>
         );
       })}
-      <Sign text={`+ ${(l.h1 - l.h0).toFixed(1)} V`} pos={[linkPoint(l, 0.5).x, l.h1 + 2.2, linkPoint(l, 0.5).z]} yaw={yaw + Math.PI / 2} bg={INK.pink} fg={INK.paper} w={2.4} />
+      <Sign text={l.room?.fault === 'reversed' ? `${l.id} BACKWARDS · ${(l.h1 - l.h0).toFixed(1)} V` : `${l.id === 'SUPPLY' ? '' : `${l.id} · `}+ ${(l.h1 - l.h0).toFixed(1)} V`}
+        pos={[linkPoint(l, 0.5).x, Math.max(l.h0, l.h1) + 2.2, linkPoint(l, 0.5).z]} yaw={yaw + Math.PI / 2}
+        bg={l.room?.fault === 'reversed' ? '#1c0a3a' : INK.pink} fg={INK.paper} w={l.room?.fault === 'reversed' ? 3.6 : 2.4} />
     </group>
   );
 }

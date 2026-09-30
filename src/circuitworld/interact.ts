@@ -14,6 +14,7 @@ export function targets(w: World): Target[] {
   const out: Target[] = [];
   for (const l of w.links) {
     if (l.kind === 'door' && l.room?.fault === 'reversed') out.push({ kind: 'door', id: l.id, pos: linkPoint(l, l.at).setY(l.h0 + 1.4), label: `turn ${l.id}'s door round` });
+    if (l.kind === 'stair' && l.room?.fault === 'reversed') out.push({ kind: 'door', id: l.id, pos: linkPoint(l, 0.5).setY(Math.max(l.h0, l.h1) + 1.2), label: `turn ${l.id} round` });
     if (l.kind === 'bridge') out.push({ kind: 'bridge', id: l.id, pos: linkPoint(l, l.at - 0.25).setY(l.h0 + 1.2), label: `hold ${l.id} down` });
   }
   // The power panel stands on the top plaza, beside where the stair arrives.

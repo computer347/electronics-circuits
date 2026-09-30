@@ -1,0 +1,42 @@
+{
+  "id": "w0-07-push-to-light",
+  "world": 0,
+  "number": 7,
+  "title": "Push to light",
+  "format": "build",
+  "skills": ["switch", "breadboard.strips", "series"],
+  "brief": {
+    "story": "The bench's call light should come on only while someone holds its button. The LED and its resistor are already wired; the loop has a gap where the button goes.",
+    "goal": "Make LED1 light at 10–25 mA only while the push button is held, and go dark when it's let go.",
+    "datasheet": {
+      "title": "SW1 · push button",
+      "rows": [
+        ["Held", "closed: joins its legs"],
+        ["Let go", "open: nothing flows"],
+        ["Max current", "50 mA"]
+      ]
+    }
+  },
+  "hints": [
+    "There's a gap between column 3, where the + wire lands, and column 6, where R1 starts. The button goes across it.",
+    "Take the push button from the box and click a hole in column 3, then one in column 6.",
+    "A wire across the gap would light the LED for good. The button has to be the only way across."
+  ],
+  "board": {
+    "supply": { "volts": 9, "on": true },
+    "parts": [
+      { "id": "W1", "kind": "wire", "h1": "T+:3", "h2": "j3", "wireColor": "#e8413c" },
+      { "id": "R1", "kind": "resistor", "h1": "g6", "h2": "g12", "ohms": 330 },
+      { "id": "LED1", "kind": "led", "h1": "h12", "h2": "h14", "color": "red" },
+      { "id": "W2", "kind": "wire", "h1": "j14", "h2": "T-:12", "wireColor": "#2f6fe0" }
+    ]
+  },
+  "locked": ["W1", "R1", "LED1", "W2"],
+  "tools": ["button", "wire", "probe"],
+  "spec": [
+    { "kind": "switched-led", "part": "LED1", "min": 0.01, "max": 0.025 },
+    { "kind": "no-burnt" }
+  ],
+  "par": { "checks": 1, "partsAdded": 1, "measurements": 1 },
+  "debrief": "A push button is a switch you hold. Held, it joins column 3 to column 6 and the loop is complete, so (9 V − 2 V) ÷ 330 Ω = 21.2 mA flows. Let go, and the loop is broken and nothing flows anywhere in it. In series, one gap stops the current everywhere, which is why a single switch can turn off a whole circuit."
+}

@@ -4,6 +4,7 @@ import { WORLD0_CLASSES, classForLevel } from '../src/learn/classes';
 import { dividerLab, dividerOut, ledLab, ledResistor, ohmLab, pairLab, rcLab } from '../src/learn/physics';
 import type { LabSpec } from '../src/learn/types';
 import { WORLD0, levelById } from '../src/levels';
+import { parseNetlist, solve } from '../src/sim';
 
 const near = (got: number, want: number, pct = 1) => expect(Math.abs(got - want)).toBeLessThanOrEqual(Math.abs(want) * pct / 100);
 const byNumber = (n: number) => WORLD0_CLASSES.find((c) => c.number === n)!;
@@ -125,5 +126,47 @@ describe('World 0 classes: the numbers they teach agree with the solver', () => 
     // After 3τ it's about 95 % full.
     const at3 = plain.curve.find(([t]) => t >= 3 * plain.tau)!;
     near(at3[1] / 9, 0.95, 1.5);
+  });
+});
+
+describe('World 0 classes 6–9: the numbers they teach agree with the solver', () => {
+  const solveNet = (text: string) => solve(parseNetlist(text));
+  const num = (n: number, i: number) => { const q = byNumber(n).check[i]!; if (q.kind !== 'number') throw new Error('expected a number question'); return q.answer; };
+
+  it('0–6: parallel branches add at the junction', () => {
+    const r = solveNet('V1 vcc 0 9\nR1 vcc a 330\nLED1 a 0 red\nR2 vcc b 330\nLED2 b 0 green');
+    near(r.currents.LED1!, 0.0212);
+    near(r.currents.LED2!, 0.0206);
+    near(Math.abs(r.currents.V1!), 0.0418);
+    const slow = solveNet('V1 vcc 0 9\nR2 vcc b 3300\nLED2 b 0 green');
+    near(slow.currents.LED2!, 0.00206);
+    near(slow.nodeVoltages.vcc! - slow.nodeVoltages.b!, 6.8);
+    near(num(6, 0), 0.012 + 0.018);
+    near(solveNet('V1 a 0 5\nR1 a 0 1000').currents.R1!, num(6, 1));
+  });
+
+  it('0–7: the held current, and nothing with the switch open', () => {
+    near(solveNet('V1 vcc 0 9\nS1 vcc a closed\nR1 a b 330\nLED1 b 0 red').currents.LED1!, num(7, 1));
+    near(num(7, 1), 0.0212);
+    expect(Math.abs(solveNet('V1 vcc 0 9\nS1 vcc a open\nR1 a b 330\nLED1 b 0 red').currents.LED1 ?? 0)).toBeLessThan(1e-6);
+  });
+
+  it('0–8: cells stack, a backwards one cancels, and 15 mA once fixed', () => {
+    const good = solveNet('V1 a 0 1.5\nV2 b a 1.5\nV3 c b 1.5\nR1 c d 100\nLED1 d 0 blue');
+    near(good.nodeVoltages.c!, 4.5);
+    near(good.currents.LED1!, 0.015);
+    const bad = solveNet('V1 a 0 1.5\nV2 a b 1.5\nV3 c b 1.5\nR1 c d 100\nLED1 d 0 blue');
+    near(bad.nodeVoltages.c!, num(8, 1));
+    expect(Math.abs(bad.currents.LED1 ?? 0)).toBeLessThan(1e-6);
+    near(solveNet('V1 a 0 1.5\nV2 b a 1.5\nV3 c b 1.5\nV4 d c 1.5\nR1 d 0 1000').nodeVoltages.d!, num(8, 0));
+  });
+
+  it('0–9: both taps at 6.19 V when the ratios match', () => {
+    const r = solveNet('V1 vcc 0 9\nR1 vcc a 1000\nR2 a 0 2200\nR3 vcc b 10000\nR4 b 0 22000');
+    near(r.nodeVoltages.a!, 6.19);
+    expect(Math.abs(r.nodeVoltages.a! - r.nodeVoltages.b!)).toBeLessThan(1e-6);
+    near(dividerOut(9, 1000, 1000), num(9, 0));
+    const b = solveNet(`V1 vcc 0 9\nR1 vcc a 2000\nR2 a 0 6000\nR3 vcc b 5000\nR4 b 0 ${num(9, 1)}`);
+    expect(Math.abs(b.nodeVoltages.a! - b.nodeVoltages.b!)).toBeLessThan(1e-6);
   });
 });

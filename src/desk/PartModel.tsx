@@ -121,6 +121,20 @@ function Button({ labels }: { labels: string[] }) {
   );
 }
 
+function Battery({ labels }: { labels: string[] }) {
+  return (
+    <group rotation={[0, 0, Math.PI / 2]}>
+      <mesh><cylinderGeometry args={[0.7, 0.7, 3.2, 40]} /><meshStandardMaterial color="#1e1e1e" roughness={0.5} /></mesh>
+      <mesh position={[0, 0.9, 0]}><cylinderGeometry args={[0.705, 0.705, 1.2, 40]} /><meshStandardMaterial color="#e57b23" roughness={0.5} /></mesh>
+      <mesh position={[0, 1.7, 0]}><cylinderGeometry args={[0.25, 0.3, 0.25, 24]} /><meshStandardMaterial {...METAL} /></mesh>
+      <mesh position={[0, -1.62, 0]}><cylinderGeometry args={[0.55, 0.55, 0.06, 32]} /><meshStandardMaterial {...METAL} /></mesh>
+      <Callout n={1} at={[0, 2.2, 0]} label={labels[0]!} />
+      <Callout n={2} at={[0, -2.1, 0]} label={labels[1]!} />
+      <Callout n={3} at={[0.9, 0, 0]} label={labels[2]!} />
+    </group>
+  );
+}
+
 function Meter({ labels }: { labels: string[] }) {
   return (
     <group scale={16} rotation={[0.9, 0, 0]} position={[0, 0, 0]}>
@@ -149,6 +163,7 @@ export function PartModel({ part, labels }: { part: PartId; labels: string[] }) 
   const model = {
     led: <Led labels={labels} />, resistor: <Resistor labels={labels} />, breadboard: <BoardPatch labels={labels} />,
     capacitor: <Capacitor labels={labels} />, button: <Button labels={labels} />, multimeter: <Meter labels={labels} />,
+    battery: <Battery labels={labels} />,
   }[part];
   const layer = useRef<HTMLDivElement>(null);
   return (

@@ -164,7 +164,9 @@ export function buildWorld(board: BoardState, analysis: BoardAnalysis): World {
     const room = e.room;
     const kind = e.kind;
     let passable = true;
-    if (kind === 'door') passable = !room?.fault && room?.forward !== false;
+    // A door opens only when current actually flows through it: backwards, or without
+    // enough voltage to reach its forward drop, it stays shut.
+    if (kind === 'door') passable = !room?.fault && room?.forward !== false && !!room?.lit;
     if (kind === 'bridge') passable = !!room?.part?.pressed;
     if (kind === 'reservoir' || kind === 'chasm') passable = false;
     return {
@@ -175,7 +177,22 @@ export function buildWorld(board: BoardState, analysis: BoardAnalysis): World {
   });
 
   // Side paths: parts not on the loop, between the plazas of the nets they join, bowed inward.
+  // A net that only side parts reach (the far tap of a bridge) gets its own plaza inside the
+  // ring, near the plazas it connects to, standing at its own voltage.
   const plazaOfNet = (net: string) => plazas.findIndex((p) => p.net === net);
+  for (let pass = 0; pass < 3; pass++) {
+    for (const room of map.side) {
+      room.nets.forEach((nt, k) => {
+        if (plazaOfNet(nt) >= 0) return;
+        const others = map.side.filter((x) => x.nets.includes(nt)).flatMap((x) => x.nets).filter((x) => x !== nt).map(plazaOfNet).filter((i) => i >= 0);
+        if (!others.length) return;
+        const cx = others.reduce((s, i) => s + plazas[i]!.center[0], 0) / others.length;
+        const cz = others.reduce((s, i) => s + plazas[i]!.center[1], 0) / others.length;
+        const volts = k === 0 ? room.vIn : room.vOut;
+        plazas.push({ index: plazas.length, net: nt, volts, height: h(volts), center: [cx * 0.3, cz * 0.3], ground: false });
+      });
+    }
+  }
   for (const room of map.side) {
     const ia = plazaOfNet(room.nets[0]), ib = plazaOfNet(room.nets[1]);
     if (ia < 0 || ib < 0 || ia === ib) continue;
@@ -192,7 +209,7 @@ export function buildWorld(board: BoardState, analysis: BoardAnalysis): World {
     links.push({
       id: room.id, kind, room, from: ia, to: ib, path: trimmed.length >= 2 ? trimmed : [pts[1]!, pts[7]!],
       width: linkWidth(kind, room), h0: a.height, h1: b.height, profile: kind === 'door' ? 'ledge' : 'slope',
-      passable: kind === 'ramp' || kind === 'stair' || (kind === 'door' && !room.fault) || (kind === 'bridge' && !!room.part?.pressed),
+      passable: kind === 'ramp' || kind === 'stair' || (kind === 'door' && !room.fault && !!room.lit) || (kind === 'bridge' && !!room.part?.pressed),
       at: 0.5, side: true,
     });
   }

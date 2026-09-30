@@ -54,7 +54,8 @@ export function Corkboard({ current, passed, unlocked, onPick, onFreeBench }: {
       </mesh>
       {WORLD0_PLAN.map((l, i) => {
         const state = l.number === current ? 'here' : passed.has(l.number) ? 'done' : unlocked.has(l.number) ? 'open' : 'later';
-        const x = -0.26 + i * 0.105, y = i % 2 ? -0.03 : 0.03;
+        // Two rows of five: levels in order, the free bench last.
+        const x = -0.24 + (i % 5) * 0.12, y = (i < 5 ? 0.062 : -0.062) + (i % 2 ? -0.006 : 0.006);
         const canPick = !!onPick && unlocked.has(l.number);
         return (
           <group key={l.number} position={[x, y, 0.012]} rotation={[0, 0, (i % 3 - 1) * 0.05]}
@@ -73,7 +74,7 @@ export function Corkboard({ current, passed, unlocked, onPick, onFreeBench }: {
         );
       })}
       {/* the free bench: a blue card at the end, always open */}
-      <group position={[0.265, 0.03, 0.012]} rotation={[0, 0, 0.06]}
+      <group position={[-0.24 + (WORLD0_PLAN.length % 5) * 0.12, WORLD0_PLAN.length < 5 ? 0.062 : -0.062, 0.012]} rotation={[0, 0, 0.06]}
         onClick={onFreeBench ? (e) => { e.stopPropagation(); onFreeBench(); } : undefined}
         onPointerOver={onFreeBench ? () => { document.body.style.cursor = 'pointer'; } : undefined}
         onPointerOut={onFreeBench ? () => { document.body.style.cursor = ''; } : undefined}>
