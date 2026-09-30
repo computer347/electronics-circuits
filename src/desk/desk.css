@@ -338,3 +338,5 @@
 .gallery-board { margin-top: 8px; }
 .gallery-board canvas { width: 100% !important; height: 240px !important; display: block; }
 .gallery-tip { margin: 6px 0 0; padding: 6px 8px; background: var(--r-yellow); font-weight: 700; font-size: 12px; }
+.desk-result-skill { padding: 10px 12px; background: rgba(0, 120, 191, 0.12); border-left: 4px solid var(--r-blue); }
+.desk-result-skill b { display: block; font-family: var(--r-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--r-blue); }

@@ -201,6 +201,16 @@ describe('every World 0 level on the desk', () => {
     }
   });
 
+  it('says for every level what you can do afterwards and where you meet it in real life', () => {
+    for (const l of WORLD0) {
+      const p = taskPage(l);
+      expect(p.skill.length, l.id).toBeGreaterThan(25);
+      expect(p.skill.length, l.id).toBeLessThan(90);
+      expect(p.realLife.length, l.id).toBeGreaterThan(60);
+      expect(p.realLife.length, l.id).toBeLessThan(200);
+    }
+  });
+
   it('shows a missing resistor as a loop that never closes (the broken bridge)', () => {
     const m = map(startingBoard(L1));
     expect(m.closed).toBe(false);

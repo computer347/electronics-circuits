@@ -183,7 +183,21 @@ export const taskPagesTexture = (p: TaskPage) => once(`task:${p.label}`, () => c
   g.globalCompositeOperation = 'source-over';
   g.fillStyle = INK.pink; g.font = `44px ${FONT_DISPLAY}`; g.fillText('TIP', R, y);
   g.fillStyle = INK.ink; g.font = `bold 32px ${FONT_MONO}`;
-  wrap(g, p.tip, R, y + 60, 740, 44);
+  y = wrap(g, p.tip, R, y + 60, 740, 44);
+
+  // What you walk away with, and where you'll meet it: the reason the level exists.
+  if (p.skill) {
+    y += 70;
+    g.fillStyle = INK.blue; g.font = `44px ${FONT_DISPLAY}`; g.fillText('YOU’LL USE THIS', R, y);
+    g.fillStyle = INK.ink; g.font = `bold 30px ${FONT_MONO}`;
+    y = wrap(g, p.skill, R, y + 62, 760, 40);
+    // Shrink the last paragraph if it would run into the steps.
+    let size = 28;
+    g.font = `${size}px ${FONT_MONO}`;
+    while (size > 20 && y + 16 + measureLines(g, p.realLife, 760) * (size + 10) > 1140) { size -= 2; g.font = `${size}px ${FONT_MONO}`; }
+    g.fillStyle = INK.ink;
+    wrap(g, p.realLife, R, y + 16, 760, size + 10);
+  }
 
   // The four steps, always the same.
   const steps: [string, string][] = [['read', 'this page'], ['build', 'or fix'], ['measure', 'with the meter'], ['go in', 'and clear it']];

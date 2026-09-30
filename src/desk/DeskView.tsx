@@ -237,6 +237,7 @@ export function DeskView({ onMenu }: { onMenu: () => void }) {
                 <p className="desk-result-sub">{r.stats.measurements} {r.stats.measurements === 1 ? 'measurement' : 'measurements'} · {r.stats.checks} {r.stats.checks === 1 ? 'try' : 'tries'} · {r.stats.seconds} s{r.improved ? ' · new best' : ''}</p>
                 <StarList level={level} r={r} />
                 <p>{level.debrief}</p>
+                {page.skill && <p className="desk-result-skill"><b>You can now</b> {page.skill.charAt(0).toLowerCase() + page.skill.slice(1)}</p>}
               </>
             ) : (
               <>
