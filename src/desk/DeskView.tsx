@@ -19,7 +19,7 @@ import { isDynamicBoard } from '../breadboard/model';
 import { SandboxTray } from './SandboxTray';
 import { ScopeControls } from './ScopeControls';
 import { isUnlocked, followingLevel, nextLevel } from './levelPick';
-import { DIAL, meteredBoard, readMeter } from './meter';
+import { DIAL, DIAL_LABEL, meteredBoard, readMeter } from './meter';
 import { spreads } from './notebook';
 import { NotebookPages } from './NotebookPages';
 import { PartsTray } from './PartsTray';
@@ -334,7 +334,7 @@ export function DeskView({ onMenu }: { onMenu: () => void }) {
           <span className="meter-modes" role="radiogroup" aria-label="Meter dial">
             {DIAL.map((m) => (
               <button key={m} role="radio" aria-checked={meterMode === m} className={meterMode === m ? 'on' : ''} onClick={() => desk.setMeterMode(m)}>
-                {m === 'off' ? 'OFF' : m}
+                {DIAL_LABEL[m]}
               </button>
             ))}
           </span>

@@ -9,9 +9,10 @@
  * this lays out as a ring.
  */
 import { hole } from '../breadboard/layout';
-import { SUPPLY_ID, type BoardAnalysis, type BoardPart, type BoardState } from '../breadboard/model';
+import { currentLegs, SUPPLY_ID, type BoardAnalysis, type BoardPart, type BoardState } from '../breadboard/model';
 
-export type RoomKind = 'source' | 'resistor' | 'led' | 'button' | 'capacitor' | 'battery' | 'generator';
+export type RoomKind = 'source' | 'resistor' | 'led' | 'button' | 'capacitor' | 'battery' | 'generator'
+  | 'diode' | 'pot' | 'transistor' | 'regulator';
 
 export type RoomFault =
   /** A diode or LED facing against the current: a one-way door that won't open. */
@@ -65,7 +66,16 @@ class UnionFind {
 
 const KIND: Record<BoardPart['kind'], RoomKind | null> = {
   resistor: 'resistor', led: 'led', wire: null, button: 'button', battery: 'battery', capacitor: 'capacitor', generator: 'generator',
+  diode: 'diode', pot: 'pot', npn: 'transistor', nmos: 'transistor', regulator: 'regulator',
 };
+/** A three-legged part walks like a two-legged one between its main legs (collector → emitter...). */
+const mainLegs = (p: BoardPart): BoardPart => {
+  if (!p.h3) return p;
+  const [h1, h2] = currentLegs(p);
+  return { ...p, h1, h2 };
+};
+/** Doors: LEDs, diodes and transistors let the loop through one way, when they conduct. */
+const DOORS: readonly BoardPart['kind'][] = ['led', 'diode', 'npn', 'nmos'];
 const tidy = (a: number) => (Math.abs(a) < 1e-9 ? 0 : a);
 
 export function buildMap(board: BoardState, analysis: BoardAnalysis): CircuitMap {
@@ -75,7 +85,7 @@ export function buildMap(board: BoardState, analysis: BoardAnalysis): CircuitMap
   const net = (h: string) => uf.find(hole(h).strip);
   const r = analysis.result;
   const v = (h: string) => (r.ok ? r.nodeVoltages[analysis.nodeOf(h)] : undefined);
-  const rooms = board.parts.filter((p) => KIND[p.kind]);
+  const rooms = board.parts.filter((p) => KIND[p.kind]).map(mainLegs);
   const used = new Set<string>();
 
   // The loop starts at the source: the bench supply when it's on, else the battery (or
@@ -115,8 +125,8 @@ export function buildMap(board: BoardState, analysis: BoardAnalysis): CircuitMap
     // Currents from the solver run h1 → h2; flip the sign when we walk it h2 → h1.
     const amps = tidy((r.currents[next.id] ?? 0) * (inLeg === 'h1' ? 1 : -1));
     const room = describe(next, v(next[inLeg]), v(next[outLeg]), amps, [net(next[inLeg]), net(next[outLeg])]);
-    if (next.kind === 'led') {
-      // The door opens from anode (h1) to cathode (h2): forward if we come in at the anode.
+    if (DOORS.includes(next.kind)) {
+      // The door opens from anode (h1) to cathode (h2), collector to emitter: forward if we come in at h1.
       room.forward = inLeg === 'h1';
       if (!room.forward && !next.burnt) room.fault = 'reversed';
     }
@@ -138,7 +148,9 @@ export function buildMap(board: BoardState, analysis: BoardAnalysis): CircuitMap
 function describe(p: BoardPart, vIn: number | undefined, vOut: number | undefined, amps: number, nets: [string, string]): Room {
   const kind = KIND[p.kind]!;
   const room: Room = { id: p.id, kind, label: p.id, vIn, vOut, amps, nets, part: p };
-  if (p.kind === 'resistor') room.label = `${p.id} · ${fmtOhms(p.ohms ?? 1000)}`;
+  if (p.kind === 'resistor' || p.kind === 'pot') room.label = `${p.id} · ${fmtOhms(p.ohms ?? (p.kind === 'pot' ? 10000 : 1000))}`;
+  if (p.marking && p.kind !== 'pot') room.label = `${p.id} · ${p.marking}`;
+  if (p.kind === 'diode' || p.kind === 'npn' || p.kind === 'nmos') room.lit = Math.abs(amps) > 1e-4;
   if (p.kind === 'led') {
     room.label = `${p.id} · ${p.color ?? 'red'}`;
     room.color = p.color ?? 'red';

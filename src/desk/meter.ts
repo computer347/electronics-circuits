@@ -6,14 +6,22 @@
  *   supply that's a short: the fuse blows.
  * - Ω: the supply and batteries are taken out and a small test current is pushed through the
  *   probes; the reading is volts over amps. No path, a capacitor or a diode reads OL.
+ * - Diode (▶|): the same, but with a fixed 1 mA test current and the voltage it takes shown
+ *   directly. A silicon junction the right way round reads about 0.6–0.7 V, a red LED about
+ *   1.8 V; backwards, or above the meter's 3 V, it reads OL. This is how you find a
+ *   transistor's legs and a diode's cathode on the bench.
  */
 import type { HoleId } from '../breadboard/layout';
 import { boardToCircuit, type BoardPart, type BoardState } from '../breadboard/model';
 import { solve } from '../sim';
 
-export type MeterMode = 'off' | 'V' | 'Ω' | 'A';
+export type MeterMode = 'off' | 'V' | 'Ω' | 'diode' | 'A';
 /** Dial order, clockwise. */
-export const DIAL: MeterMode[] = ['off', 'V', 'Ω', 'A'];
+export const DIAL: MeterMode[] = ['off', 'V', 'Ω', 'diode', 'A'];
+/** What the dial and the buttons print for each mode. */
+export const DIAL_LABEL: Record<MeterMode, string> = { off: 'OFF', V: 'V', 'Ω': 'Ω', diode: '▶|', A: 'A' };
+/** The diode test's own source runs out of voltage here. */
+const DIODE_COMPLIANCE = 3;
 export const AMMETER_ID = 'METER';
 
 /** The mode one click round the dial (wraps, so every mode is reachable by clicking on). */
@@ -67,6 +75,19 @@ function scaled(v: number, unit: string): { text: string; unit: string } {
   return { text: fixed(Math.abs(v) < 5e-4 ? 0 : v), unit };
 }
 
+/** Forward voltage between two holes at the diode test's 1 mA, sources off; null for OL. */
+export function diodeDrop(board: BoardState, red: HoleId, black: HoleId): number | null {
+  const { circuit, nodeOf } = boardToCircuit({ supply: { ...board.supply, on: false }, parts: board.parts });
+  const a = nodeOf(red), b = nodeOf(black);
+  if (a === b) return 0;
+  const components = circuit.components.map((c) => (c.kind === 'vsource' ? { ...c, volts: 0, wave: undefined } : c));
+  components.push({ kind: 'isource', id: '__TEST', a: b, b: a, amps: 1e-3 });
+  const r = solve({ components });
+  if (!r.ok) return null;
+  const v = (r.nodeVoltages[a] ?? 0) - (r.nodeVoltages[b] ?? 0);
+  return v >= 0 && v <= DIODE_COMPLIANCE ? v : null;
+}
+
 /** Resistance between two holes with every source switched off. */
 export function ohmsBetween(board: BoardState, red: HoleId, black: HoleId): number | null {
   const { circuit, nodeOf } = boardToCircuit({ supply: { ...board.supply, on: false }, parts: board.parts });
@@ -94,7 +115,12 @@ export function readMeter(
   solved: { ok: boolean; voltageAt: (h: HoleId) => number | undefined; currents: Record<string, number> },
 ): Reading {
   if (mode === 'off') return { text: '', unit: '' };
-  if (!both(probes)) return { text: '- - - -', unit: mode === 'A' ? 'mA' : mode };
+  if (!both(probes)) return { text: '- - - -', unit: mode === 'A' ? 'mA' : mode === 'diode' ? 'V' : mode };
+  if (mode === 'diode') {
+    const v = diodeDrop(board, probes.red, probes.black);
+    if (v === null) return { text: 'OL', unit: 'V', note: 'OL: nothing conducts this way at the meter’s 3 V. Try the probes the other way round.' };
+    return { text: v.toFixed(3), unit: 'V', value: v, note: v < 0.05 ? 'Near 0 V: the probes are joined (a short, or a wire).' : undefined };
+  }
   if (mode === 'V') {
     if (!solved.ok) return { text: '- - - -', unit: 'V' };
     const v = (solved.voltageAt(probes.red) ?? 0) - (solved.voltageAt(probes.black) ?? 0);

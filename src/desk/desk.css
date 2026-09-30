@@ -282,8 +282,11 @@
 .star-rules li.met .star-rule-stars { color: var(--r-pink); }
 
 /* ------------------------------------------------------------ free bench tray, scope controls */
-.tray-tools .tray-more { width: auto; padding: 6px 12px; background: var(--r-blue); color: var(--r-paper); font-size: 12px; box-shadow: 3px 3px 0 var(--r-pink); }
-.tray-tools .tray-more:hover { color: var(--r-paper); }
+.tray-pages { display: inline-grid; grid-template-columns: 1fr 1fr; gap: 3px; margin-left: 6px; }
+.tray-tools .tray-pages button { width: auto; min-width: 0; padding: 3px 8px; font-size: 11px; background: rgba(28, 10, 58, 0.72); color: var(--r-paper); box-shadow: none; }
+.tray-tools .tray-pages button:hover { color: var(--r-yellow); }
+.tray-tools .tray-pages button.on { background: var(--r-blue); box-shadow: 2px 2px 0 var(--r-pink); }
+.tray-knob { display: inline-flex; align-items: center; gap: 6px; color: var(--r-paper); font-family: var(--r-mono); font-size: 12px; font-weight: 700; }
 .tray-colors { display: inline-flex; gap: 6px; padding: 6px 8px; background: var(--r-paper); box-shadow: 3px 3px 0 var(--r-blue); }
 .tray-colors button { width: 22px; height: 22px; border-radius: 50%; border: 2px solid rgba(28, 10, 58, 0.25); padding: 0; }
 .tray-colors button.on { border-color: var(--r-ink); box-shadow: 0 0 0 2px var(--r-paper), 0 0 0 4px var(--r-pink); }

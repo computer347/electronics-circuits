@@ -17,7 +17,7 @@ import balanceTheBridge from './world0/09-balance-the-bridge.json';
 
 export class LevelError extends Error {}
 
-const TOOLS = new Set(['select', 'wire', 'resistor', 'led', 'button', 'battery', 'capacitor', 'generator', 'probe', 'scope']);
+const TOOLS = new Set(['select', 'wire', 'resistor', 'led', 'button', 'battery', 'capacitor', 'generator', 'diode', 'pot', 'npn', 'nmos', 'regulator', 'probe', 'scope']);
 
 export function parseLevel(raw: unknown): LevelDef {
   const l = raw as LevelDef;
@@ -28,7 +28,7 @@ export function parseLevel(raw: unknown): LevelDef {
   for (const p of l.board.parts) {
     if (ids.has(p.id)) fail(`duplicate part id ${p.id}`);
     ids.add(p.id);
-    for (const h of [p.h1, p.h2]) if (!HOLE_BY_ID.has(h)) fail(`${p.id} uses a hole that doesn't exist: ${h}`);
+    for (const h of [p.h1, p.h2, ...(p.h3 ? [p.h3] : [])]) if (!HOLE_BY_ID.has(h)) fail(`${p.id} uses a hole that doesn't exist: ${h}`);
   }
   for (const id of [...(l.locked ?? []), ...(l.pinned ?? [])]) if (!ids.has(id)) fail(`locked part ${id} isn't on the board`);
   for (const t of l.tools) if (!TOOLS.has(t)) fail(`unknown tool ${t}`);

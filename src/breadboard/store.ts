@@ -2,7 +2,8 @@ import { create } from 'zustand';
 import type { LedColor, Waveform } from '../sim';
 import type { HoleId } from './layout';
 import type { ScopeSetup } from '../instruments/scopeStore';
-import { DEFAULT_WAVE, type BoardPart, type BoardPartKind, type BoardState } from './model';
+import { hole, HOLES } from './layout';
+import { DEFAULT_WAVE, THREE_LEGGED, type BoardPart, type BoardPartKind, type BoardState } from './model';
 import { connectedGroup, occupiedHoles, translateParts, type MoveMode } from './move';
 
 export type Tool = 'select' | BoardPartKind | 'probe' | 'scope';
@@ -83,7 +84,14 @@ export interface BenchExtras {
   scopeSetup?: ScopeSetup;
 }
 
-const PREFIX: Record<BoardPartKind, string> = { resistor: 'R', led: 'LED', wire: 'W', button: 'SW', battery: 'B', capacitor: 'C', generator: 'FG' };
+const PREFIX: Record<BoardPartKind, string> = {
+  resistor: 'R', led: 'LED', wire: 'W', button: 'SW', battery: 'B', capacitor: 'C', generator: 'FG',
+  diode: 'D', pot: 'RV', npn: 'Q', nmos: 'Q', regulator: 'U',
+};
+/** What a new three-legged part is when it's placed. */
+const THREE_DEFAULTS: Partial<Record<BoardPartKind, Partial<BoardPart>>> = {
+  pot: { ohms: 10000, position: 0.5 }, npn: { marking: 'BC547' }, nmos: { marking: 'IRLZ44N' }, regulator: { marking: 'LM7805', vout: 5 },
+};
 const nextId = (kind: BoardPartKind, parts: BoardPart[]) => {
   const prefix = PREFIX[kind];
   let n = counters[prefix] ?? 0;
@@ -157,6 +165,17 @@ export const useBench = create<BenchStore>((set, get) => ({
       return set({ scopeProbes: { ...s.scopeProbes, [next]: h }, scopeNext: next === 'ch1' ? 'ch2' : 'ch1' });
     }
     if (occupiedHoles(s.parts).has(h)) return set({ notice: 'That hole already has a leg in it.' });
+    // Three-legged parts go in with one click: that hole and the next two along the row.
+    if (THREE_LEGGED.includes(s.tool as BoardPartKind)) {
+      const kind = s.tool as BoardPartKind;
+      const i = hole(h);
+      const next = (dx: number) => HOLES.find((q) => q.x === i.x + dx && q.z === i.z)?.id;
+      const h2 = next(1), h3 = next(2);
+      const taken = occupiedHoles(s.parts);
+      if (!h2 || !h3 || taken.has(h2) || taken.has(h3)) return set({ notice: 'It needs three free holes in a row, starting here.' });
+      const id = nextId(kind, s.parts);
+      return set({ parts: [...s.parts, { id, kind, h1: h, h2, h3, ...THREE_DEFAULTS[kind] }], pending: null, selected: id });
+    }
     if (!s.pending) return set({ pending: h, notice: null });
     if (s.pending === h) return set({ pending: null });
     const kind = s.tool;
@@ -167,6 +186,7 @@ export const useBench = create<BenchStore>((set, get) => ({
     if (kind === 'battery') part.volts = s.batteryVolts;
     if (kind === 'capacitor') part.farads = s.farads;
     if (kind === 'generator') part.wave = { ...s.wave };
+    if (kind === 'diode') { part.vf = 0.7; part.marking = '1N4148'; }
     if (kind === 'wire') part.wireColor = WIRE_COLORS[s.parts.filter((p) => p.kind === 'wire').length % WIRE_COLORS.length];
     set({ parts: [...s.parts, part], pending: null, selected: id });
   },
@@ -195,7 +215,9 @@ export const useBench = create<BenchStore>((set, get) => ({
   }),
   setShowStrips: (showStrips) => set({ showStrips }),
   updatePart: (id, patch) => set((s) => (s.locked.includes(id) ? { notice: 'That part belongs to the level, so it stays put.' } : { parts: s.parts.map((p) => (p.id === id ? { ...p, ...patch } : p)) })),
-  flipPart: (id) => set((s) => (s.locked.includes(id) ? { notice: 'That part belongs to the level, so it stays put.' } : { parts: s.parts.map((p) => (p.id === id ? { ...p, h1: p.h2, h2: p.h1 } : p)) })),
+  // Turning a part round swaps its end legs (a three-legged part keeps its middle leg).
+  flipPart: (id) => set((s) => (s.locked.includes(id) ? { notice: 'That part belongs to the level, so it stays put.' }
+    : { parts: s.parts.map((p) => (p.id !== id ? p : p.h3 ? { ...p, h1: p.h3, h3: p.h1 } : { ...p, h1: p.h2, h2: p.h1 })) })),
   openMenu: (partId, x, y, anchor) => set({ menu: { partId, x, y, anchor }, selected: partId }),
   closeMenu: () => set({ menu: null }),
   startMove: (partId, anchor, mode) => {
@@ -288,5 +310,32 @@ export const BENCH_PRESETS: Record<string, BoardState & BenchExtras> = {
     ],
     scope: { ch1: 'j13' },
     scopeSetup: { tdiv: 500e-3, ch1: { vdiv: 1, pos: -3, on: true }, ch2: { on: false }, trigger: { level: 1, source: 'ch1', mode: 'auto' } },
+  },
+  'Transistor switch': {
+    // A BC547 switching an LED: 10 kΩ into the base lets ~0.8 mA in, plenty to saturate it.
+    supply: { volts: 9, on: true },
+    parts: [
+      { id: 'Q1', kind: 'npn', h1: 'e10', h2: 'e11', h3: 'e12', marking: 'BC547' },
+      { id: 'W1', kind: 'wire', h1: 'a10', h2: 'T-:9', wireColor: '#2f6fe0' },
+      { id: 'R1', kind: 'resistor', h1: 'T+:5', h2: 'a11', ohms: 10000 },
+      { id: 'R2', kind: 'resistor', h1: 'T+:16', h2: 'a16', ohms: 470 },
+      { id: 'LED1', kind: 'led', h1: 'b16', h2: 'b12', color: 'green' },
+    ],
+  },
+  'Regulated 5 V': {
+    // An LM7805 turning the 9 V supply into 5 V; the pot divides that down, the LED shows it.
+    supply: { volts: 9, on: true },
+    parts: [
+      { id: 'U1', kind: 'regulator', h1: 'e6', h2: 'e7', h3: 'e8', vout: 5, marking: 'LM7805' },
+      { id: 'W1', kind: 'wire', h1: 'T+:5', h2: 'a6', wireColor: '#e8413c' },
+      { id: 'W2', kind: 'wire', h1: 'a7', h2: 'T-:7', wireColor: '#2f6fe0' },
+      { id: 'W3', kind: 'wire', h1: 'a8', h2: 'a14', wireColor: '#ffb000' },
+      { id: 'RV1', kind: 'pot', h1: 'e14', h2: 'e15', h3: 'e16', ohms: 10000, position: 0.3 },
+      { id: 'W4', kind: 'wire', h1: 'a16', h2: 'T-:16', wireColor: '#2f6fe0' },
+      { id: 'D1', kind: 'diode', h1: 'j15', h2: 'j19', vf: 0.7, marking: '1N4148' },
+      { id: 'R1', kind: 'resistor', h1: 'g19', h2: 'g23', ohms: 220 },
+      { id: 'LED1', kind: 'led', h1: 'h23', h2: 'h25', color: 'yellow' },
+      { id: 'W5', kind: 'wire', h1: 'j25', h2: 'T-:24', wireColor: '#2f6fe0' },
+    ],
   },
 };

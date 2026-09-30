@@ -84,6 +84,11 @@ export function partPoints(part: BoardPart): V3[] {
     }
     case 'wire':
       return wireCurve(part.h1, part.h2).getSpacedPoints(24).map((p) => [p.x, p.y, p.z] as V3);
+    default: {
+      // Diodes and three-legged parts: up one leg, over the body, down the other.
+      const m = ledMid(part);
+      return [a, [a[0], 0.5, a[2]], [m[0], 0.8, m[2]], [b[0], 0.5, b[2]], b];
+    }
   }
 }
 

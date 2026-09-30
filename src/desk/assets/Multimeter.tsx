@@ -8,7 +8,7 @@ import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { reducedMotion, useEased } from '../anim';
-import { DIAL, nextMode, type MeterMode, type Reading } from '../meter';
+import { DIAL, DIAL_LABEL, nextMode, type MeterMode, type Reading } from '../meter';
 import { drawLcd } from './textures';
 
 export const METER = { w: 0.09, d: 0.17, h: 0.032 } as const;
@@ -16,7 +16,7 @@ export const METER = { w: 0.09, d: 0.17, h: 0.032 } as const;
 export const JACKS = { com: new THREE.Vector3(-0.018, METER.h + 0.004, 0.066), v: new THREE.Vector3(0.018, METER.h + 0.004, 0.066) };
 
 /** Dial angle (radians, clockwise from pointing at the display) for each mode. */
-const DIAL_ANGLE: Record<MeterMode, number> = { off: -1.05, V: -0.35, 'Ω': 0.35, A: 1.05 };
+const DIAL_ANGLE: Record<MeterMode, number> = { off: -1.2, V: -0.6, 'Ω': 0, diode: 0.6, A: 1.2 };
 const DIAL_R = 0.022;
 const LABEL_R = 0.034;
 const DIAL_Z = 0.016;
@@ -32,9 +32,9 @@ function dialFaceTexture() {
   for (const m of DIAL) {
     const a = DIAL_ANGLE[m];
     const x = 256 + Math.sin(a) * 180, y = 256 - Math.cos(a) * 180;
-    g.fillStyle = m === 'off' ? '#bdbdbd' : m === 'V' ? '#ffe800' : m === 'Ω' ? '#9fd0f2' : '#ff48b0';
-    g.font = `bold ${m === 'off' ? 46 : 70}px 'Space Mono', monospace`;
-    g.fillText(m === 'off' ? 'OFF' : m, x, y);
+    g.fillStyle = m === 'off' ? '#bdbdbd' : m === 'V' ? '#ffe800' : m === 'Ω' ? '#9fd0f2' : m === 'diode' ? '#7ee0a1' : '#ff48b0';
+    g.font = `bold ${m === 'off' ? 46 : m === 'diode' ? 54 : 70}px 'Space Mono', monospace`;
+    g.fillText(DIAL_LABEL[m], x, y);
     g.strokeStyle = '#d8d8d8'; g.lineWidth = 8;
     g.beginPath(); g.moveTo(256 + Math.sin(a) * 118, 256 - Math.cos(a) * 118); g.lineTo(256 + Math.sin(a) * 138, 256 - Math.cos(a) * 138); g.stroke();
   }

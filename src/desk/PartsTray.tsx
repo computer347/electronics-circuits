@@ -10,7 +10,10 @@ import { formatSI } from '../lib/units';
 import type { LevelDef } from '../levels/types';
 
 const BOX_TOOLS: BoardPartKind[] = ['resistor', 'wire', 'led', 'capacitor', 'button'];
-export const TOOL_LABEL: Partial<Record<Tool, string>> = { select: 'Hand', resistor: 'Resistor', wire: 'Wire', led: 'LED', capacitor: 'Capacitor', button: 'Button', battery: 'Battery', generator: 'Signal gen' };
+export const TOOL_LABEL: Partial<Record<Tool, string>> = {
+  select: 'Hand', resistor: 'Resistor', wire: 'Wire', led: 'LED', capacitor: 'Capacitor', button: 'Button', battery: 'Battery', generator: 'Signal gen',
+  diode: 'Diode', pot: 'Pot', npn: 'Transistor', nmos: 'MOSFET', regulator: 'Regulator',
+};
 const FLIPPABLE: BoardPartKind[] = ['led', 'capacitor', 'battery'];
 
 export function ToolIcon({ tool }: { tool: Tool }) {
@@ -21,6 +24,10 @@ export function ToolIcon({ tool }: { tool: Tool }) {
   if (tool === 'capacitor') return <svg viewBox="0 0 32 20" aria-hidden><rect x="10" y="2" width="12" height="15" rx="3" fill="#2f6fc0" /><path d="M14 17v3M18 17v3" {...s} /></svg>;
   if (tool === 'battery') return <svg viewBox="0 0 32 20" aria-hidden><rect x="6" y="5" width="18" height="11" rx="1.5" fill="#1b1b1b" /><rect x="6" y="5" width="7" height="11" fill="#e57b23" /><rect x="24" y="8" width="3" height="5" fill="#999" /></svg>;
   if (tool === 'generator') return <svg viewBox="0 0 32 20" aria-hidden><rect x="3" y="2" width="26" height="16" rx="2" fill="#2b2e31" /><path d="M6 13 l4 -6 l4 6 l4 -6 l4 6 l4 -6" fill="none" stroke="#ffd21f" strokeWidth="2" /></svg>;
+  if (tool === 'diode') return <svg viewBox="0 0 32 20" aria-hidden><path d="M1 10h9M22 10h9" {...s} /><rect x="10" y="6" width="12" height="8" rx="3" fill="#e0703a" /><rect x="18" y="6" width="2.5" height="8" fill="#111" /></svg>;
+  if (tool === 'pot') return <svg viewBox="0 0 32 20" aria-hidden><rect x="7" y="6" width="18" height="11" rx="1.5" fill="#1f5fa8" /><circle cx="16" cy="7" r="5" fill="#1c1c1e" /><path d="M16 7 V3" stroke="#ffe800" strokeWidth="1.6" /></svg>;
+  if (tool === 'npn') return <svg viewBox="0 0 32 20" aria-hidden><path d="M9 14 V6 a7 7 0 0 1 14 0 V14 z" fill="#1c1c1e" /><path d="M12 14v6M16 14v6M20 14v6" {...s} /></svg>;
+  if (tool === 'nmos' || tool === 'regulator') return <svg viewBox="0 0 32 20" aria-hidden><rect x="9" y="1" width="14" height="6" fill="#b8bec6" /><rect x="9" y="6" width="14" height="9" fill="#1c1c1e" /><path d="M12 15v5M16 15v5M20 15v5" {...s} /><text x="16" y="13" fontSize="5" fill="#ddd" textAnchor="middle">{tool === 'nmos' ? 'FET' : '5V'}</text></svg>;
   if (tool === 'button') return <svg viewBox="0 0 32 20" aria-hidden><rect x="8" y="6" width="16" height="10" fill="#222" /><circle cx="16" cy="11" r="3.5" fill="#0078bf" /></svg>;
   return <svg viewBox="0 0 32 20" aria-hidden><path d="M12 18 V6 a2 2 0 0 1 4 0 v6 M16 11 V4 a2 2 0 0 1 4 0 v8 M20 11 a2 2 0 0 1 4 0 v3 c0 4 -3 5 -6 5 h-3 c-2 0 -4 -2 -5 -4 l-2 -4 a2 2 0 0 1 3 -2 l1 2" {...s} /></svg>;
 }

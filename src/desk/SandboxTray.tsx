@@ -1,11 +1,11 @@
 /**
  * The free bench's parts tray: every part, but never more than four at a glance. The common
- * ones sit in the tray (hand, wire, resistor, LED); a "More" drawer holds the button, battery,
- * capacitor and signal generator. The part in hand shows its value picker; a selected part
+ * ones sit on the first page (hand, wire, resistor, LED); three more pages hold the rest,
+ * grouped the way a parts drawer is: passives, semiconductors, sources. The part in hand shows its value picker; a selected part
  * can be changed, turned round or taken out. Example circuits and the supply voltage live in
  * a small row underneath.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { isElectrolytic, type BoardPart } from '../breadboard/model';
 import { BENCH_PRESETS, useBench, type Tool } from '../breadboard/store';
 import { useScope } from '../instruments/scopeStore';
@@ -22,8 +22,20 @@ const FREQS = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000];
 const LEDS: LedColor[] = ['red', 'yellow', 'green', 'blue', 'white'];
 const LED_HEX: Record<LedColor, string> = { red: '#ff3b30', yellow: '#ffd60a', green: '#39d86a', blue: '#3a8bff', white: '#f5f5ff' };
 const SHAPES: WaveShape[] = ['square', 'sine', 'triangle'];
-const MAIN: Tool[] = ['select', 'wire', 'resistor', 'led'];
-const MORE: Tool[] = ['button', 'battery', 'capacitor', 'generator'];
+const PAGES: { name: string; tools: Tool[] }[] = [
+  { name: 'Basics', tools: ['select', 'wire', 'resistor', 'led'] },
+  { name: 'Passives', tools: ['button', 'capacitor', 'pot'] },
+  { name: 'Semis', tools: ['diode', 'npn', 'nmos'] },
+  { name: 'Sources', tools: ['battery', 'generator', 'regulator'] },
+];
+const POT_OHMS = [1000, 10000, 100000];
+const POSITIONS = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1];
+/** Regulators you can buy, by output voltage. */
+const REGULATORS: Record<number, string> = { 3.3: 'LM1117-3.3', 5: 'LM7805', 9: 'LM7809', 12: 'LM7812' };
+/** How a three-legged part goes in, leg by leg, as the hint under the tray says it. */
+const LEG_HINT: Partial<Record<Tool, string>> = {
+  pot: 'end · wiper · end', npn: 'E · B · C, flat face away from you', nmos: 'G · D · S', regulator: 'IN · GND · OUT',
+};
 const fmtF = (f: number) => (f >= 1e-6 ? `${Number((f * 1e6).toPrecision(3))} µF` : formatSI(f, 'F'));
 
 /** ‹ value › over a fixed list. */
@@ -54,6 +66,18 @@ function ValueEditor({ kind, part, onPatch }: { kind: Tool; part?: BoardPart; on
   if (kind === 'led') return <LedColors value={part?.color ?? s.ledColor} onChange={(c) => (part ? onPatch({ color: c }) : b.setLedColor(c))} />;
   if (kind === 'capacitor') return <Step value={part?.farads ?? s.farads} values={FARADS} fmt={fmtF} onChange={(f) => (part ? onPatch({ farads: f }) : b.setFarads(f))} />;
   if (kind === 'battery') return <Step value={part?.volts ?? s.batteryVolts} values={VOLTS} fmt={(v) => `${v} V`} onChange={(v) => (part ? onPatch({ volts: v }) : b.setBatteryVolts(v))} />;
+  if (kind === 'pot') {
+    const set = (patch: Partial<BoardPart>) => (part ? onPatch(patch) : undefined);
+    return (
+      <>
+        <Step value={part?.ohms ?? 10000} values={POT_OHMS} fmt={(o) => formatSI(o, 'Ω')} onChange={(o) => set({ ohms: o })} />
+        {part && <label className="tray-knob">knob <Step value={part.position ?? 0.5} values={POSITIONS} fmt={(k) => `${Math.round(k * 100)} %`} onChange={(k) => set({ position: k })} /></label>}
+      </>
+    );
+  }
+  if (kind === 'regulator' && part) {
+    return <Step value={part.vout ?? 5} values={[3.3, 5, 9, 12]} fmt={(v) => `${REGULATORS[v] ?? ''} · ${v} V`} onChange={(v) => onPatch({ vout: v, marking: REGULATORS[v] })} />;
+  }
   if (kind === 'generator') {
     const w = part?.wave ?? s.wave;
     const set = (patch: Partial<typeof w>) => (part ? onPatch({ wave: { ...w, ...patch } }) : b.setWave({ ...w, ...patch }));
@@ -74,25 +98,29 @@ export function SandboxTray() {
   const parts = useBench((s) => s.parts);
   const supply = useBench((s) => s.supply);
   const bench = useBench.getState();
-  const [more, setMore] = useState(MORE.includes(tool));
+  const [page, setPage] = useState(Math.max(0, PAGES.findIndex((p) => p.tools.includes(tool))));
+  // Keep the drawer that holds the part in hand open, however it was picked up.
+  useEffect(() => { const i = PAGES.findIndex((p) => p.tools.includes(tool)); if (i > 0) setPage(i); }, [tool]);
   const part = parts.find((p) => p.id === selected);
-  const flippable = !!part && (part.kind === 'led' || part.kind === 'battery' || isElectrolytic(part));
+  const flippable = !!part && (part.kind === 'led' || part.kind === 'battery' || part.kind === 'diode' || !!part.h3 || isElectrolytic(part));
 
   return (
     <div className="tray">
       <div className="tray-tools" role="toolbar" aria-label="Parts">
-        {(more ? MORE : MAIN).map((t) => (
+        {PAGES[page]!.tools.map((t) => (
           <button key={t} className={tool === t ? 'on' : ''} onClick={() => bench.setTool(t)} title={TOOL_LABEL[t]}>
             <ToolIcon tool={t} /><span>{TOOL_LABEL[t]}</span>
           </button>
         ))}
-        <button className="tray-more" onClick={() => setMore(!more)} aria-expanded={more}>{more ? '‹ Back' : 'More ›'}</button>
+        <span className="tray-pages" role="tablist" aria-label="Part drawers">
+          {PAGES.map((p, i) => <button key={p.name} role="tab" aria-selected={i === page} className={i === page ? 'on' : ''} onClick={() => setPage(i)}>{p.name}</button>)}
+        </span>
       </div>
       <div className="tray-context">
         {tool !== 'select' && tool !== 'probe' && tool !== 'scope' && (
           <>
             <ValueEditor kind={tool} onPatch={() => {}} />
-            <span className="desk-pict"><span className="dot pink" /> {pending ? 'now the second hole' : 'click two holes'}</span>
+            <span className="desk-pict"><span className="dot pink" /> {LEG_HINT[tool] ? `click the first of three holes in a row: ${LEG_HINT[tool]}` : pending ? 'now the second hole' : 'click two holes'}</span>
           </>
         )}
         {tool === 'select' && part && (

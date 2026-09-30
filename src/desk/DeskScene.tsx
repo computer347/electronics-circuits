@@ -315,11 +315,11 @@ function PartLabels({ analysis }: { analysis: BoardAnalysis }) {
   return (
     <>
       {parts.filter((p) => p.kind !== 'wire' || p.id === selected).map((p) => {
-        const a = hole(p.h1), b = hole(p.h2);
+        const a = hole(p.h1), b = hole(p.h3 ?? p.h2);
         const info = partInfo(p, analysis);
         const open = p.id === selected;
         return (
-          <Html key={p.id} position={[(a.x + b.x) / 2, open ? 2.6 : 1.9, (a.z + b.z) / 2]} center zIndexRange={[9, 0]} style={{ pointerEvents: 'none' }} portal={(layer ?? undefined) as RefObject<HTMLElement> | undefined}>
+          <Html key={p.id} position={[(a.x + b.x) / 2, open ? 2.6 : 1.9, (a.z + b.z) / 2]} center zIndexRange={open ? [30, 20] : [9, 0]} style={{ pointerEvents: 'none' }} portal={(layer ?? undefined) as RefObject<HTMLElement> | undefined}>
             {open ? (
               <div className="part-card">
                 <b>{p.id}</b>

@@ -47,7 +47,8 @@ export function PartMotion({ part, still, children }: { part: BoardPart; still?:
   useLayoutEffect(() => {
     if (generation !== seenGeneration) { seenGeneration = generation; seenGenerationAt = performance.now(); lastLegs.clear(); }
     const prev = lastLegs.get(part.id);
-    const now: Legs = { h1: part.h1, h2: part.h2 };
+    // A three-legged part turns about its middle leg, so its end legs stand for it.
+    const now: Legs = { h1: part.h1, h2: part.h3 ?? part.h2 };
     lastLegs.set(part.id, now);
     if (still || reduced()) return;
     const t0 = performance.now();
@@ -57,7 +58,7 @@ export function PartMotion({ part, still, children }: { part: BoardPart; still?:
       anim.current = { kind: 'drop', t0 };
     } else if (prev.h1 === now.h2 && prev.h2 === now.h1) anim.current = { kind: 'flip', t0 };
     else if (prev.h1 !== now.h1 || prev.h2 !== now.h2) anim.current = { kind: 'move', t0, from: prev };
-  }, [part.id, part.h1, part.h2, still, generation]);
+  }, [part.id, part.h1, part.h2, part.h3, still, generation]);
 
   useFrame(() => {
     const group = g.current;

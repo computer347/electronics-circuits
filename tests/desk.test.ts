@@ -161,6 +161,16 @@ describe('multimeter modes', () => {
     expect(read(fixedL2(), 'A', 'T+:2', 'T-:2').text).toBe('FUSE');
   });
 
+  it('tests a diode: about 1.8 V across a red LED one way, OL the other', () => {
+    const fwd = read(fixedL2(), 'diode', 'h12', 'h14');
+    const back = read(fixedL2(), 'diode', 'h14', 'h12');
+    // Whichever way the LED faces, one direction conducts and the other reads OL.
+    const [on, off] = fwd.text === 'OL' ? [back, fwd] : [fwd, back];
+    expect(off.text).toBe('OL');
+    expect(on.value!).toBeGreaterThan(1.5);
+    expect(on.value!).toBeLessThan(2.2);
+  });
+
   it('shows nothing when switched off', () => {
     expect(read(fixedL2(), 'off', 'h12', 'h14').text).toBe('');
   });
@@ -237,8 +247,8 @@ describe('meter dial and part cards', () => {
   it('clicks round every mode on the dial, wrapping', () => {
     const seen: string[] = [];
     let m: MeterMode = 'V';
-    for (let i = 0; i < 4; i++) { m = nextMode(m); seen.push(m); }
-    expect(seen).toEqual(['Ω', 'A', 'off', 'V']);
+    for (let i = 0; i < 5; i++) { m = nextMode(m); seen.push(m); }
+    expect(seen).toEqual(['Ω', 'diode', 'A', 'off', 'V']);
     expect(nextMode('off', -1)).toBe('A');
   });
 

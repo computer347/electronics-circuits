@@ -79,7 +79,7 @@ export function resistorWidth(ohms: number): number {
 function linkKind(room: Room): LinkKind {
   switch (room.kind) {
     case 'source': case 'battery': case 'generator': return 'stair';
-    case 'led': return 'door';
+    case 'led': case 'diode': case 'transistor': return 'door';
     case 'button': return 'bridge';
     case 'capacitor': return 'reservoir';
     default: return 'ramp';

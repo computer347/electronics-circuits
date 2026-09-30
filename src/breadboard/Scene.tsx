@@ -12,6 +12,7 @@ import { isElectrolytic, LED_MAX_AMPS, type BoardAnalysis, type BoardPart, type 
 import { translateParts } from './move';
 import { PartMotion } from './PartMotion';
 import { CAP_Y, ledMid, wireCurve } from './paths';
+import { Potentiometer, TO220, TO92 } from '../parts3d/tht';
 import { useBench } from './store';
 
 const LED_HEX = { red: '#ff3b30', yellow: '#ffd60a', green: '#39ff88', blue: '#3a8bff', white: '#f5f5ff' } as const;
@@ -184,7 +185,7 @@ function usePartHandlers(part: BoardPart) {
       e.nativeEvent.preventDefault();
       const p = boardPoint(e);
       const d = (h: HoleId) => { const i = hole(h); return Math.hypot(i.x - p.x, i.z - p.z); };
-      const anchor = d(part.h1) <= d(part.h2) ? part.h1 : part.h2;
+      const anchor = [part.h1, part.h2, ...(part.h3 ? [part.h3] : [])].reduce((m, h) => (d(h) < d(m) ? h : m));
       st.openMenu(part.id, e.nativeEvent.clientX, e.nativeEvent.clientY, anchor);
     },
   };
@@ -220,6 +221,86 @@ function Resistor({ part, mark }: { part: BoardPart; mark?: string }) {
             <meshStandardMaterial color={c} roughness={0.5} metalness={c === '#c9a227' ? 0.7 : 0} />
           </mesh>
         ))}
+      </group>
+    </group>
+  );
+}
+
+/** A small signal diode: orange glass, black band at the cathode (h2). */
+function Diode({ part, mark }: { part: BoardPart; mark?: string }) {
+  const handlers = usePartHandlers(part);
+  const a = new THREE.Vector3(...at(part.h1)), b = new THREE.Vector3(...at(part.h2));
+  const u = b.clone().sub(a).normalize();
+  const bodyLen = Math.min(1.5, Math.max(a.distanceTo(b) - 0.5, 0.6));
+  const y = 0.45;
+  const mid = a.clone().add(b).multiplyScalar(0.5);
+  const e1 = mid.clone().addScaledVector(u, -bodyLen / 2), e2 = mid.clone().addScaledVector(u, bodyLen / 2);
+  const quat = new THREE.Quaternion().setFromUnitVectors(Y_AXIS, u);
+  return (
+    <group {...handlers}>
+      <Segment from={[a.x, 0, a.z]} to={[a.x, y, a.z]} />
+      <Segment from={[a.x, y, a.z]} to={[e1.x, y, e1.z]} />
+      <Segment from={[b.x, 0, b.z]} to={[b.x, y, b.z]} />
+      <Segment from={[b.x, y, b.z]} to={[e2.x, y, e2.z]} />
+      <group position={[mid.x, y, mid.z]} quaternion={quat}>
+        <mesh>
+          <capsuleGeometry args={[0.16, bodyLen - 0.32, 6, 14]} />
+          <meshStandardMaterial color="#e0703a" roughness={0.2} transparent opacity={0.9} emissive={mark ?? '#000'} emissiveIntensity={mark ? 0.45 : 0} />
+        </mesh>
+        <mesh position={[0, bodyLen * 0.3, 0]}>
+          <cylinderGeometry args={[0.17, 0.17, 0.12, 16]} />
+          <meshStandardMaterial color="#111" roughness={0.5} />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
+/** Millimetre models from the parts catalogue, at board scale (1 unit = 2.54 mm). */
+const MM = 1 / 2.54;
+/**
+ * A three-legged part standing in three holes in a row. The catalogue model sits above the
+ * middle hole; its legs are bent out to the holes, like a TO-92 pushed into a breadboard.
+ */
+function ThreeLegged({ part, mark }: { part: BoardPart; mark?: string }) {
+  const handlers = usePartHandlers(part);
+  if (!part.h3) return null;
+  const a = hole(part.h1), m = hole(part.h2), c = hole(part.h3);
+  const yaw = Math.atan2(-(c.z - a.z), c.x - a.x);
+  // Where each package's legs come out, in mm along the row, and how high the body sits.
+  // The board's own parts are drawn a touch small so the holes stay readable; the big
+  // packages follow suit (`k`) so a TO-220 doesn't hide half the board.
+  const spec = part.kind === 'npn' ? { legs: [-1.27, 0, 1.27], foot: 2, lift: 1.3, z: 0, k: 1 }
+    : part.kind === 'pot' ? { legs: [-2.5, 0, 2.5], foot: 3, lift: 0.9, z: 4.5, k: 0.7 }
+    : { legs: [-2.54, 0, 2.54], foot: 3, lift: 0.9, z: 0, k: 0.6 };
+  const body = part.kind === 'npn' ? <TO92 marking={part.marking ?? 'BC547'} />
+    : part.kind === 'pot' ? <Potentiometer />
+    : <TO220 marking={part.marking ?? (part.kind === 'regulator' ? 'LM7805' : 'IRLZ44N')} />;
+  const s = MM * spec.k;
+  const footY = spec.lift - spec.foot * s;
+  const cos = Math.cos(yaw), sin = Math.sin(yaw);
+  // A point `along` mm from the middle hole, along the row.
+  const alongRow = (along: number, y: number): V3 => [m.x + along * s * cos, y, m.z - along * s * sin];
+  const holes = [a, m, c];
+  return (
+    <group {...handlers}>
+      {holes.map((h, i) => {
+        const top = alongRow(spec.legs[i]!, footY);
+        return (
+          <group key={i}>
+            <Segment from={[h.x, 0, h.z]} to={[h.x, footY * 0.5, h.z]} />
+            <Segment from={[h.x, footY * 0.5, h.z]} to={top} />
+          </group>
+        );
+      })}
+      <group position={[m.x, spec.lift, m.z]} rotation={[0, yaw, 0]}>
+        <group scale={s} position={[0, 0, -spec.z * s]}>{body}</group>
+        {mark && (
+          <mesh position={[0, 1.2, 0]}>
+            <boxGeometry args={[2.4, 2.8, 2]} />
+            <meshBasicMaterial color={mark} transparent opacity={0.22} depthWrite={false} />
+          </mesh>
+        )}
       </group>
     </group>
   );
@@ -510,6 +591,8 @@ export function BreadboardContents({ analysis, dynamic }: { analysis: BoardAnaly
           case 'battery': el = <Battery part={p} mark={mark} color="#ff48b0" />; break;
           case 'capacitor': el = <Capacitor part={p} mark={mark} />; break;
           case 'generator': el = <Generator part={p} mark={mark} color="#ffd21f" />; break;
+          case 'diode': el = <Diode part={p} mark={mark} />; break;
+          case 'pot': case 'npn': case 'nmos': case 'regulator': el = <ThreeLegged part={p} mark={mark} />; break;
         }
         // Parts being dragged follow the pointer as they are; everything else animates its moves.
         return <PartMotion key={p.id} part={p} still={movingIds.has(p.id)}>{el}</PartMotion>;

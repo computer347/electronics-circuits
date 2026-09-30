@@ -4,7 +4,7 @@
  */
 
 import { HOLES, hole, type HoleId } from './layout';
-import type { BoardPart } from './model';
+import { legsOf, type BoardPart } from './model';
 
 const isRail = (h: HoleId) => h.includes(':');
 const key = (x: number, z: number) => `${x.toFixed(1)},${z.toFixed(1)}`;
@@ -20,8 +20,7 @@ export function occupiedHoles(parts: BoardPart[], except: ReadonlySet<string> = 
   const s = new Set<HoleId>();
   for (const p of parts) {
     if (except.has(p.id)) continue;
-    s.add(p.h1);
-    s.add(p.h2);
+    for (const h of legsOf(p)) s.add(h);
   }
   return s;
 }
@@ -36,7 +35,7 @@ export function connectedGroup(parts: BoardPart[], id: string): string[] {
   const group = new Set<string>([id]);
   const strips = new Set<string>();
   const addStrips = (p: BoardPart) => {
-    for (const h of [p.h1, p.h2]) if (!isRail(h)) strips.add(hole(h).strip);
+    for (const h of legsOf(p)) if (!isRail(h)) strips.add(hole(h).strip);
   };
   addStrips(start);
   let grew = true;
@@ -44,7 +43,7 @@ export function connectedGroup(parts: BoardPart[], id: string): string[] {
     grew = false;
     for (const p of parts) {
       if (group.has(p.id)) continue;
-      if ([p.h1, p.h2].some((h) => !isRail(h) && strips.has(hole(h).strip))) {
+      if (legsOf(p).some((h) => !isRail(h) && strips.has(hole(h).strip))) {
         group.add(p.id);
         addStrips(p);
         grew = true;
@@ -92,16 +91,16 @@ export function translateParts(
 
   const out = parts.map((p) => {
     if (!moving.has(p.id)) return p;
-    const h1 = shift(p.h1), h2 = shift(p.h2);
-    for (const h of [h1, h2]) {
-      if (taken.has(h) && !(mode === 'group' && isRail(h) && (h === p.h1 || h === p.h2))) {
+    const h1 = shift(p.h1), h2 = shift(p.h2), h3 = p.h3 ? shift(p.h3) : undefined;
+    for (const h of h3 ? [h1, h2, h3] : [h1, h2]) {
+      if (taken.has(h) && !(mode === 'group' && isRail(h) && legsOf(p).includes(h))) {
         valid = false; reason ??= `Hole ${hole(h).label} is already in use.`;
       }
       if (used.has(h)) { valid = false; reason ??= 'Two legs would share a hole.'; }
       used.add(h);
     }
     if (h1 === h2) { valid = false; reason ??= 'Both legs would be in the same hole.'; }
-    return { ...p, h1, h2 };
+    return h3 ? { ...p, h1, h2, h3 } : { ...p, h1, h2 };
   });
 
   return { parts: out, valid, ...(reason && { reason }) };
