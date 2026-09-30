@@ -9,6 +9,7 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import '../desk/desk.css';
+import { useWallet } from '../jobs/wallet';
 import { ARDUINO_UNO, Board, type BoardDef } from '../parts3d/boards';
 import { BLINK, checkCoding, codingJobById, type CodingJob } from './jobs';
 import { codeOf, compile, levelAt, newNode, NODE_INFO, run, sketch, type CompileResult, type NodeKind, type Program, type ProgramNode } from './program';
@@ -171,7 +172,11 @@ export function CodingBench({ jobId, onExit }: { jobId: string; onExit: () => vo
       timer.current = window.setTimeout(() => {
         const r = checkCoding(job, sent);
         setLog((l) => [...l, r.pass ? `✓ ${r.message}` : `✗ ${r.message}`]);
-        if (r.pass) setResult({ stars: failed === 0 && c.problems.length === 0 ? 3 : failed <= 2 ? 2 : 1, message: r.message });
+        if (r.pass) {
+          const stars = failed === 0 && c.problems.length === 0 ? 3 : failed <= 2 ? 2 : 1;
+          setResult({ stars, message: r.message });
+          useWallet.getState().complete(job.id, stars);
+        }
         else setFailed((f) => f + 1);
       }, 2400);
     }, UPLOAD_MS);

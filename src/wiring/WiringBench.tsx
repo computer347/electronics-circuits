@@ -9,6 +9,7 @@ import { Canvas } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import '../desk/desk.css';
+import { useWallet } from '../jobs/wallet';
 import { Board } from '../parts3d/boards';
 import { NETLISTS, type PadSpot } from '../repair/netlists';
 import { powerUp, wireColor, wiringJobById, wiringSpots, DHT11_JOB, type Wire, type WiringJob, type WiringResult } from './wiring';
@@ -99,7 +100,11 @@ export function WiringBench({ jobId, onExit }: { jobId: string; onExit: () => vo
     tick.current = window.setInterval(() => {
       setSerial((s) => [...s.slice(-8), r.serial[i % r.serial.length]!]);
       i++;
-      if (r.outcome === 'ok' && i === 2) setResult({ stars: cooked ? 1 : powerUps === 0 ? 3 : 2 });
+      if (r.outcome === 'ok' && i === 2) {
+        const stars = cooked ? 1 : powerUps === 0 ? 3 : 2;
+        setResult({ stars });
+        useWallet.getState().complete(job.id, stars);
+      }
     }, 1100);
   };
 

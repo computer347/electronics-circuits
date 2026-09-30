@@ -4,6 +4,7 @@
  */
 import { create } from 'zustand';
 import type { MeterMode } from '../desk/meter';
+import { useWallet } from '../jobs/wallet';
 import { repairJobById } from './jobs';
 import { act, checkRepair, repairReading, repairStars, startRepair, type RepairAction, type RepairJob, type RepairState } from './repair';
 
@@ -62,7 +63,7 @@ export const useRepair = create<RepairUI>((set, get) => {
       // Powering up is the test: if it works, the job's done.
       if (a.kind === 'power' && a.on && r.state.power) {
         const c = checkRepair(job, r.state);
-        if (c.pass) { const s = repairStars(job, r.state); set({ result: { ...s, message: c.message } }); }
+        if (c.pass) { const s = repairStars(job, r.state); set({ result: { ...s, message: c.message } }); useWallet.getState().complete(job.id, s.stars); }
         else if (!r.notice) set({ notice: c.message });
       }
     },

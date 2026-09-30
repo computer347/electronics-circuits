@@ -455,3 +455,40 @@
 .wiring-monitor .dim { color: #8f9a96; }
 .wiring-monitor .desk-chip { margin-top: 8px; font-size: 16px; padding: 6px 12px; }
 .wiring-smoke { padding: 4px 10px; background: #3a3a36; color: #ffd166; font-family: var(--r-mono); font-weight: 700; font-size: 12px; box-shadow: 0 0 18px 8px rgba(140, 140, 130, 0.7); }
+
+/* ------------------------------------------------------------ client jobs */
+.workshop-wallet { color: var(--r-blue); }
+.workshop-cards em.done { color: var(--r-blue); }
+.riso.client { grid-template-rows: auto 1fr auto; }
+.client .desk-back { position: relative; top: 0; left: 0; justify-self: start; background: var(--r-ink); color: var(--r-paper); z-index: 7; }
+.client-clock { position: absolute; top: clamp(20px, 5vw, 64px); right: clamp(20px, 5vw, 64px); padding: 6px 12px; background: #121416; color: #ff5a4f; font-family: var(--r-mono); font-weight: 700; font-size: 28px; letter-spacing: 0.08em; box-shadow: 4px 4px 0 var(--r-blue); z-index: 7; }
+.client-stage { position: relative; display: grid; justify-items: center; align-content: end; min-height: 0; }
+.client-portrait { width: auto; height: min(250px, 30vh); flex-shrink: 0; }
+.client-tag { position: absolute; left: calc(50% + min(120px, 14vh)); bottom: 110px; display: grid; justify-items: start; padding: 6px 14px; background: var(--r-paper); box-shadow: 4px 4px 0 var(--r-pink); z-index: 2; }
+.client-tag b { font-family: var(--r-display); font-weight: 400; font-size: 28px; line-height: 1; }
+.client-tag span { font-size: 12px; font-weight: 700; }
+.client-counter { width: min(760px, 92vw); height: 70px; background: #d9cdb4; border-top: 6px solid var(--r-ink); display: grid; justify-items: center; }
+.client-item { width: 170px; margin-top: -48px; }
+.dialogue { position: relative; z-index: 8; justify-self: center; width: min(760px, 100%); padding: 16px 20px 12px; background: #fffdf6; color: var(--r-ink); font-family: var(--r-mono); box-shadow: 6px 6px 0 var(--r-blue); cursor: pointer; user-select: none; }
+.dialogue.you { box-shadow: 6px 6px 0 var(--r-pink); }
+.dialogue-who { margin: 0 0 6px; font-family: var(--r-display); font-size: 22px; letter-spacing: 0.03em; color: var(--r-pink); }
+.dialogue.you .dialogue-who { color: var(--r-blue); }
+.dialogue-text { margin: 0; min-height: 3em; font-size: 17px; line-height: 1.5; }
+.dialogue-rest { visibility: hidden; }
+.dialogue-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 12px; font-weight: 700; color: #5b5068; }
+.dialogue-hold { position: relative; padding: 3px 8px 5px; background: rgba(28, 10, 58, 0.06); }
+.dialogue-hold i { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--r-pink); }
+.dialogue-hold kbd { padding: 0 4px; border: 1px solid currentColor; }
+.client-take { position: relative; z-index: 8; justify-self: center; width: min(640px, 100%); padding: 18px 20px 90px; background: #fffdf6; box-shadow: 6px 6px 0 var(--r-blue); font-size: 14px; line-height: 1.5; }
+.client-take h2 { margin: 2px 0 8px; font-family: var(--r-display); font-weight: 400; font-size: 34px; }
+.client-take .desk-main { position: absolute; right: 18px; bottom: 18px; }
+.client-banner { position: fixed; left: 50%; top: 78px; transform: translateX(-50%); z-index: 13; display: flex; gap: 12px; align-items: center; padding: 6px 12px; background: var(--r-paper); color: var(--r-ink); font-family: var(--r-mono); font-size: 13px; font-weight: 700; box-shadow: 4px 4px 0 var(--r-pink); white-space: nowrap; }
+.client-banner b { font-family: var(--r-display); font-weight: 400; font-size: 16px; padding: 1px 6px; background: var(--r-pink); color: var(--r-paper); }
+.client-banner-clock { padding: 1px 6px; background: #121416; color: #ff5a4f; letter-spacing: 0.06em; }
+.client-banner.late { box-shadow: 4px 4px 0 #ff5a4f; }
+.client-back { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 30; width: min(760px, calc(100vw - 32px)); }
+.client-slip { width: 100%; border-collapse: collapse; margin: 10px 0; font-family: var(--r-mono); }
+.client-slip td { padding: 6px 0; border-bottom: 1px solid rgba(28, 10, 58, 0.15); }
+.client-slip td + td { text-align: right; font-weight: 700; }
+.client-slip tr.total td { border-top: 3px solid var(--r-ink); border-bottom: 0; font-family: var(--r-display); font-size: 22px; }
+@media (max-width: 720px) { .client-banner { top: 70px; font-size: 11px; gap: 6px; } }
