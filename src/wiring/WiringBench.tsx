@@ -14,25 +14,7 @@ import { Board } from '../parts3d/boards';
 import { NETLISTS, type PadSpot } from '../repair/netlists';
 import { powerUp, wireColor, wiringJobById, wiringSpots, DHT11_JOB, type Wire, type WiringJob, type WiringResult } from './wiring';
 import { StudioEnvironment } from '../parts3d/common';
-
-const TOP = 1.6;
-const MODULE_PIN_Y = TOP + 7.5; // top of a male header pin
-const BOARD_PIN_Y = TOP + 8.5; // top of a female header
-
-function Jumper({ a, b, color, onClick }: { a: THREE.Vector3; b: THREE.Vector3; color: string; onClick: () => void }) {
-  const geom = useMemo(() => {
-    const mid = a.clone().add(b).multiplyScalar(0.5);
-    const lift = 10 + a.distanceTo(b) * 0.18;
-    const curve = new THREE.CatmullRomCurve3([a, a.clone().setY(a.y + 6), mid.clone().setY(mid.y + lift), b.clone().setY(b.y + 6), b]);
-    return new THREE.TubeGeometry(curve, 64, 0.7, 10, false);
-  }, [a, b]);
-  return (
-    <mesh geometry={geom} castShadow onClick={(e) => { e.stopPropagation(); onClick(); }}
-      onPointerOver={(e) => { e.stopPropagation(); document.body.style.cursor = 'pointer'; }} onPointerOut={() => { document.body.style.cursor = ''; }}>
-      <meshStandardMaterial color={color} roughness={0.45} />
-    </mesh>
-  );
-}
+import { BOARD_PIN_Y, Jumper, MODULE_PIN_Y } from './Jumper';
 
 function PinTarget({ s, y, picked, onPick, onHover }: { s: PadSpot; y: number; picked: boolean; onPick: () => void; onHover: (s: PadSpot | null) => void }) {
   const [hot, setHot] = useState(false);
@@ -101,7 +83,7 @@ export function WiringBench({ jobId, onExit }: { jobId: string; onExit: () => vo
     tick.current = window.setInterval(() => {
       setSerial((s) => [...s.slice(-8), r.serial[i % r.serial.length]!]);
       i++;
-      if (r.outcome === 'ok' && i === 2) {
+      if (r.outcome === 'ok' && i === r.serial.length) {
         const stars = cooked ? 1 : powerUps === 0 ? 3 : 2;
         setResult({ stars });
         useWallet.getState().complete(job.id, stars);
@@ -173,8 +155,8 @@ export function WiringBench({ jobId, onExit }: { jobId: string; onExit: () => vo
       </div>
 
       <div className="wiring-monitor" role="log" aria-live="polite" aria-label="Serial monitor">
-        <p className="wiring-monitor-head">Serial monitor · 9600 baud</p>
-        {serial.map((l, i) => <p key={i} className={l.startsWith('Failed') ? 'bad' : ''}>{l}</p>)}
+        <p className="wiring-monitor-head">Serial monitor · {job.baud} baud</p>
+        {serial.map((l, i) => <p key={i} className={job.failLines.includes(l) && !job.okLines.includes(l) ? 'bad' : ''}>{l}</p>)}
         {power?.why && serial.length > 0 && <p className="why">{power.why}</p>}
         {power?.outcome === 'reversed' && <p className="why">{power.why}</p>}
         {dead && (
@@ -187,11 +169,11 @@ export function WiringBench({ jobId, onExit }: { jobId: string; onExit: () => vo
 
       {result && (
         <div className="desk-result" role="dialog" aria-label="Job result">
-          <h2>Reading the greenhouse</h2>
+          <h2>{job.done.title}</h2>
           <div className="desk-stars" aria-label={`${result.stars} of 3 stars`}>{[1, 2, 3].map((i) => <span key={i} className={i <= result.stars ? 'on' : ''}>★</span>)}</div>
-          <p className="desk-result-sub">{job.okLine}</p>
+          <p className="desk-result-sub">{job.done.line}</p>
           <ul className="star-rules">
-            <li className="met"><span className="star-rule-stars">★</span><b>The sketch reads the sensor</b></li>
+            <li className="met"><span className="star-rule-stars">★</span><b>{job.done.rule}</b></li>
             <li className={result.stars >= 2 ? 'met' : ''}><span className="star-rule-stars">★★</span><b>Nothing cooked</b></li>
             <li className={result.stars >= 3 ? 'met' : ''}><span className="star-rule-stars">★★★</span><b>Right first time you powered it</b></li>
           </ul>

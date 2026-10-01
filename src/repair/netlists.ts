@@ -8,7 +8,7 @@
  * Pads: two-pad parts have pad 1 at their local −x end and pad 2 at +x (an LED's anode is pad 1).
  */
 import type { LedColor } from '../sim';
-import { ARDUINO_UNO, DHT11, type BoardDef } from '../parts3d/boards';
+import { ARDUINO_UNO, DHT11, OLED_096, type BoardDef } from '../parts3d/boards';
 import { boardPads } from '../parts3d/pcbgen';
 
 export type ElectricalPart =
@@ -38,8 +38,11 @@ export interface BoardNetlist {
 const pins = (header: string, labels: string[], net: (label: string) => string): HeaderPin[] =>
   labels.map((label, index) => ({ id: `${header}.${index}`, header, index, label, net: net(label) }));
 
-/** Pin names that are ground, supply rails, or a pin of their own. */
-const pinNet = (l: string) => (l === 'GND' ? 'GND' : l === '5V' || l === 'IOREF' ? '5V' : l === '3.3V' ? '3V3' : l === '' ? `NC` : l);
+/**
+ * Pin names that are ground, supply rails, or a pin of their own. On the Uno R3 the SDA and SCL
+ * pins by AREF are the same wires as A4 and A5 (the ATmega328P's I²C pins).
+ */
+const pinNet = (l: string) => (l === 'GND' ? 'GND' : l === '5V' || l === 'IOREF' ? '5V' : l === '3.3V' ? '3V3' : l === '' ? `NC` : l === 'SDA' ? 'A4' : l === 'SCL' ? 'A5' : l);
 
 /**
  * Arduino Uno R3, powered from USB. The power LED is ON: 5 V → R_ON (1 kΩ) → LED_ON → GND,
@@ -83,9 +86,25 @@ export const DHT11_NETLIST: BoardNetlist = {
 };
 export const DHT11_SENSOR: ElectricalPart = { kind: 'resistor', nets: ['M_VCC', 'M_GND'], ohms: 5000 };
 
+/**
+ * 0.96" OLED module: GND, VCC, SCL, SDA. It has its own 3.3 V regulator (so 3.3–5 V in), the
+ * I²C pull-ups (4.7 kΩ from SCL and SDA up to VCC), and the panel draws about 20 mA lit.
+ */
+export const OLED_NETLIST: BoardNetlist = {
+  board: 'oled-096',
+  parts: {},
+  pins: pins('H1', ['GND', 'VCC', 'SCL', 'SDA'], (l) => (l === 'GND' ? 'M_GND' : l === 'VCC' ? 'M_VCC' : `M_${l}`)),
+};
+export const OLED_FIXED: Record<string, ElectricalPart> = {
+  PANEL: { kind: 'resistor', nets: ['M_VCC', 'M_GND'], ohms: 250 },
+  PULL_SCL: { kind: 'resistor', nets: ['M_VCC', 'M_SCL'], ohms: 4700 },
+  PULL_SDA: { kind: 'resistor', nets: ['M_VCC', 'M_SDA'], ohms: 4700 },
+};
+
 export const NETLISTS: Record<string, { def: BoardDef; net: BoardNetlist; fixed?: Record<string, ElectricalPart> }> = {
   'arduino-uno': { def: ARDUINO_UNO, net: UNO_NETLIST, fixed: { U_LDO: UNO_LDO } },
   dht11: { def: DHT11, net: DHT11_NETLIST, fixed: { SENSOR: DHT11_SENSOR } },
+  'oled-096': { def: OLED_096, net: OLED_NETLIST, fixed: OLED_FIXED },
 };
 
 // Boards with a real circuit draw their copper from it.

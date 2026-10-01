@@ -1,6 +1,6 @@
-# OLED (SSD1306) — work in progress
+# OLED (SSD1306)
 
-Started 2026-10-01. Done so far: `src/oled/font.ts` (5 × 7 font, GFX metrics: 6 × 8 cell).
+Built 2026-10-01: steps 1–7 below are done. The emulator is `src/oled/` (font, gfx, icons), and the screen nodes and `Runner` are in `src/coding/program.ts`. There are four judged screen jobs plus a sandbox in `src/coding/jobs.ts`, the wiring job `wiring-oled` (I²C scanner), and tests in `tests/oled.test.ts` and `tests/wiring.test.ts`. The font is our own 5 × 7 with the same metrics as GFX's; the glyph shapes are close to the real ones, not identical.
 
 ## Plan
 

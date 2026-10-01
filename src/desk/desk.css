@@ -424,6 +424,22 @@
 .node-palette button { display: grid; gap: 2px; text-align: left; padding: 8px 10px; border: 0; border-radius: 0; background: #fffdf6; color: var(--r-ink); font-family: var(--r-mono); font-size: 12px; box-shadow: 2px 2px 0 var(--r-blue); }
 .node-palette button:hover { background: var(--r-yellow); color: var(--r-ink); border: 0; }
 .node-palette b { font-family: var(--r-display); font-weight: 400; font-size: 17px; }
+.node-palette { max-height: 60vh; overflow: auto; padding: 2px 6px 6px 2px; }
+.node-palette section { display: grid; gap: 6px; }
+.node-palette h4 { margin: 8px 0 0; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #5b5068; }
+.node-params label { display: inline-flex; align-items: center; gap: 4px; }
+.node-label { font-size: 11px; color: #5b5068; }
+.node-params input[type='number'] { width: 58px; font: inherit; padding: 3px 4px; border: 0; border-radius: 0; background: var(--r-paper); color: var(--r-ink); box-shadow: 2px 2px 0 var(--r-blue); }
+.node-text input { width: 150px; font: inherit; padding: 3px 6px; border: 0; border-radius: 0; background: var(--r-paper); color: var(--r-ink); box-shadow: 2px 2px 0 var(--r-blue); }
+.node-check input { margin: 0 4px 0 0; }
+.node-count { border: 0; border-radius: 0; padding: 3px 6px; background: rgba(28, 10, 58, 0.08); color: var(--r-ink); font: 700 11px var(--r-mono); }
+.node-count.on { background: var(--r-pink); color: #fff; }
+.node.g-screen, .node.g-text, .node.g-draw, .node.g-effects { border-left: 4px solid #0078bf; }
+.node.g-count { border-left: 4px solid var(--r-pink); }
+.coding-board { position: relative; }
+.coding-screen { position: absolute; left: 12px; top: 12px; margin: 0; padding: 8px 8px 4px; background: #15181b; box-shadow: 4px 4px 0 var(--r-ink); }
+.coding-screen canvas { display: block; width: min(320px, 40vw); aspect-ratio: 2; image-rendering: pixelated; }
+.coding-screen figcaption { margin-top: 4px; font-size: 10px; color: #9aa6ad; }
 .coding-sketch { margin: 0; padding: 14px 16px; background: #10231a; color: #9ff0b8; font-family: var(--r-mono); font-size: 14px; line-height: 1.5; white-space: pre; overflow: auto; box-shadow: 5px 5px 0 var(--r-blue); }
 .coding-sketch.small { font-size: 12px; margin: 10px 0; box-shadow: none; }
 .coding-right { display: grid; grid-template-rows: 1fr auto 96px; min-height: 0; background: #4a5553; }

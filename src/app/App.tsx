@@ -29,9 +29,9 @@ export function App() {
   };
   if (screen === 'workshop') return <Workshop onBack={() => go('home')} onOpen={(c) => c.open && go(c.open.screen, c.open.job)} onLab={(p) => go('lab', p)} />;
   if (screen === 'lab' && job) return <LabBench key={job} part={job} onExit={() => go('workshop')} onNext={(p) => go('lab', p)} />;
-  if (screen === 'repair' && job) return <RepairBench jobId={job} onExit={() => go('workshop')} />;
-  if (screen === 'coding' && job) return <CodingBench jobId={job} onExit={() => go('workshop')} />;
-  if (screen === 'wiring' && job) return <WiringBench jobId={job} onExit={() => go('workshop')} />;
+  if (screen === 'repair' && job) return <RepairBench key={job} jobId={job} onExit={() => go('workshop')} />;
+  if (screen === 'coding' && job) return <CodingBench key={job} jobId={job} onExit={() => go('workshop')} />;
+  if (screen === 'wiring' && job) return <WiringBench key={job} jobId={job} onExit={() => go('workshop')} />;
   if (screen === 'client' && job) {
     const cj = clientJobById(job);
     if (cj) return <ClientIntro job={cj} onBack={() => go('workshop')} onTake={() => {

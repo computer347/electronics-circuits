@@ -76,7 +76,7 @@ function PlacedModel({ p, onHover }: { p: Placed; onHover?: (p: Placed | null) =
     case 'headerF': m = <HeaderRow n={q.n ?? 8} at={[0, 0, 0]} female />; break;
     case 'elec': m = <group scale={q.scale ?? 0.8}><Electrolytic uF={q.uF} volts={q.volts} /></group>; break;
     case 'wroom': m = <Wroom />; break;
-    case 'display': m = <Display w={q.w ?? 26} d={q.d ?? 15} flex={q.flex} />; break;
+    case 'display': m = <Display w={q.w ?? 26} d={q.d ?? 15} flex={q.flex} screen={q.screen} />; break;
     case 'transducer': m = <Transducer />; break;
     case 'dhtBody': m = <DhtBody />; break;
     case 'usbA': m = <UsbA />; break;
@@ -138,7 +138,7 @@ function antennaTexture() {
  * and, with `flex`, the amber ribbon that leaves the glass and folds round the board's edge
  * to its back, where it's soldered. Bend that ribbon too sharply and the screen dies.
  */
-function Display({ w, d, flex }: { w: number; d: number; flex?: number }) {
+function Display({ w, d, flex, screen }: { w: number; d: number; flex?: number; screen?: THREE.Texture }) {
   const glass = { color: '#101418', roughness: 0.05, metalness: 0.4 } as const;
   return (
     <group>
@@ -146,7 +146,10 @@ function Display({ w, d, flex }: { w: number; d: number; flex?: number }) {
       <mesh position={[0, 0.85, 0]} castShadow><boxGeometry args={[w, 0.7, d]} /><meshStandardMaterial {...glass} /></mesh>
       <mesh position={[0, 1.45, -1.2]} castShadow><boxGeometry args={[w, 0.5, d - 2.4]} /><meshStandardMaterial {...glass} transparent opacity={0.92} /></mesh>
       {/* the active pixels: 128 × 64 in a 21.7 × 10.9 mm window */}
-      <mesh position={[0, 1.71, -2.2]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[21.7, 10.9]} /><meshStandardMaterial color="#1a1d22" roughness={0.2} metalness={0.2} /></mesh>
+      <mesh position={[0, 1.71, -2.2]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[21.7, 10.9]} />
+        {/* with a picture (a 128 × 64 texture from the coding bench) the pixels glow by themselves */}
+        {screen ? <meshBasicMaterial map={screen} toneMapped={false} /> : <meshStandardMaterial color="#1a1d22" roughness={0.2} metalness={0.2} />}
+      </mesh>
       {/* the driver chip (SSD1306) bonded on the ledge */}
       <mesh position={[0, 1.3, d / 2 - 1.2]}><boxGeometry args={[12, 0.3, 0.9]} /><meshStandardMaterial color="#202226" roughness={0.4} /></mesh>
       {flex !== undefined && (

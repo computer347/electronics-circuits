@@ -25,7 +25,8 @@ npm run build    # typecheck + production build
 - `src/levels/` campaign: JSON levels in `world0/` and `world1/` (`WORLDS` in `index.ts`), fault injection, `check.ts` (spec checks incl. truth-table, led-pattern, part-current, sequence), stars, session, progress (localStorage `signal-path.progress.v1`).
 - `src/breadboard/chips.ts` 74HC DIP chips (pinouts); `model.ts` maps parts (incl. three-legged `h3` parts and `pins` for chips) to solver components.
 - `src/parts/catalogue.ts` + `src/parts3d/` every part and board as a procedural 3D model (`?gallery` shows them all).
-- Workshop activities: `src/repair/` (board netlists, repair mat), `src/coding/` (node programs, Blink), `src/wiring/` (module wiring), `src/jobs/` (client jobs: dialogue, clock, pay, wallet), `src/lab/` (Parts Lab: one level per catalogue part; `looks.tsx` ties answers to the models).
+- `src/oled/` SSD1306 + Adafruit GFX emulator (same pixels as the real library), font and icons.
+- Workshop activities: `src/repair/` (board netlists, repair mat), `src/coding/` (node programs run by a `Runner`: Blink, and OLED jobs: hello, uptime, loading bar, status screen, sandbox), `src/wiring/` (module wiring: DHT11, OLED on I²C with a scanner), `src/jobs/` (client jobs: dialogue, clock, pay, wallet), `src/lab/` (Parts Lab: one level per catalogue part; `looks.tsx` ties answers to the models).
 - `src/learn/` lesson content per level (`classes.ts`), live labs (`Labs.tsx`) on `physics.ts`, `check.tsx` (lesson markup and answer grading), progress in `signal-path.learn.v1`.
 - `src/drills/` exam drill generators with worked solutions (the notebook's Math pages).
 - `src/schematic/` 2D schematics (used by labs and drills).
