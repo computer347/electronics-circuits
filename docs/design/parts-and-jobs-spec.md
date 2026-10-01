@@ -96,9 +96,10 @@ World 1 builds logic from switches and transistors before it uses logic chips, s
 3. Either will do: OR from switches in parallel.
 4. Not: a transistor inverter, with the pull-up sized by the player.
 5. Not both: NAND from two transistors.
+6. Stairwell: XOR from two changeover switches with crossed travellers.
 
 Next in World 1:
 
-- XOR (the real stairwell switch), then chips: a 74HC00 NAND on the breadboard. This needs DIP parts with more than three legs straddling the centre gap.
-- Half adder, latches and flip-flops.
+- Chips: a 74HC00 NAND on the breadboard. This needs DIP parts with more than three legs straddling the centre gap.
+- Half adder (XOR + AND), latches and flip-flops.
 - The traffic-light FSM from SPEC.md.
