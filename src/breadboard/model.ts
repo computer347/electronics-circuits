@@ -6,9 +6,10 @@
 
 import { contributions, LED_VF, solve, type Circuit, type Component, type Contributions, type LedColor, type SolveResult, type Waveform } from '../sim';
 import { hole, type HoleId } from './layout';
+import { CHIPS, DEFAULT_CHIP, GND_PIN, VCC_PIN } from './chips';
 
 export type BoardPartKind = 'resistor' | 'led' | 'wire' | 'button' | 'battery' | 'capacitor' | 'generator'
-  | 'diode' | 'pot' | 'npn' | 'nmos' | 'regulator' | 'toggle' | 'spdt';
+  | 'diode' | 'pot' | 'npn' | 'nmos' | 'regulator' | 'toggle' | 'spdt' | 'dip';
 
 /** Parts with three legs in a row: h1, h2, h3 (the datasheet's pin order). */
 export const THREE_LEGGED: readonly BoardPartKind[] = ['pot', 'npn', 'nmos', 'regulator', 'spdt'];
@@ -44,12 +45,14 @@ export interface BoardPart {
   /** Regulators: output voltage. Diodes: forward drop. */
   vout?: number;
   vf?: number;
-  /** Printed on the body (BC547, IRLZ44N, LM7805, 1N4148). */
+  /** Printed on the body (BC547, IRLZ44N, LM7805, 1N4148, 74HC00). */
   marking?: string;
+  /** A chip's holes, pin 1 first (h1 is pin 1, h2 pin 8). See chips.ts. */
+  pins?: HoleId[];
 }
 
 /** Every hole a part's legs are in. */
-export const legsOf = (p: BoardPart): HoleId[] => (p.h3 ? [p.h1, p.h2, p.h3] : [p.h1, p.h2]);
+export const legsOf = (p: BoardPart): HoleId[] => (p.pins ? p.pins : p.h3 ? [p.h1, p.h2, p.h3] : [p.h1, p.h2]);
 
 /**
  * The two legs the main current flows between, in the direction it's meant to flow: a
@@ -177,6 +180,16 @@ export function boardToCircuit(board: BoardState): BoardCircuit {
           components.push({ kind: 'switch', id: `${p.id}.B`, a: b, b: nodeOf(p.h3), closed: !!p.pressed });
         }
         break;
+      case 'dip': {
+        // A logic chip: each gate switches its output pin to the VCC or GND pin (see sim Gate).
+        const chip = CHIPS[p.marking ?? DEFAULT_CHIP];
+        if (!chip || !p.pins) break;
+        const pin = (n: number) => nodeOf(p.pins![n - 1]!);
+        chip.gates.forEach((g, k) => components.push({
+          kind: 'gate', id: `${p.id}.${k + 1}`, fn: g.fn, a: pin(g.output), b: pin(GND_PIN), vcc: pin(VCC_PIN), inputs: g.inputs.map(pin),
+        }));
+        break;
+      }
       case 'regulator':
         // LM7805 pin order IN GND OUT.
         if (p.h3) components.push({ kind: 'regulator', id: p.id, a, b, out: nodeOf(p.h3), vout: p.vout ?? 5, dropout: 2 });
@@ -209,7 +222,7 @@ export function analyzeBoard(board: BoardState): BoardAnalysis {
   const joined = new UnionFind();
   for (const p of board.parts) if (p.kind === 'wire') joined.union(hole(p.h1).strip, hole(p.h2).strip);
   const shortedParts = board.parts
-    .filter((p) => p.kind !== 'wire' && p.kind !== 'battery' && p.kind !== 'generator' && !p.h3 && joined.find(hole(p.h1).strip) === joined.find(hole(p.h2).strip))
+    .filter((p) => p.kind !== 'wire' && p.kind !== 'battery' && p.kind !== 'generator' && !p.h3 && !p.pins && joined.find(hole(p.h1).strip) === joined.find(hole(p.h2).strip))
     .map((p) => p.id);
   return {
     result,

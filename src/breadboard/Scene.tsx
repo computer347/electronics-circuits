@@ -12,6 +12,7 @@ import { isElectrolytic, LED_MAX_AMPS, type BoardAnalysis, type BoardPart, type 
 import { translateParts } from './move';
 import { PartMotion } from './PartMotion';
 import { CAP_Y, ledMid, wireCurve } from './paths';
+import { printTexture } from '../parts3d/common';
 import { Potentiometer, SlideSwitch, TO220, TO92 } from '../parts3d/tht';
 import { useBench } from './store';
 
@@ -413,6 +414,51 @@ function Button({ part, mark }: { part: BoardPart; mark?: string }) {
   );
 }
 
+/**
+ * A 14-pin DIP chip across the centre gap: a black body with the notch at pin 1's end, the part
+ * number printed on top, and a leg into each hole.
+ */
+function Dip({ part, mark }: { part: BoardPart; mark?: string }) {
+  const handlers = usePartHandlers(part);
+  const pins = part.pins;
+  const tex = useMemo(() => printTexture([part.marking ?? '74HC00'], { size: 64, w: 512, h: 96, fg: '#d8d8d8' }), [part.marking]);
+  if (!pins) return null;
+  const p1 = hole(pins[0]!), p7 = hole(pins[6]!), p8 = hole(pins[7]!);
+  const cx = (p1.x + p8.x) / 2, cz = (p1.z + p8.z) / 2;
+  const along = Math.hypot(p7.x - p1.x, p7.z - p1.z) + 1;
+  const across = Math.max(1, Math.hypot(p8.x - p7.x, p8.z - p7.z) - 0.9);
+  const yaw = Math.atan2(-(p7.z - p1.z), p7.x - p1.x);
+  // The side pin 1 is on, so the notch can sit at that end.
+  return (
+    <group {...handlers}>
+      {pins.map((h, i) => {
+        const q = hole(h);
+        const toward = 0.42; // legs bend in under the body
+        const ex = q.x + (cx - q.x) * 0, ez = q.z + Math.sign(cz - q.z) * toward;
+        return <Segment key={i} from={[q.x, 0, q.z]} to={[ex, 0.5, ez]} r={0.07} />;
+      })}
+      <group position={[cx, 0.72, cz]} rotation={[0, yaw, 0]}>
+        <mesh castShadow>
+          <boxGeometry args={[along, 0.5, across]} />
+          <meshStandardMaterial color="#17181a" roughness={0.6} emissive={mark ?? '#000'} emissiveIntensity={mark ? 0.35 : 0} />
+        </mesh>
+        <mesh position={[-along / 2, 0.251, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <circleGeometry args={[0.32, 20, -Math.PI / 2, Math.PI]} />
+          <meshBasicMaterial color="#050505" />
+        </mesh>
+        <mesh position={[-along / 2 + 0.6, 0.252, across / 2 - 0.35]} rotation={[-Math.PI / 2, 0, 0]}>
+          <circleGeometry args={[0.12, 16]} />
+          <meshBasicMaterial color="#2a2c2e" />
+        </mesh>
+        <mesh position={[0.3, 0.253, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[along * 0.7, across * 0.45]} />
+          <meshBasicMaterial map={tex} transparent />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
 /** A small slide switch: click it to flip; it stays put. ON is towards its second leg. */
 function Toggle({ part, mark }: { part: BoardPart; mark?: string }) {
   const handlers = usePartHandlers(part);
@@ -642,6 +688,7 @@ export function BreadboardContents({ analysis, dynamic }: { analysis: BoardAnaly
           case 'generator': el = <Generator part={p} mark={mark} color="#ffd21f" />; break;
           case 'diode': el = <Diode part={p} mark={mark} />; break;
           case 'toggle': el = <Toggle part={p} mark={mark} />; break;
+          case 'dip': el = <Dip part={p} mark={mark} />; break;
           case 'pot': case 'npn': case 'nmos': case 'regulator': case 'spdt': el = <ThreeLegged part={p} mark={mark} />; break;
         }
         // Parts being dragged follow the pointer as they are; everything else animates its moves.

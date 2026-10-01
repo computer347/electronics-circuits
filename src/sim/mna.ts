@@ -19,8 +19,9 @@
 import { solveLinear, SingularMatrixError } from './linear';
 import {
   GROUND_NAMES,
-  thirdNode,
+  extraNodes,
   type ActiveState,
+  type GateFn,
   type Circuit,
   type Component,
   type Diode,
@@ -85,8 +86,7 @@ function indexNodes(components: Component[]): { nodes: NodeId[]; index: Map<Node
   const nodes: NodeId[] = [];
   const index = new Map<NodeId, number>();
   for (const c of components) {
-    for (const n of [c.a, c.b, thirdNode(c)]) {
-      if (n === undefined) continue;
+    for (const n of [c.a, c.b, ...extraNodes(c)]) {
       if (!isGround(n) && !index.has(n)) {
         index.set(n, nodes.length);
         nodes.push(n);
@@ -136,12 +136,14 @@ function structuralFaults(components: Component[]): Fault[] {
     // A transistor's base and a regulator's output connect through the part; a MOSFET's gate doesn't.
     if (c.kind === 'npn') conn.union(canon(c.base), canon(c.b));
     if (c.kind === 'regulator') conn.union(canon(c.out), canon(c.b));
+    // A gate's output connects through the chip to its supply pins; its inputs don't.
+    if (c.kind === 'gate') conn.union(canon(c.vcc), canon(c.b));
   }
   const groundRoot = conn.find('0');
   const seen = new Set<string>();
   for (const c of components) {
-    for (const n of [c.a, c.b, thirdNode(c)]) {
-      if (n === undefined || isGround(n) || seen.has(n)) continue;
+    for (const n of [c.a, c.b, ...extraNodes(c)]) {
+      if (isGround(n) || seen.has(n)) continue;
       seen.add(n);
       if (conn.find(n) !== groundRoot) {
         faults.push({
@@ -262,6 +264,12 @@ function build(
       case 'nmos':
         if ((active[c.id] ?? 'off') === 'on') conductance(a, b, 1 / c.ron);
         break;
+      case 'gate': {
+        const s = active[c.id] ?? 'dead';
+        if (s === 'dead') break;
+        conductance(a, s === 'on' ? idx(c.vcc) : b, 1 / R_GATE_OUT);
+        break;
+      }
       case 'regulator': {
         const k = vsrcCol.get(c.id)!;
         const out = idx(c.out);
@@ -313,11 +321,33 @@ function componentCurrent(
       return s === 'active' ? c.beta * ib : (vd - c.vcesat) / R_DIODE_ON;
     }
     case 'nmos': return (active[c.id] ?? 'off') === 'on' ? vd / c.ron : 0;
+    case 'gate': {
+      // Current the output pin sources into the circuit (negative when it sinks).
+      const s = active[c.id] ?? 'dead';
+      if (s === 'dead') return 0;
+      return s === 'on' ? (v(c.vcc) - v(c.a)) / R_GATE_OUT : -(v(c.a) - v(c.b)) / R_GATE_OUT;
+    }
     case 'regulator': {
       // The regulator's current is what it draws from its input (= what it delivers).
       const k = built.vsrcCol.get(c.id)!;
       return (active[c.id] ?? 'reg') === 'reg' ? -x[k]! : x[k]!;
     }
+  }
+}
+
+/** A logic gate's output impedance (74HC: about 25-50 Ω), and the least supply it works from. */
+export const R_GATE_OUT = 50;
+const GATE_MIN_SUPPLY = 1.5;
+
+/** What a gate outputs for these input levels. */
+export function gateLogic(fn: GateFn, x: boolean[]): boolean {
+  switch (fn) {
+    case 'AND': return x.every(Boolean);
+    case 'NAND': return !x.every(Boolean);
+    case 'OR': return x.some(Boolean);
+    case 'NOR': return !x.some(Boolean);
+    case 'XOR': return x.filter(Boolean).length % 2 === 1;
+    case 'NOT': return !x[0];
   }
 }
 
@@ -336,6 +366,13 @@ function wantedState(c: Component, s: ActiveState, v: (n: NodeId) => number, cur
   if (c.kind === 'nmos') {
     const on = v(c.gate) - v(c.b) > c.vth;
     return on !== (s === 'on') ? (on ? 'on' : 'off') : undefined;
+  }
+  if (c.kind === 'gate') {
+    const supply = v(c.vcc) - v(c.b);
+    if (supply < GATE_MIN_SUPPLY) return s === 'dead' ? undefined : 'dead';
+    const ins = c.inputs.map((n) => v(n) - v(c.b) > supply / 2);
+    const want = gateLogic(c.fn, ins) ? 'on' : 'off';
+    return want === s ? undefined : want;
   }
   if (c.kind === 'regulator') {
     const headroom = v(c.a) - v(c.b) - c.vout;
@@ -359,9 +396,9 @@ export function solve(circuit: Circuit, opts: SolveOptions = {}): SolveResult {
   const diodes = components.filter((c): c is Diode => c.kind === 'diode');
   const states: Record<string, DiodeState> = {};
   for (const d of diodes) states[d.id] = opts.fixedDiodeStates?.[d.id] ?? opts.diodeGuess?.[d.id] ?? 'off';
-  const actives = components.filter((c) => c.kind === 'npn' || c.kind === 'nmos' || c.kind === 'regulator');
+  const actives = components.filter((c) => c.kind === 'npn' || c.kind === 'nmos' || c.kind === 'regulator' || c.kind === 'gate');
   const aStates: Record<string, ActiveState> = {};
-  for (const c of actives) aStates[c.id] = opts.activeGuess?.[c.id] ?? (c.kind === 'regulator' ? 'reg' : 'off');
+  for (const c of actives) aStates[c.id] = opts.activeGuess?.[c.id] ?? (c.kind === 'regulator' ? 'reg' : c.kind === 'gate' ? 'dead' : 'off');
 
   const maxIter = opts.fixedDiodeStates ? 1 : 4 * (diodes.length + actives.length) + 10;
   let x: Float64Array | null = null;

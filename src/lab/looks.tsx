@@ -6,7 +6,7 @@
  */
 import type { ReactNode } from 'react';
 import { ChipLed, ChipResistor, Crystal, SOT223 } from '../parts3d/smd';
-import { CeramicCap, DiodeTHT, Electrolytic, LedTHT, Potentiometer, ResistorTHT, SlideSwitch, TactileButton, TO220, TO92 } from '../parts3d/tht';
+import { CeramicCap, DiodeTHT, Dip14, Electrolytic, LedTHT, Potentiometer, ResistorTHT, SlideSwitch, TactileButton, TO220, TO92 } from '../parts3d/tht';
 
 export interface Look {
   render: () => ReactNode;
@@ -36,6 +36,7 @@ export const LOOKS: Record<string, Look> = {
   'chip-r-0805': { render: () => <ChipResistor size="0805" code="1002" /> },
   'chip-led-0603': { render: () => <ChipLed size="0603" />, legsX: [-0.67, 0.67] },
   crystal: { render: () => <Crystal mhz="16.000" /> },
+  'dip14-74hc00': { render: () => <Dip14 marking="74HC00" />, lift: 3 },
   'tactile-button': { render: () => <TactileButton />, lift: 3 },
   'slide-switch': { render: () => <SlideSwitch />, lift: 3 },
   potentiometer: { render: () => <Potentiometer />, lift: 3 },

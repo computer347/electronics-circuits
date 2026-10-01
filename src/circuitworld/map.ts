@@ -9,6 +9,7 @@
  * this lays out as a ring.
  */
 import { hole } from '../breadboard/layout';
+import { CHIPS, DEFAULT_CHIP, GND_PIN, VCC_PIN } from '../breadboard/chips';
 import { currentLegs, SUPPLY_ID, type BoardAnalysis, type BoardPart, type BoardState } from '../breadboard/model';
 
 export type RoomKind = 'source' | 'resistor' | 'led' | 'button' | 'capacitor' | 'battery' | 'generator'
@@ -66,7 +67,7 @@ class UnionFind {
 
 const KIND: Record<BoardPart['kind'], RoomKind | null> = {
   resistor: 'resistor', led: 'led', wire: null, button: 'button', battery: 'battery', capacitor: 'capacitor', generator: 'generator',
-  diode: 'diode', pot: 'pot', npn: 'transistor', nmos: 'transistor', regulator: 'regulator', toggle: 'button', spdt: 'button',
+  diode: 'diode', pot: 'pot', npn: 'transistor', nmos: 'transistor', regulator: 'regulator', toggle: 'button', spdt: 'button', dip: null,
 };
 /** A three-legged part walks like a two-legged one between its main legs (collector → emitter...). */
 const mainLegs = (p: BoardPart): BoardPart => {
@@ -82,6 +83,16 @@ export function buildMap(board: BoardState, analysis: BoardAnalysis): CircuitMap
   // Nets: strips joined by jumper wires (the wires are corridors, not rooms).
   const uf = new UnionFind();
   for (const p of board.parts) if (p.kind === 'wire') uf.union(hole(p.h1).strip, hole(p.h2).strip);
+  // A chip's outputs aren't rooms: a high output is joined to the chip's VCC, a low one to its
+  // GND, the way the current really goes through it.
+  for (const p of board.parts) {
+    const chip = p.kind === 'dip' && p.pins ? CHIPS[p.marking ?? DEFAULT_CHIP] : undefined;
+    if (!chip || !p.pins) continue;
+    chip.gates.forEach((g, k) => {
+      const s = analysis.result.activeStates[`${p.id}.${k + 1}`];
+      if (s === 'on' || s === 'off') uf.union(hole(p.pins![g.output - 1]!).strip, hole(p.pins![(s === 'on' ? VCC_PIN : GND_PIN) - 1]!).strip);
+    });
+  }
   const net = (h: string) => uf.find(hole(h).strip);
   const r = analysis.result;
   const v = (h: string) => (r.ok ? r.nodeVoltages[analysis.nodeOf(h)] : undefined);

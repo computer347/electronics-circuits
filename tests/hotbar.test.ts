@@ -35,7 +35,7 @@ describe('hotbar', () => {
   it('puts every placeable part in exactly one free-bench drawer', () => {
     const all = DRAWERS.flatMap((d) => d.tools);
     expect(new Set(all).size).toBe(all.length);
-    expect(all.sort()).toEqual(['battery', 'button', 'capacitor', 'diode', 'generator', 'led', 'nmos', 'npn', 'pot', 'regulator', 'resistor', 'spdt', 'toggle', 'wire']);
+    expect(all.sort()).toEqual(['battery', 'button', 'capacitor', 'diode', 'dip', 'generator', 'led', 'nmos', 'npn', 'pot', 'regulator', 'resistor', 'spdt', 'toggle', 'wire']);
     for (let i = 0; i < DRAWERS.length; i++) expect(benchSlots(i).length).toBeLessThanOrEqual(MAX_SLOTS);
     expect(drawerOf('npn')).toBe(2);
     expect(drawerOf('select')).toBe(-1);

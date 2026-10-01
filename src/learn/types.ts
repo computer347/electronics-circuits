@@ -9,7 +9,9 @@ export type LabSpec =
   /** Flip the inputs of a gate built from real parts, and watch its lamp and truth table. */
   | { kind: 'logic'; gate: Gate }
   /** Four bits, worth 8 4 2 1: flip them and read the number. */
-  | { kind: 'binary' };
+  | { kind: 'binary' }
+  /** A half adder from a 74HC86 and a 74HC08: flip A and B, read sum and carry. */
+  | { kind: 'adder' };
 
 export type Gate = 'AND' | 'OR' | 'NOT' | 'NAND' | 'XOR';
 

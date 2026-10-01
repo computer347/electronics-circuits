@@ -7,7 +7,7 @@ import { BOARDS, Board } from './boards';
 import { HeaderRow } from './common';
 import { ChipCap, ChipLed, ChipResistor, Crystal, DcJack, MicroUsb, QFP, SOIC8, SOT223, SOT23, UsbB } from './smd';
 import {
-  Battery9V, Buzzer, CellAA, CeramicCap, DiodeTHT, Electrolytic, LedTHT, Potentiometer, ResistorTHT, SlideSwitch, TactileButton, TO220, TO92,
+  Battery9V, Buzzer, CellAA, CeramicCap, DiodeTHT, Dip14, Electrolytic, LedTHT, Potentiometer, ResistorTHT, SlideSwitch, TactileButton, TO220, TO92,
 } from './tht';
 
 /** Model and its rough size in millimetres (width, depth, height). */
@@ -27,6 +27,7 @@ export const MODELS: Record<string, ModelEntry> = {
   'battery-9v': { render: () => <Battery9V />, size: [27, 49, 21] },
   buzzer: { render: () => <Buzzer />, size: [12, 12, 10] },
   'npn-bc547': { render: () => <TO92 marking="BC547" />, size: [5, 4, 8] },
+  'dip14-74hc00': { render: () => <Dip14 marking="74HC00" />, size: [19.3, 7.6, 5] },
   'mosfet-irlz44n': { render: () => <TO220 marking="IRLZ44N" />, size: [10, 5, 26] },
   'reg-7805': { render: () => <TO220 marking="LM7805" />, size: [10, 5, 26] },
   'ldo-ams1117': { render: () => <SOT223 marking="AMS1117" />, size: [7, 7, 2] },

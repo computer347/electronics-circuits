@@ -92,7 +92,8 @@ export function translateParts(
   const out = parts.map((p) => {
     if (!moving.has(p.id)) return p;
     const h1 = shift(p.h1), h2 = shift(p.h2), h3 = p.h3 ? shift(p.h3) : undefined;
-    for (const h of h3 ? [h1, h2, h3] : [h1, h2]) {
+    const pins = p.pins?.map(shift);
+    for (const h of pins ?? (h3 ? [h1, h2, h3] : [h1, h2])) {
       if (taken.has(h) && !(mode === 'group' && isRail(h) && legsOf(p).includes(h))) {
         valid = false; reason ??= `Hole ${hole(h).label} is already in use.`;
       }
@@ -100,7 +101,7 @@ export function translateParts(
       used.add(h);
     }
     if (h1 === h2) { valid = false; reason ??= 'Both legs would be in the same hole.'; }
-    return h3 ? { ...p, h1, h2, h3 } : { ...p, h1, h2 };
+    return pins ? { ...p, h1, h2, pins } : h3 ? { ...p, h1, h2, h3 } : { ...p, h1, h2 };
   });
 
   return { parts: out, valid, ...(reason && { reason }) };

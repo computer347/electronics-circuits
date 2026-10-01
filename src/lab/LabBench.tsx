@@ -110,7 +110,7 @@ export function LabBench({ part, onExit, onNext }: { part: string; onExit: () =>
 
   return (
     <div className="repair lab" onPointerMove={(e) => setMouse([e.clientX, e.clientY])}>
-      <Canvas shadows camera={{ position: [0, 90, 110], fov: 36, near: 0.5, far: 2000 }} dpr={[1, 2]}>
+      <Canvas shadows camera={{ position: [-16, 104, 132], fov: 36, near: 0.5, far: 2000 }} dpr={[1, 2]}>
         <color attach="background" args={['#4a5553']} />
         <ambientLight intensity={0.6} /><hemisphereLight args={['#ffffff', '#40505a', 0.45]} />
         <StudioEnvironment />
@@ -123,7 +123,7 @@ export function LabBench({ part, onExit, onNext }: { part: string; onExit: () =>
               settle(p.id === spec.target, p.id === spec.target ? spec.explain : `That’s the ${p.name ?? p.id}. ${spec.hint}`);
             }} />
           : <PartOnMat part={part} model={entry.model} />}
-        <OrbitControls makeDefault target={[spec.kind === 'identify' ? 22 : 0, spec.kind === 'identify' ? -12 : -heightOf(part, entry.model) * 0.18 - 4, 0]} maxPolarAngle={Math.PI / 2.2} minDistance={30} maxDistance={300} enablePan={false} />
+        <OrbitControls makeDefault target={[spec.kind === 'identify' ? 22 : -16, spec.kind === 'identify' ? -12 : -heightOf(part, entry.model) * 0.18 - 4, 0]} maxPolarAngle={Math.PI / 2.2} minDistance={30} maxDistance={300} enablePan={false} />
       </Canvas>
 
       <button className="desk-back" onClick={onExit}>‹ Parts Lab <kbd>Esc</kbd></button>

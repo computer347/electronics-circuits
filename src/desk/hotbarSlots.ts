@@ -28,19 +28,19 @@ export interface Slot {
 }
 
 export const PART_KINDS: readonly BoardPartKind[] = [
-  'resistor', 'wire', 'led', 'capacitor', 'button', 'battery', 'generator', 'diode', 'pot', 'npn', 'nmos', 'regulator', 'toggle', 'spdt',
+  'resistor', 'wire', 'led', 'capacitor', 'button', 'battery', 'generator', 'diode', 'pot', 'npn', 'nmos', 'regulator', 'toggle', 'spdt', 'dip',
 ];
 
 const LABEL: Partial<Record<Tool, string>> = {
   select: 'Hand', resistor: 'Resistor', wire: 'Wire', led: 'LED', capacitor: 'Capacitor', button: 'Button', battery: 'Battery',
-  generator: 'Signal gen', diode: 'Diode', pot: 'Pot', npn: 'Transistor', nmos: 'MOSFET', regulator: 'Regulator', toggle: 'Toggle', spdt: 'Changeover', probe: 'Meter', scope: 'Scope',
+  generator: 'Signal gen', diode: 'Diode', pot: 'Pot', npn: 'Transistor', nmos: 'MOSFET', regulator: 'Regulator', toggle: 'Toggle', spdt: 'Changeover', dip: 'Chip', probe: 'Meter', scope: 'Scope',
 };
 
 /** Drawers for the free bench, grouped the way a parts cabinet is. */
 export const DRAWERS: { name: string; tools: BoardPartKind[] }[] = [
   { name: 'Basics', tools: ['wire', 'resistor', 'led'] },
   { name: 'Passives', tools: ['button', 'toggle', 'spdt', 'capacitor', 'pot'] },
-  { name: 'Semis', tools: ['diode', 'npn', 'nmos'] },
+  { name: 'Semis', tools: ['diode', 'npn', 'nmos', 'dip'] },
   { name: 'Sources', tools: ['battery', 'generator', 'regulator'] },
 ];
 

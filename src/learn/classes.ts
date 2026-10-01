@@ -747,7 +747,90 @@ const w1c6: LearnClass = {
   ],
 };
 
-export const WORLD1_CLASSES: LearnClass[] = [w1c1, w1c2, w1c3, w1c4, w1c5, w1c6];
+const w1c7: LearnClass = {
+  id: 'c1-07-chips',
+  world: 1, number: 7,
+  title: 'Logic chips',
+  levelId: 'w1-07-power-the-chip',
+  minutes: 5,
+  goals: ['Read a 14-pin chip’s pins from its notch', 'Power a chip and wire its gates', 'Explain pull-down resistors'],
+  steps: [
+    {
+      title: 'Gates in a package',
+      lab: { kind: 'logic', gate: 'NAND' },
+      tryThis: 'Same NAND as level 1–5; a 74HC00 has four of them, each far smaller and quicker.',
+      body: [
+        'A **74HC00** holds four NAND gates, built from MOSFETs in the same spirit as your two-transistor NAND. Its cousins share the pinout: **74HC08** (AND), **74HC32** (OR), **74HC86** (XOR).',
+        'With the notch on the left, pins 1–7 run along the bottom, left to right, and 8–14 come back along the top. Gate 1 is pins 1 and 2 in, 3 out.',
+      ],
+    },
+    {
+      title: 'Power comes first',
+      body: [
+        'The gates switch their outputs to the chip\'s own supply pins: **VCC on 14**, **GND on 7**. With those unwired the chip is dead, however right the rest is.',
+        'A 74HC chip runs on 2–6 V. Its output can source or sink about 20 mA, enough for an LED with a resistor.',
+      ],
+    },
+    {
+      title: 'Never leave an input floating',
+      body: [
+        'A CMOS input draws almost no current, so a wire to nothing picks up any stray charge and reads 1, 0 or both. A **10 kΩ pull-down** to GND holds it at 0 until a switch pulls it to 1.',
+        'Unused inputs on a real board are tied to GND or VCC for the same reason.',
+      ],
+    },
+  ],
+  check: [
+    { kind: 'choice', prompt: 'Which pin of a 74HC00 goes to the + supply?', options: ['1', '7', '8', '14'], correct: 3,
+      explain: 'VCC is pin 14, top left by the notch; GND is pin 7.' },
+    { kind: 'choice', prompt: 'Why the 10 kΩ from each input to GND?', options: ['To limit the LED current', 'To hold the input low when its switch is off', 'To protect the supply', 'To slow the gate down'], correct: 1,
+      explain: 'It\'s a pull-down: without it an open switch leaves the input floating.' },
+    { kind: 'choice', prompt: 'A 74HC86 has the same pinout as the 74HC00. What do its gates do?', options: ['NAND', 'AND', 'OR', 'XOR'], correct: 3,
+      explain: '\'86 is the quad XOR; \'08 AND, \'32 OR, \'00 NAND.' },
+  ],
+};
+
+const w1c8: LearnClass = {
+  id: 'c1-08-half-adder',
+  world: 1, number: 8,
+  title: 'The half adder',
+  levelId: 'w1-08-half-adder',
+  minutes: 5,
+  goals: ['Add two bits in binary', 'Build sum and carry from XOR and AND'],
+  steps: [
+    {
+      title: 'Adding in binary',
+      lab: { kind: 'adder' },
+      tryThis: 'Try 1 + 1: the sum digit is 0 and the carry is 1, which is 10, two.',
+      body: [
+        'In binary, `0 + 0 = 0`, `0 + 1 = 1`, `1 + 0 = 1` and `1 + 1 = 10`: zero, carry one, just like 5 + 5 = 10 in decimal.',
+        'So adding two bits gives two bits out: a **sum** and a **carry**.',
+      ],
+    },
+    {
+      title: 'Two gates do it',
+      body: [
+        'The sum is 1 when exactly one input is 1: **XOR**. The carry is 1 only for 1 + 1: **AND**. Feed the same A and B to both: a **half adder**.',
+        'A full adder also takes the carry from the column to its right. Chain eight and you can add two bytes.',
+      ],
+    },
+    {
+      title: 'Where it lives',
+      body: [
+        'Every CPU has an arithmetic unit built from adders like this. The `+` in your code ends up here, as XORs and ANDs switching in a few picoseconds.',
+      ],
+    },
+  ],
+  check: [
+    { kind: 'choice', prompt: '1 + 1 in binary is…', options: ['2', '11', '10', '01'], correct: 2,
+      explain: 'Two is 10 in binary: sum 0, carry 1.' },
+    { kind: 'choice', prompt: 'Which gate gives the sum bit?', options: ['AND', 'OR', 'XOR', 'NAND'], correct: 2,
+      explain: 'The sum is 1 when the inputs differ: XOR.' },
+    { kind: 'choice', prompt: 'Which gate gives the carry?', options: ['AND', 'OR', 'XOR', 'NOT'], correct: 0,
+      explain: 'Only 1 + 1 carries: AND.' },
+  ],
+};
+
+export const WORLD1_CLASSES: LearnClass[] = [w1c1, w1c2, w1c3, w1c4, w1c5, w1c6, w1c7, w1c8];
 export const ALL_CLASSES: LearnClass[] = [...WORLD0_CLASSES, ...WORLD1_CLASSES];
 
 export const classById = (id: string) => ALL_CLASSES.find((c) => c.id === id);

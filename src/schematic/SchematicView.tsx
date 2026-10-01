@@ -33,6 +33,7 @@ function valueText(p: SchPart): string {
     case 'npn': return `β ${p.beta}`;
     case 'nmos': return `Vth ${p.vth} V`;
     case 'regulator': return `${p.vout} V`;
+    case 'gate': return p.fn;
   }
 }
 

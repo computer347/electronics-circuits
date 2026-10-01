@@ -461,6 +461,25 @@ function drawPicture(g: CanvasRenderingContext2D, pic: TaskPicture) {
     g.fillStyle = INK.pink; g.fillText('travellers', 250, 260);
     g.fillStyle = INK.ink; g.font = `bold 22px ${FONT_MONO}`; g.fillText('A', 238, 64); g.fillText('B', 238, 222); g.fillText('A', 408, 64); g.fillText('B', 408, 222);
   }
+  if (pic === 'chip' || pic === 'adder') {
+    // A DIP seen from above: notch, pin numbers, the power corners picked out.
+    const x0 = pic === 'chip' ? 150 : 90, w = 360, y0 = 120, h = 150;
+    g.save(); g.fillStyle = '#1c1c1e'; g.fillRect(x0, y0, w, h); g.restore();
+    g.save(); g.fillStyle = INK.paper; g.beginPath(); g.arc(x0, y0 + h / 2, 22, -Math.PI / 2, Math.PI / 2); g.fill(); g.restore();
+    for (let i = 0; i < 7; i++) {
+      const x = x0 + 30 + i * 50;
+      g.save(); g.fillStyle = '#9aa0a6'; g.fillRect(x - 8, y0 + h, 16, 30); g.fillRect(x - 8, y0 - 30, 16, 30); g.restore();
+      g.fillStyle = INK.ink; g.font = `bold 22px ${FONT_MONO}`; g.textAlign = 'center';
+      g.fillText(String(i + 1), x, y0 + h + 36);
+      g.fillText(String(14 - i), x, y0 - 62);
+    }
+    g.textAlign = 'center';
+    g.fillStyle = '#d8d8d8'; g.font = `bold 34px ${FONT_MONO}`; g.fillText(pic === 'chip' ? '74HC00' : '74HC86 + 74HC08', x0 + w / 2, y0 + h / 2 - 18);
+    g.fillStyle = INK.pink; g.font = `bold 26px ${FONT_MONO}`;
+    g.fillText('VCC', x0 + 30, y0 - 100); g.fillText('GND', x0 + 330, y0 + h + 70);
+    if (pic === 'adder') { g.fillStyle = INK.ink; g.font = `bold 28px ${FONT_MONO}`; g.fillText('sum = A XOR B', 570, 170); g.fillText('carry = A AND B', 570, 230); }
+    g.textAlign = 'left';
+  }
   if (pic === 'rc') {
     battery(g, left, 190, '9 V');
     line(g, [[left, 190], [left, top], [140, top]]);

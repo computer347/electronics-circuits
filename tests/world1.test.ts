@@ -20,8 +20,8 @@ const R = (id: string, h1: string, h2: string, ohms: number): BoardPart => ({ id
 const W = (id: string, h1: string, h2: string): BoardPart => ({ id, kind: 'wire', h1, h2 });
 
 describe('World 1', () => {
-  it('has six levels, numbered in order, after World 0', () => {
-    expect(WORLD1.map((l) => l.number)).toEqual([1, 2, 3, 4, 5, 6]);
+  it('has eight levels, numbered in order, after World 0', () => {
+    expect(WORLD1.map((l) => l.number)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
     expect(WORLD1.every((l) => l.world === 1)).toBe(true);
   });
 
@@ -125,7 +125,7 @@ describe('World 1 notebook and classes', () => {
       expect(p.skill.length, l.id).toBeGreaterThan(25);
       expect(p.skill.length, l.id).toBeLessThan(90);
       expect(p.realLife.length, l.id).toBeGreaterThan(60);
-      expect(['binary', 'and', 'or', 'not', 'nand', 'xor']).toContain(p.picture);
+      expect(['binary', 'and', 'or', 'not', 'nand', 'xor', 'chip', 'adder']).toContain(p.picture);
     }
   });
 
@@ -160,6 +160,8 @@ describe('World 1 inside the circuit', () => {
       4: (b) => add(b, R('R2', 'T+:9', 'a12', 1000)),
       5: (b) => add(b, W('W9', 'a8', 'a18')),
       6: (b) => add(b, W('W8', 'a4', 'a16'), W('W9', 'a6', 'a14')),
+      7: (b) => set(add(b, W('W8', 'j10', 'T+:8'), W('W9', 'a16', 'B-:13')), { SA: { pressed: true } }),
+      8: (b) => set(add(b, W('W8', 'c3', 'a14'), W('W9', 'd4', 'a15')), { SA: { pressed: true }, SB: { pressed: true } }),
     };
     for (const l of WORLD1) {
       for (const b of [startingBoard(l), fixes[l.number]!(startingBoard(l))]) {
@@ -184,5 +186,45 @@ describe('1-6 Stairwell (XOR)', () => {
     const fixed = add(b, W('W8', 'a4', 'a16'), W('W9', 'a6', 'a14'));
     expect(analyzeBoard(set(fixed, { S1: { pressed: true } })).result.currents['LED1']! * 1000).toBeGreaterThan(10);
     expect(Math.abs(analyzeBoard(fixed).result.currents['LED1'] ?? 0)).toBeLessThan(1e-4);
+  });
+});
+
+describe('1-7 Power the chip', () => {
+  const b = L(7).board;
+  it('does nothing until pins 14 and 7 are wired, then is NAND', () => {
+    expect(check(7, b).pass).toBe(false);
+    expect(check(7, add(b, W('W8', 'j10', 'T+:8'), W('W9', 'a16', 'B-:13'))).pass).toBe(true);
+  });
+  it('still fails with only GND wired: no VCC, no output', () => {
+    expect(check(7, add(b, W('W9', 'a16', 'B-:13'))).pass).toBe(false);
+  });
+  it('lights LED1 through the chip with the switches off (output high)', () => {
+    const fixed = add(b, W('W8', 'j10', 'T+:8'), W('W9', 'a16', 'B-:13'));
+    expect(analyzeBoard(fixed).result.currents['LED1']! * 1000).toBeGreaterThan(7);
+  });
+});
+
+describe('1-8 Half adder', () => {
+  const b = L(8).board;
+  it('adds once IC2’s inputs are wired to A and B', () => {
+    expect(check(8, add(b, W('W8', 'c3', 'a14'), W('W9', 'd4', 'a15'))).pass).toBe(true);
+  });
+  it('has the sum working from the start, but no carry', () => {
+    const r = check(8, b);
+    expect(r.pass).toBe(false);
+    expect(r.diagnosis?.message).toMatch(/LEDC should be lit/);
+  });
+  it('fails with the AND wired to only one input', () => {
+    expect(check(8, add(b, W('W8', 'c3', 'a14'), W('W9', 'd3', 'a15'))).pass).toBe(false);
+  });
+});
+
+describe('the half-adder lab', () => {
+  it('gives sum and carry from the solved chips', async () => {
+    const { adderLab } = await import('../src/learn/physics');
+    expect(adderLab(false, false)).toEqual({ sum: false, carry: false });
+    expect(adderLab(true, false)).toEqual({ sum: true, carry: false });
+    expect(adderLab(false, true)).toEqual({ sum: true, carry: false });
+    expect(adderLab(true, true)).toEqual({ sum: false, carry: true });
   });
 });

@@ -5,7 +5,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { formatSI } from '../lib/units';
 import { SchematicView } from '../schematic/SchematicView';
-import { BIN_OHMS, dividerLab, GATE_INPUTS, ledLab, ledState, logicLab, ohmLab, pairLab, rcLab, type LedState } from './physics';
+import { adderLab, BIN_OHMS, dividerLab, GATE_INPUTS, ledLab, ledState, logicLab, ohmLab, pairLab, rcLab, type LedState } from './physics';
 import type { Gate } from './types';
 import type { LabSpec } from './types';
 
@@ -309,8 +309,28 @@ function BinaryLab() {
   );
 }
 
+/** Half adder from two chips: flip A and B, read carry and sum (solved). */
+function AdderLab() {
+  const [ab, setAb] = useState([false, false]);
+  const out = adderLab(ab[0]!, ab[1]!);
+  return (
+    <div className="logic-lab">
+      <div className="logic-row">
+        {ab.map((v, k) => (
+          <button key={k} className={`logic-in ${v ? 'on' : ''}`} aria-pressed={v} onClick={() => setAb(ab.map((x, j) => (j === k ? !x : x)))}>{'AB'[k]} <b>{v ? 1 : 0}</b></button>
+        ))}
+        <span className="logic-arrow">→ adder →</span>
+        <span className={`logic-lamp ${out.carry ? 'on' : ''}`} aria-label="carry">{out.carry ? 1 : 0}</span>
+        <span className={`logic-lamp ${out.sum ? 'on' : ''}`} aria-label="sum">{out.sum ? 1 : 0}</span>
+      </div>
+      <p className="logic-note">{Number(ab[0])} + {Number(ab[1])} = {Number(out.carry)}{Number(out.sum)} in binary (carry, sum) = {Number(ab[0]) + Number(ab[1])}</p>
+    </div>
+  );
+}
+
 export function Lab({ spec }: { spec: LabSpec }) {
   switch (spec.kind) {
+    case 'adder': return <AdderLab />;
     case 'logic': return <LogicLab gate={spec.gate} />;
     case 'binary': return <BinaryLab />;
     case 'ohm': return <OhmLab spec={spec} />;

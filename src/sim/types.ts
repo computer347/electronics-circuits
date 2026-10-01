@@ -76,6 +76,16 @@ export interface Nmos extends Base { kind: 'nmos'; gate: NodeId; vth: number; ro
  */
 export interface Regulator extends Base { kind: 'regulator'; out: NodeId; vout: number; dropout: number }
 
+export type GateFn = 'NAND' | 'AND' | 'OR' | 'NOR' | 'XOR' | 'NOT';
+
+/**
+ * One logic gate inside a chip (a 74HC00 has four). `a` is the output pin, `b` the chip's GND
+ * pin, `vcc` its VCC pin. The output is a 50 Ω switch to VCC (high) or to GND (low), so the
+ * chip really is powered through its pins: unpowered, the output drives nothing. An input
+ * reads high above half the chip's supply; inputs draw no current.
+ */
+export interface Gate extends Base { kind: 'gate'; fn: GateFn; vcc: NodeId; inputs: NodeId[] }
+
 export type Component =
   | Resistor
   | VoltageSource
@@ -86,7 +96,12 @@ export type Component =
   | Capacitor
   | Npn
   | Nmos
-  | Regulator;
+  | Regulator
+  | Gate;
+
+/** Every terminal of a component past `a` and `b`. */
+export const extraNodes = (c: Component): NodeId[] =>
+  c.kind === 'gate' ? [c.vcc, ...c.inputs] : c.kind === 'npn' ? [c.base] : c.kind === 'nmos' ? [c.gate] : c.kind === 'regulator' ? [c.out] : [];
 
 /** The third terminal of a three-legged component, if it has one. */
 export const thirdNode = (c: Component): NodeId | undefined =>
@@ -127,7 +142,7 @@ export interface Fault {
 
 export type DiodeState = 'on' | 'off';
 /** States of the three-legged parts: transistor off / active / saturated; MOSFET off / on; regulator regulating / in dropout. */
-export type ActiveState = 'off' | 'active' | 'sat' | 'on' | 'reg' | 'dropout';
+export type ActiveState = 'off' | 'active' | 'sat' | 'on' | 'reg' | 'dropout' | 'dead';
 
 export interface SolveResult {
   /** False when the equations had no unique solution (see faults). */

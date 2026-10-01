@@ -179,6 +179,16 @@ export const FORMULAS: Record<string, Formula> = {
     terms: [['changeover', 'a switch with a common leg that joins one of two others'], ['travellers', 'the two wires between the switches']],
     when: 'Either input flips the output; it is the sum bit when adding two bits.',
   },
+  chip: {
+    name: '14-pin logic chip', expr: 'VCC = pin 14 · GND = pin 7',
+    terms: [['notch', 'marks the pin 1 end; pins count anticlockwise from it'], ['quad 2-input', 'four gates: 1,2→3 · 4,5→6 · 9,10→8 · 12,13→11'], ['pull-down', '10 kΩ to GND holds an input low when nothing drives it']],
+    when: 'Power first, then wire gates by their pin numbers; never leave a CMOS input floating.',
+  },
+  adder: {
+    name: 'Half adder', expr: 'sum = A XOR B · carry = A AND B',
+    terms: [['sum', 'the right-hand digit of A + B'], ['carry', 'the 1 carried to the next column (1 + 1 = 10)']],
+    when: 'Two bits in, two out; a full adder adds a carry in as well.',
+  },
   rc: {
     name: 'RC time constant', expr: 'τ = R × C',
     terms: [['τ', 'the time to reach 63 % of the final voltage (seconds)'], ['R', 'ohms'], ['C', 'farads (100 µF = 0.0001 F)'], ['V(t)', 'V × (1 − e^(−t/τ))']],
@@ -203,6 +213,8 @@ const LEVEL: Record<string, { parts: PartId[]; formulas: string[]; generators: s
   'w1-04-not': { parts: ['transistor', 'resistor'], formulas: ['inverter', 'npn', 'led'], generators: ['led-resistor', 'ohm'] },
   'w1-05-not-both': { parts: ['transistor'], formulas: ['nand', 'inverter', 'npn'], generators: ['led-resistor'] },
   'w1-06-stairwell': { parts: ['led'], formulas: ['xor', 'logic'], generators: ['led-resistor'] },
+  'w1-07-power-the-chip': { parts: ['multimeter'], formulas: ['chip', 'nand'], generators: ['led-resistor'] },
+  'w1-08-half-adder': { parts: ['led'], formulas: ['adder', 'xor', 'chip'], generators: ['led-resistor'] },
 };
 
 /** A stable seed per level so the worked example is the same each time you open it. */

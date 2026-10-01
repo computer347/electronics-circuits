@@ -4,6 +4,7 @@
  * whether it's lit, dark, backwards or burnt). Plain words first, numbers second.
  */
 import { colorBands } from '../breadboard/colorCode';
+import { CHIPS, DEFAULT_CHIP, GND_PIN, VCC_PIN } from '../breadboard/chips';
 import { currentLegs, type BoardAnalysis, type BoardPart } from '../breadboard/model';
 import { formatSI } from '../lib/units';
 
@@ -19,7 +20,7 @@ export interface PartInfo {
 
 const KIND_NAME: Record<BoardPart['kind'], string> = {
   resistor: 'Resistor', led: 'LED', wire: 'Jumper wire', button: 'Push button', battery: 'Battery', capacitor: 'Capacitor', generator: 'Function generator',
-  diode: 'Diode', pot: 'Potentiometer', npn: 'NPN transistor', nmos: 'MOSFET', regulator: 'Voltage regulator', toggle: 'Toggle switch', spdt: 'Changeover switch',
+  diode: 'Diode', pot: 'Potentiometer', npn: 'NPN transistor', nmos: 'MOSFET', regulator: 'Voltage regulator', toggle: 'Toggle switch', spdt: 'Changeover switch', dip: 'Logic chip',
 };
 /** What each leg of a three-legged part is, in hole order. */
 export const LEG_NAMES: Partial<Record<BoardPart['kind'], [string, string, string]>> = {
@@ -39,6 +40,7 @@ export function valueOf(p: BoardPart): string {
     case 'button': return p.pressed ? 'pressed' : 'open';
     case 'toggle': return p.pressed ? 'on (1)' : 'off (0)';
     case 'spdt': return p.pressed ? 'to B (1)' : 'to A (0)';
+    case 'dip': return p.marking ?? DEFAULT_CHIP;
     case 'pot': return `${formatSI(p.ohms ?? 10000, 'Ω')} · ${Math.round((p.position ?? 0.5) * 100)} %`;
     case 'diode': case 'npn': case 'nmos': return p.marking ?? '';
     case 'regulator': return `${p.marking ?? 'LM7805'} · ${p.vout ?? 5} V`;
@@ -76,6 +78,25 @@ export function partInfo(p: BoardPart, a: BoardAnalysis): PartInfo {
   if (p.kind === 'npn' && ok) { const ib = Math.abs(a.result.currents[`${p.id}.base`] ?? 0); rows.push(['Base current', formatSI(ib, 'A')]); state = amps > 1e-4 ? (ib * 200 > amps * 1.5 ? 'switched fully on (saturated)' : 'on: amplifying the base current') : 'off: no base current'; tone = amps > 1e-4 ? 'good' : 'neutral'; }
   if (p.kind === 'nmos' && ok) { state = amps > 1e-4 ? 'on: the gate is above its threshold' : 'off: gate below 2 V'; tone = amps > 1e-4 ? 'good' : 'neutral'; }
   if (p.kind === 'diode' && ok) { state = amps > 1e-4 ? 'conducting' : across !== undefined && across < -0.5 ? 'blocking (reverse biased)' : 'not conducting'; tone = 'neutral'; }
+  if (p.kind === 'dip' && p.pins) {
+    const chip = CHIPS[p.marking ?? DEFAULT_CHIP];
+    if (chip) {
+      rows[0] = ['Part', `${p.marking ?? DEFAULT_CHIP} · ${chip.name}`];
+      rows.splice(1);
+      const supply = (a.voltageAt(p.pins[VCC_PIN - 1]!) ?? 0) - (a.voltageAt(p.pins[GND_PIN - 1]!) ?? 0);
+      rows.push(['VCC (pin 14) to GND (pin 7)', formatSI(legVolts(supply), 'V')]);
+      const dead = chip.gates.every((_, k) => (a.result.activeStates[`${p.id}.${k + 1}`] ?? 'dead') === 'dead');
+      if (dead) { state = 'not powered: pin 14 goes to +, pin 7 to −'; tone = 'bad'; }
+      else {
+        state = 'powered'; tone = 'good';
+        chip.gates.forEach((g, k) => {
+          const on = a.result.activeStates[`${p.id}.${k + 1}`] === 'on';
+          rows.push([`Gate ${k + 1} (${g.inputs.map((i) => `pin ${i}`).join(', ')} → ${g.output})`, on ? 'out high (1)' : 'out low (0)']);
+        });
+      }
+      return { tag, state, tone, rows };
+    }
+  }
   if (p.kind === 'capacitor' && across !== undefined) { state = `charged to ${formatSI(Math.abs(across), 'V')}`; tone = 'neutral'; }
   if (p.kind !== 'led' && a.shortedParts.includes(p.id)) { state = 'both legs on the same strip: it does nothing'; tone = 'bad'; }
   return { tag, state, tone, rows };

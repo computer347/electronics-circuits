@@ -1,0 +1,178 @@
+{
+  "id": "w1-07-power-the-chip",
+  "world": 1,
+  "number": 7,
+  "title": "Power the chip",
+  "format": "find-fault",
+  "skills": [
+    "chip.power-pins",
+    "chip.pinout",
+    "logic.nand"
+  ],
+  "brief": {
+    "story": "Four NAND gates in one black package: a 74HC00. Someone wired its gate 1 to two switches and an LED, and it does nothing at all, whatever the switches do. The chip isn't broken.",
+    "goal": "Make LED1 follow NAND of SA and SB (dark only when both are on) using IC1's gate 1.",
+    "datasheet": {
+      "title": "IC1 · 74HC00 (notch on the left)",
+      "rows": [
+        [
+          "Pins 1, 2 → 3",
+          "gate 1: 1A, 1B → 1Y"
+        ],
+        [
+          "Pin 14",
+          "VCC, + supply"
+        ],
+        [
+          "Pin 7",
+          "GND"
+        ],
+        [
+          "Supply",
+          "2–6 V (5 V here)"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "A chip is powered through its own pins, like any other part. Select IC1: its card says whether it's powered.",
+    "Pin 14 is top left (column 10, row f), pin 7 bottom right (column 16, row e). Neither is wired.",
+    "A wire from column 10 (rows f–j) to the + rail at the top, and one from column 16 (rows a–d) to a − rail."
+  ],
+  "board": {
+    "supply": {
+      "volts": 5,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "IC1",
+        "kind": "dip",
+        "h1": "e10",
+        "h2": "f16",
+        "pins": [
+          "e10",
+          "e11",
+          "e12",
+          "e13",
+          "e14",
+          "e15",
+          "e16",
+          "f16",
+          "f15",
+          "f14",
+          "f13",
+          "f12",
+          "f11",
+          "f10"
+        ],
+        "marking": "74HC00"
+      },
+      {
+        "id": "WP",
+        "kind": "wire",
+        "h1": "T+:25",
+        "h2": "B+:25",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WN",
+        "kind": "wire",
+        "h1": "T-:24",
+        "h2": "B-:24",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "SA",
+        "kind": "toggle",
+        "h1": "B+:8",
+        "h2": "a10",
+        "pressed": false
+      },
+      {
+        "id": "RA",
+        "kind": "resistor",
+        "h1": "b10",
+        "h2": "B-:7",
+        "ohms": 10000
+      },
+      {
+        "id": "SB",
+        "kind": "toggle",
+        "h1": "B+:9",
+        "h2": "a11",
+        "pressed": false
+      },
+      {
+        "id": "RB",
+        "kind": "resistor",
+        "h1": "b11",
+        "h2": "B-:10",
+        "ohms": 10000
+      },
+      {
+        "id": "R1",
+        "kind": "resistor",
+        "h1": "c12",
+        "h2": "c20",
+        "ohms": 330
+      },
+      {
+        "id": "LED1",
+        "kind": "led",
+        "h1": "d20",
+        "h2": "d22",
+        "color": "red"
+      },
+      {
+        "id": "WL",
+        "kind": "wire",
+        "h1": "a22",
+        "h2": "B-:18",
+        "wireColor": "#2f6fe0"
+      }
+    ]
+  },
+  "locked": [
+    "IC1",
+    "WP",
+    "WN",
+    "SA",
+    "RA",
+    "SB",
+    "RB",
+    "R1",
+    "LED1",
+    "WL"
+  ],
+  "tools": [
+    "wire",
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "truth-table",
+      "inputs": [
+        "SA",
+        "SB"
+      ],
+      "output": "LED1",
+      "table": [
+        1,
+        1,
+        1,
+        0
+      ],
+      "label": "LED1 = SA NAND SB",
+      "explain": "With no supply on pins 14 and 7 the chip can't drive anything: its gates have nothing to switch the output to."
+    },
+    {
+      "kind": "no-burnt"
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 2
+  },
+  "debrief": "Logic chips are powered through their own pins: VCC (14) and GND (7) on nearly every 14-pin chip. Forget them and nothing works. The 10 kΩ pull-downs matter too: they hold each input low while its switch is off, because a CMOS input left floating reads high, low or anything in between."
+}

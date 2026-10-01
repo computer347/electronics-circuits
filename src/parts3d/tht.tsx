@@ -193,3 +193,28 @@ export function TO220({ marking = 'IRLZ44N' }: { marking?: string }) {
     </group>
   );
 }
+
+/**
+ * DIP-14 logic chip (7.62 mm row spacing, 2.54 mm pitch): the notch and pin-1 dot at −x, pins
+ * 1–7 along +z (the side facing you) left to right, 8–14 back along −z.
+ */
+export function Dip14({ marking = '74HC00' }: { marking?: string }) {
+  return (
+    <group>
+      <mesh position={[0, 2.4, 0]} castShadow><boxGeometry args={[19.3, 3.3, 6.35]} /><meshStandardMaterial color="#17181a" roughness={0.6} /></mesh>
+      <mesh position={[-9.66, 4.06, 0]} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[1, 20, -Math.PI / 2, Math.PI]} /><meshBasicMaterial color="#050505" /></mesh>
+      <mesh position={[-7.6, 4.07, 2.1]} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[0.45, 16]} /><meshBasicMaterial color="#2a2c2e" /></mesh>
+      <mesh position={[0.6, 4.07, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[14, 3.4]} /><meshBasicMaterial map={printTexture([marking, 'TI  8C K4'], { size: 40, w: 512, h: 128, fg: '#c8c8c8' })} transparent /></mesh>
+      {Array.from({ length: 7 }, (_, i) => (i - 3) * 2.54).flatMap((x) => [
+        <group key={`f${x}`}>
+          <mesh position={[x, 1.4, 3.6]}><boxGeometry args={[1.5, 0.25, 1.2]} /><meshStandardMaterial {...TIN} /></mesh>
+          <Leg x={x} z={3.81} y0={1.4} y1={-3} r={0.25} />
+        </group>,
+        <group key={`b${x}`}>
+          <mesh position={[x, 1.4, -3.6]}><boxGeometry args={[1.5, 0.25, 1.2]} /><meshStandardMaterial {...TIN} /></mesh>
+          <Leg x={x} z={-3.81} y0={1.4} y1={-3} r={0.25} />
+        </group>,
+      ])}
+    </group>
+  );
+}

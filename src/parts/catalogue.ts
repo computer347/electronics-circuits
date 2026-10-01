@@ -63,7 +63,10 @@ export const CATALOGUE: CatalogueEntry[] = [
   // ---- transistors and power
   { id: 'npn-bc547', name: 'NPN transistor BC547', family: 'semiconductor', package: 'TO-92', pins: ['E', 'B', 'C'], model: 'npn-bc547',
     job: 'A small current into the base switches a bigger current from collector to emitter.',
-    facts: [{ label: 'E B C', text: 'left to right, flat face towards you' }, { label: 'Vbe 0.7 V', text: 'the base needs about 0.7 V to turn on' }, { label: 'Gain', text: 'collector current is about 100 × base current' }] },
+    facts: [{ label: 'C B E', text: 'left to right, flat face towards you' }, { label: 'Vbe 0.7 V', text: 'the base needs about 0.7 V to turn on' }, { label: 'Gain', text: 'collector current is 110–800 × base current (about 200 here)' }] },
+  { id: 'dip14-74hc00', name: 'Logic chip 74HC00', family: 'semiconductor', package: 'DIP-14', pins: ['1A', '1B', '1Y', '2A', '2B', '2Y', 'GND', '3Y', '3A', '3B', '4Y', '4A', '4B', 'VCC'], model: 'dip14-74hc00',
+    job: 'Four NAND gates in one package. It needs power on its own pins: VCC on 14, GND on 7.',
+    facts: [{ label: 'Notch', text: 'marks the pin 1 end; pins count anticlockwise from it' }, { label: 'Pin 14', text: 'VCC, 2–6 V' }, { label: 'Pin 7', text: 'GND' }, { label: '74HC08, 32, 86', text: 'same pins, with AND, OR and XOR gates' }] },
   { id: 'mosfet-irlz44n', name: 'MOSFET IRLZ44N', family: 'semiconductor', package: 'TO-220', pins: ['G', 'D', 'S'], model: 'mosfet-irlz44n',
     job: 'A voltage on the gate switches a big current from drain to source; logic level, so 5 V turns it fully on.',
     facts: [{ label: 'G D S', text: 'left to right, printed face towards you' }, { label: 'Threshold', text: 'about 2 V on the gate starts it' }, { label: 'Tab', text: 'is the drain' }] },

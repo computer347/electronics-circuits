@@ -1,0 +1,274 @@
+{
+  "id": "w1-08-half-adder",
+  "world": 1,
+  "number": 8,
+  "title": "Half adder",
+  "format": "build",
+  "skills": [
+    "logic.half-adder",
+    "logic.xor",
+    "logic.and",
+    "chip.pinout"
+  ],
+  "brief": {
+    "story": "Adding two bits: 0 + 0 = 0, 0 + 1 = 1, 1 + 1 = 10 (two). The sum digit is XOR, the carry is AND. IC1 (74HC86, XOR) already makes the sum on LEDS. IC2 (74HC08, AND) is powered and has its carry LED, but its inputs aren't wired to A and B.",
+    "goal": "Wire IC2's gate 1 (pins 1 and 2) to A and B, so LEDS shows the sum and LEDC the carry of A + B.",
+    "datasheet": {
+      "title": "Half adder",
+      "rows": [
+        [
+          "A + B",
+          "carry · sum"
+        ],
+        [
+          "0 + 0",
+          "0 · 0"
+        ],
+        [
+          "0 + 1  /  1 + 0",
+          "0 · 1"
+        ],
+        [
+          "1 + 1",
+          "1 · 0"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "A is column 3 and B column 4 (they also go into IC1's pins 1 and 2). IC2's pins 1 and 2 are columns 14 and 15, row e.",
+    "Two wires: one from a free hole in column 3 to column 14, one from column 4 to column 15 (rows a–d).",
+    "Wire c3 to a14 and d4 to a15. Then LEDC is lit only with both A and B on."
+  ],
+  "board": {
+    "supply": {
+      "volts": 5,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "IC1",
+        "kind": "dip",
+        "h1": "e3",
+        "h2": "f9",
+        "pins": [
+          "e3",
+          "e4",
+          "e5",
+          "e6",
+          "e7",
+          "e8",
+          "e9",
+          "f9",
+          "f8",
+          "f7",
+          "f6",
+          "f5",
+          "f4",
+          "f3"
+        ],
+        "marking": "74HC86"
+      },
+      {
+        "id": "IC2",
+        "kind": "dip",
+        "h1": "e14",
+        "h2": "f20",
+        "pins": [
+          "e14",
+          "e15",
+          "e16",
+          "e17",
+          "e18",
+          "e19",
+          "e20",
+          "f20",
+          "f19",
+          "f18",
+          "f17",
+          "f16",
+          "f15",
+          "f14"
+        ],
+        "marking": "74HC08"
+      },
+      {
+        "id": "WP",
+        "kind": "wire",
+        "h1": "T+:25",
+        "h2": "B+:25",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WN",
+        "kind": "wire",
+        "h1": "T-:24",
+        "h2": "B-:24",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "WV1",
+        "kind": "wire",
+        "h1": "g3",
+        "h2": "T+:2",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WG1",
+        "kind": "wire",
+        "h1": "a9",
+        "h2": "B-:7",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "WV2",
+        "kind": "wire",
+        "h1": "g14",
+        "h2": "T+:11",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WG2",
+        "kind": "wire",
+        "h1": "a20",
+        "h2": "B-:16",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "SA",
+        "kind": "toggle",
+        "h1": "B+:2",
+        "h2": "a3",
+        "pressed": false
+      },
+      {
+        "id": "RA",
+        "kind": "resistor",
+        "h1": "b3",
+        "h2": "B-:1",
+        "ohms": 10000
+      },
+      {
+        "id": "SB",
+        "kind": "toggle",
+        "h1": "B+:3",
+        "h2": "a4",
+        "pressed": false
+      },
+      {
+        "id": "RB",
+        "kind": "resistor",
+        "h1": "b4",
+        "h2": "B-:4",
+        "ohms": 10000
+      },
+      {
+        "id": "RS",
+        "kind": "resistor",
+        "h1": "c5",
+        "h2": "c11",
+        "ohms": 330
+      },
+      {
+        "id": "LEDS",
+        "kind": "led",
+        "h1": "d11",
+        "h2": "d13",
+        "color": "yellow"
+      },
+      {
+        "id": "WS",
+        "kind": "wire",
+        "h1": "a13",
+        "h2": "B-:10",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "RC",
+        "kind": "resistor",
+        "h1": "c16",
+        "h2": "c22",
+        "ohms": 330
+      },
+      {
+        "id": "LEDC",
+        "kind": "led",
+        "h1": "d22",
+        "h2": "d24",
+        "color": "red"
+      },
+      {
+        "id": "WC",
+        "kind": "wire",
+        "h1": "a24",
+        "h2": "B-:20",
+        "wireColor": "#2f6fe0"
+      }
+    ]
+  },
+  "locked": [
+    "IC1",
+    "IC2",
+    "WP",
+    "WN",
+    "WV1",
+    "WG1",
+    "WV2",
+    "WG2",
+    "SA",
+    "RA",
+    "SB",
+    "RB",
+    "RS",
+    "LEDS",
+    "WS",
+    "RC",
+    "LEDC",
+    "WC"
+  ],
+  "tools": [
+    "wire",
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "truth-table",
+      "inputs": [
+        "SA",
+        "SB"
+      ],
+      "output": "LEDS",
+      "table": [
+        0,
+        1,
+        1,
+        0
+      ],
+      "label": "LEDS = sum (A XOR B)"
+    },
+    {
+      "kind": "truth-table",
+      "inputs": [
+        "SA",
+        "SB"
+      ],
+      "output": "LEDC",
+      "table": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "label": "LEDC = carry (A AND B)",
+      "explain": "The carry is 1 only for 1 + 1: AND of the same two inputs the XOR gets."
+    },
+    {
+      "kind": "no-burnt"
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 2
+  },
+  "debrief": "XOR makes the sum bit and AND the carry: a half adder. Chain them (a full adder adds the carry in too) and you can add numbers of any size: every calculator and CPU adds like this, billions of times a second."
+}

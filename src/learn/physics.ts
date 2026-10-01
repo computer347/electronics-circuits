@@ -233,3 +233,20 @@ export function logicLab(gate: Gate, inputs: boolean[]): { lit: boolean; amps: n
 export const GATE_TRUTH: Record<Gate, (x: boolean[]) => boolean> = {
   AND: (x) => !!x[0] && !!x[1], OR: (x) => !!x[0] || !!x[1], NOT: (x) => !x[0], NAND: (x) => !(x[0] && x[1]), XOR: (x) => !!x[0] !== !!x[1],
 };
+
+/**
+ * A half adder from two chips' gates (74HC86 XOR for the sum, 74HC08 AND for the carry), on
+ * 5 V, solved: each output drives a 10 kΩ load, high above 2.5 V.
+ */
+export function adderLab(a: boolean, b: boolean): { sum: boolean; carry: boolean } {
+  const r = solve({ components: [
+    { kind: 'vsource', id: 'VCC', a: 'vcc', b: '0', volts: 5 },
+    { kind: 'vsource', id: 'A', a: 'a', b: '0', volts: a ? 5 : 0 },
+    { kind: 'vsource', id: 'B', a: 'b', b: '0', volts: b ? 5 : 0 },
+    { kind: 'gate', id: 'XOR', fn: 'XOR', a: 's', b: '0', vcc: 'vcc', inputs: ['a', 'b'] },
+    { kind: 'gate', id: 'AND', fn: 'AND', a: 'c', b: '0', vcc: 'vcc', inputs: ['a', 'b'] },
+    { kind: 'resistor', id: 'LS', a: 's', b: '0', ohms: 10000 },
+    { kind: 'resistor', id: 'LC', a: 'c', b: '0', ohms: 10000 },
+  ] });
+  return { sum: (r.nodeVoltages.s ?? 0) > 2.5, carry: (r.nodeVoltages.c ?? 0) > 2.5 };
+}

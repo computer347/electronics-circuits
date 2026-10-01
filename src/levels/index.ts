@@ -21,10 +21,12 @@ import either from './world1/03-either.json';
 import notGate from './world1/04-not.json';
 import notBoth from './world1/05-not-both.json';
 import stairwell from './world1/06-stairwell.json';
+import powerTheChip from './world1/07-power-the-chip.json';
+import halfAdder from './world1/08-half-adder.json';
 
 export class LevelError extends Error {}
 
-const TOOLS = new Set(['select', 'wire', 'resistor', 'led', 'button', 'toggle', 'spdt', 'battery', 'capacitor', 'generator', 'diode', 'pot', 'npn', 'nmos', 'regulator', 'probe', 'scope']);
+const TOOLS = new Set(['select', 'wire', 'resistor', 'led', 'button', 'toggle', 'spdt', 'dip', 'battery', 'capacitor', 'generator', 'diode', 'pot', 'npn', 'nmos', 'regulator', 'probe', 'scope']);
 
 export function parseLevel(raw: unknown): LevelDef {
   const l = raw as LevelDef;
@@ -35,7 +37,7 @@ export function parseLevel(raw: unknown): LevelDef {
   for (const p of l.board.parts) {
     if (ids.has(p.id)) fail(`duplicate part id ${p.id}`);
     ids.add(p.id);
-    for (const h of [p.h1, p.h2, ...(p.h3 ? [p.h3] : [])]) if (!HOLE_BY_ID.has(h)) fail(`${p.id} uses a hole that doesn't exist: ${h}`);
+    for (const h of [p.h1, p.h2, ...(p.h3 ? [p.h3] : []), ...(p.pins ?? [])]) if (!HOLE_BY_ID.has(h)) fail(`${p.id} uses a hole that doesn't exist: ${h}`);
   }
   for (const id of [...(l.locked ?? []), ...(l.pinned ?? [])]) if (!ids.has(id)) fail(`locked part ${id} isn't on the board`);
   for (const t of l.tools) if (!TOOLS.has(t)) fail(`unknown tool ${t}`);
@@ -78,7 +80,7 @@ export const WORLD0_PLAN = [
 ];
 
 /** World 1: logic, built first from the parts World 0 taught (switches, transistors). */
-export const WORLD1: LevelDef[] = [countInLights, both, either, notGate, notBoth, stairwell].map(parseLevel);
+export const WORLD1: LevelDef[] = [countInLights, both, either, notGate, notBoth, stairwell, powerTheChip, halfAdder].map(parseLevel);
 
 export const WORLD1_PLAN = [
   { number: 1, title: 'Count in lights', topic: 'Binary' },
@@ -87,6 +89,8 @@ export const WORLD1_PLAN = [
   { number: 4, title: 'Not', topic: 'NOT (inverter)' },
   { number: 5, title: 'Not both', topic: 'NAND' },
   { number: 6, title: 'Stairwell', topic: 'XOR' },
+  { number: 7, title: 'Power the chip', topic: 'Logic chips' },
+  { number: 8, title: 'Half adder', topic: 'Adding bits' },
 ];
 
 export interface World { number: number; name: string; levels: LevelDef[]; plan: { number: number; title: string; topic: string }[] }

@@ -3,6 +3,7 @@
  * can be changed, turned round or taken out. Example circuits and the supply voltage live in
  * a small row underneath.
  */
+import { CHIPS } from '../breadboard/chips';
 import { isElectrolytic, type BoardPart } from '../breadboard/model';
 import { BENCH_PRESETS, useBench, type Tool } from '../breadboard/store';
 import { useScope } from '../instruments/scopeStore';
@@ -66,6 +67,14 @@ function ValueEditor({ kind, part, onPatch }: { kind: Tool; part?: BoardPart; on
       </>
     );
   }
+  if (kind === 'dip') {
+    const value = part?.marking ?? s.chip;
+    return (
+      <span className="tray-shapes">
+        {Object.keys(CHIPS).map((c) => <button key={c} className={c === value ? 'on' : ''} title={CHIPS[c]!.name} onClick={() => (part ? onPatch({ marking: c }) : b.setChip(c))}>{c.replace('74HC', '')}</button>)}
+      </span>
+    );
+  }
   if (kind === 'regulator' && part) {
     return <Step value={part.vout ?? 5} values={[3.3, 5, 9, 12]} fmt={(v) => `${REGULATORS[v] ?? ''} · ${v} V`} onChange={(v) => onPatch({ vout: v, marking: REGULATORS[v] })} />;
   }
@@ -98,7 +107,7 @@ export function SandboxTray() {
         {tool !== 'select' && tool !== 'probe' && tool !== 'scope' && (
           <>
             <ValueEditor kind={tool} onPatch={() => {}} />
-            <span className="desk-pict"><span className="dot pink" /> {LEG_HINT[tool] ? `click the first of three holes in a row: ${LEG_HINT[tool]}` : pending ? 'now the second hole' : 'click two holes'}</span>
+            <span className="desk-pict"><span className="dot pink" /> {tool === 'dip' ? 'click a column for pin 1: the chip straddles the centre gap, notch on the left' : LEG_HINT[tool] ? `click the first of three holes in a row: ${LEG_HINT[tool]}` : pending ? 'now the second hole' : 'click two holes'}</span>
           </>
         )}
         {tool === 'select' && part && (

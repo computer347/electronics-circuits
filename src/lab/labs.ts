@@ -92,6 +92,9 @@ export const LABS: LabSpec[] = [
   { part: 'npn-bc547', kind: 'pins', legs: ['leg 1', 'leg 2', 'leg 3'], modes: ['diode', 'Ω'], circuit: [D('BE', 'L2', 'L3', 0.68), D('BC', 'L2', 'L1', 0.66)], answer: 1,
     ask: 'An NPN transistor with its print worn off. Which leg is the base?', skill: 'Find a transistor’s base with the diode test.', why: 'A transistor is two diodes back to back. Finding the base is the first step to working out any unknown transistor.',
     hint: 'Red on the base reads about 0.7 V to both of the other legs. No other leg does that.', explain: 'Red on leg 2 reads ~0.7 V to leg 1 and to leg 3: leg 2 is the base. (The slightly higher reading, to leg 3, is the emitter.)' },
+  { part: 'dip14-74hc00', kind: 'read', options: ['pin 1', 'pin 7', 'pin 8', 'pin 14'], answer: 3,
+    ask: 'A 74HC00, notch to the left. Which pin takes the + supply (VCC)?', skill: 'Find a logic chip’s power pins from its notch.', why: 'A chip with no power on its VCC and GND pins does nothing at all. It’s the commonest reason a first logic circuit stays dead.',
+    hint: 'Pins count anticlockwise from the notch: 1–7 along the bottom, 8–14 back along the top. Power is at the corners: GND bottom right, VCC top left.', explain: 'Pin 14, top left next to the notch, is VCC; pin 7, bottom right, is GND. Almost every 14-pin logic chip uses those two.' },
   { part: 'mosfet-irlz44n', kind: 'use', options: ['No: it needs 10 V on the gate', 'Yes: it’s a logic-level MOSFET', 'Only with a resistor in series'], answer: 1,
     outcome: (i) => {
       const r = solve({ components: [V('PIN', 'G', '0', 3.3), V('SUP', 'S12', '0', 12), R('LOAD', 'S12', 'D', 12), { kind: 'nmos', id: 'M', a: 'D', b: '0', gate: 'G', vth: 2, ron: 0.022 }] });

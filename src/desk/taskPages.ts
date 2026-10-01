@@ -6,7 +6,7 @@
 import type { LevelDef } from '../levels/types';
 
 export type TaskPicture = 'led' | 'two-leds' | 'divider' | 'rc' | 'fork' | 'button' | 'cells' | 'bridge' | 'transistor'
-  | 'binary' | 'and' | 'or' | 'not' | 'nand' | 'xor';
+  | 'binary' | 'and' | 'or' | 'not' | 'nand' | 'xor' | 'chip' | 'adder';
 
 export interface TaskPage {
   label: string;
@@ -137,6 +137,20 @@ const EXTRA: Record<string, { headline: string; tip: string; picture: TaskPictur
     picture: 'xor',
     skill: 'Wire two-way switching with changeover switches, and read XOR from it.',
     realLife: 'Every stairwell, hallway and long room with a switch at each end is wired like this, and XOR is how a computer adds two bits.',
+  },
+  'w1-07-power-the-chip': {
+    headline: 'Wake the chip up.',
+    tip: 'Every logic chip needs its own power: VCC on pin 14 (top left, by the notch) and GND on pin 7 (bottom right).',
+    picture: 'chip',
+    skill: 'Find a logic chip’s pins from its notch and power it through VCC and GND.',
+    realLife: 'Every chip on every board, from a 74HC00 to an ESP32, has supply pins. A dead chip is so often just an unpowered one.',
+  },
+  'w1-08-half-adder': {
+    headline: 'Add two bits: sum and carry.',
+    tip: 'The sum is XOR, the carry is AND, of the same two inputs. IC2’s gate 1 takes its inputs on pins 1 and 2.',
+    picture: 'adder',
+    skill: 'Build a half adder from XOR and AND chips, and read sum and carry.',
+    realLife: 'Adders are the heart of every calculator and CPU: chained, they add numbers of any size.',
   },
 };
 

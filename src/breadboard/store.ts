@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { LedColor, Waveform } from '../sim';
 import type { HoleId } from './layout';
 import type { ScopeSetup } from '../instruments/scopeStore';
+import { colOf, DEFAULT_CHIP, dipPins } from './chips';
 import { hole, HOLES } from './layout';
 import { DEFAULT_WAVE, THREE_LEGGED, type BoardPart, type BoardPartKind, type BoardState } from './model';
 import { connectedGroup, occupiedHoles, translateParts, type MoveMode } from './move';
@@ -49,6 +50,9 @@ interface BenchStore extends BoardState {
   select: (id: string | null) => void;
   removeSelected: () => void;
   togglePress: (id: string, pressed: boolean) => void;
+  /** Which chip the chip tool places. */
+  chip: string;
+  setChip: (chip: string) => void;
   markBurnt: (ids: string[]) => void;
   replaceLed: (id: string) => void;
   setShowStrips: (v: boolean) => void;
@@ -86,7 +90,7 @@ export interface BenchExtras {
 
 const PREFIX: Record<BoardPartKind, string> = {
   resistor: 'R', led: 'LED', wire: 'W', button: 'SW', battery: 'B', capacitor: 'C', generator: 'FG',
-  diode: 'D', pot: 'RV', npn: 'Q', nmos: 'Q', regulator: 'U', toggle: 'S', spdt: 'S',
+  diode: 'D', pot: 'RV', npn: 'Q', nmos: 'Q', regulator: 'U', toggle: 'S', spdt: 'S', dip: 'IC',
 };
 /** What a new three-legged part is when it's placed. */
 const THREE_DEFAULTS: Partial<Record<BoardPartKind, Partial<BoardPart>>> = {
@@ -165,6 +169,16 @@ export const useBench = create<BenchStore>((set, get) => ({
       return set({ scopeProbes: { ...s.scopeProbes, [next]: h }, scopeNext: next === 'ch1' ? 'ch2' : 'ch1' });
     }
     if (occupiedHoles(s.parts).has(h)) return set({ notice: 'That hole already has a leg in it.' });
+    // A chip goes in with one click on the column for pin 1, straddling the centre gap.
+    if (s.tool === 'dip') {
+      const col = colOf(h);
+      const pins = col === null ? null : dipPins(col);
+      const taken = occupiedHoles(s.parts);
+      if (!pins) return set({ notice: 'A chip needs seven columns, starting here: click nearer the left.' });
+      if (pins.some((x) => taken.has(x))) return set({ notice: 'A chip sits in rows e and f, across the gap: those holes need to be free.' });
+      const id = nextId('dip', s.parts);
+      return set({ parts: [...s.parts, { id, kind: 'dip', h1: pins[0]!, h2: pins[7]!, pins, marking: s.chip }], pending: null, selected: id });
+    }
     // Three-legged parts go in with one click: that hole and the next two along the row.
     if (THREE_LEGGED.includes(s.tool as BoardPartKind)) {
       const kind = s.tool as BoardPartKind;
@@ -195,6 +209,8 @@ export const useBench = create<BenchStore>((set, get) => ({
   removeSelected: () => set((s) => (s.selected && (s.locked.includes(s.selected) || s.pinned.includes(s.selected))
     ? { notice: 'That part belongs to the level, so it stays put.' }
     : { parts: s.parts.filter((p) => p.id !== s.selected), selected: null })),
+  chip: DEFAULT_CHIP,
+  setChip: (chip) => set({ chip }),
   togglePress: (id, pressed) => set((s) => ({ parts: s.parts.map((p) => (p.id === id ? { ...p, pressed } : p)) })),
   markBurnt: (ids) => set((s) => {
     const fresh = s.parts.filter((p) => ids.includes(p.id) && !p.burnt).length;
@@ -217,7 +233,12 @@ export const useBench = create<BenchStore>((set, get) => ({
   updatePart: (id, patch) => set((s) => (s.locked.includes(id) ? { notice: 'That part belongs to the level, so it stays put.' } : { parts: s.parts.map((p) => (p.id === id ? { ...p, ...patch } : p)) })),
   // Turning a part round swaps its end legs (a three-legged part keeps its middle leg).
   flipPart: (id) => set((s) => (s.locked.includes(id) ? { notice: 'That part belongs to the level, so it stays put.' }
-    : { parts: s.parts.map((p) => (p.id !== id ? p : p.h3 ? { ...p, h1: p.h3, h3: p.h1 } : { ...p, h1: p.h2, h2: p.h1 })) })),
+    : { parts: s.parts.map((p) => {
+      if (p.id !== id) return p;
+      // A chip turned round: pin 1 goes where pin 8 was.
+      if (p.pins) { const pins = p.pins.map((_, i) => p.pins![(i + 7) % 14]!); return { ...p, pins, h1: pins[0]!, h2: pins[7]! }; }
+      return p.h3 ? { ...p, h1: p.h3, h3: p.h1 } : { ...p, h1: p.h2, h2: p.h1 };
+    }) })),
   openMenu: (partId, x, y, anchor) => set({ menu: { partId, x, y, anchor }, selected: partId }),
   closeMenu: () => set({ menu: null }),
   startMove: (partId, anchor, mode) => {
