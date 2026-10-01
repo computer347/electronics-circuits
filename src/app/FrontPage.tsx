@@ -13,13 +13,14 @@ import { useProgress, worldStars } from '../levels/progress';
 import { nextLevel } from '../desk/levelPick';
 import { CATALOGUE } from '../parts/catalogue';
 
-export type FrontChoice = 'continue' | 'play' | 'learn' | 'practice' | 'workshop';
+export type FrontChoice = 'continue' | 'play' | 'learn' | 'practice' | 'workshop' | 'career';
 
 const CHOICES: { id: Exclude<FrontChoice, 'continue'>; label: string; key: string }[] = [
   { id: 'play', label: 'Level map', key: '1' },
   { id: 'learn', label: 'Learn', key: '2' },
   { id: 'practice', label: 'Practice', key: '3' },
   { id: 'workshop', label: 'Workshop', key: '4' },
+  { id: 'career', label: 'Career', key: '5' },
 ];
 
 const Icon = {
@@ -149,15 +150,21 @@ export function FrontPage({ onChoose }: { onChoose: (c: FrontChoice) => void }) 
           <li><b>Code</b> a blink, an uptime clock or a status screen on a real OLED, in nodes that write real Arduino code.</li>
           <li><b>Wire</b> sensors and screens to the board, and prove they answer with an I²C scanner.</li>
           <li><b>Identify</b> {parts} parts in the Parts Lab, from a resistor’s bands to a TSOP flash chip.</li>
+          <li><b>Grow</b> the business: every job pays for its parts and your time; spend it on better tools that open harder work.</li>
         </ul>
         <button className="landing-link" onClick={() => onChoose('workshop')}>Go to the workshop →</button>
+      </Section>
+
+      <Section id="career" kicker="Your career" title="From hobbyist to Master Engineer">
+        <p className="landing-note">Training earns <b>certificates</b> (Ohm’s law and LEDs, fault finding, logic chips…), jobs earn credits and reputation, and tools open new tiers of work. Six ranks, eleven certificates and a wall of achievements stand between you and your own lab.</p>
+        <button className="landing-link" onClick={() => onChoose('career')}>See your career →</button>
       </Section>
 
       {/* ---------------------------------------------------------------- the button again */}
       <footer className="landing-end">
         <p className="landing-end-line">You are an electron. Build the path, then walk it.</p>
         <Cta big />
-        <p className="landing-small">Enter to {started ? 'continue' : 'start'} · 1–4 for the menu · Install it from your browser to play offline</p>
+        <p className="landing-small">Enter to {started ? 'continue' : 'start'} · 1–5 for the menu · Install it from your browser to play offline</p>
       </footer>
     </main>
   );

@@ -18,7 +18,7 @@ function read(): Saved {
 
 const write = (s: Saved) => { try { globalThis.localStorage?.setItem(KEY, JSON.stringify(s)); } catch { /* not saved */ } };
 
-export const useWallet = create<Saved & { earn: (jobId: string, amount: number, stars?: 1 | 2 | 3) => void; complete: (jobId: string, stars: 1 | 2 | 3) => void }>((set, get) => ({
+export const useWallet = create<Saved & { earn: (jobId: string, amount: number, stars?: 1 | 2 | 3) => void; complete: (jobId: string, stars: 1 | 2 | 3) => void; spend: (amount: number) => boolean }>((set, get) => ({
   ...read(),
   earn: (jobId, amount, stars) => {
     const prev = get().done[jobId];
@@ -28,4 +28,12 @@ export const useWallet = create<Saved & { earn: (jobId: string, amount: number, 
     set(next);
   },
   complete: (jobId, stars) => get().earn(jobId, 0, stars),
+  /** Pay for something from the takings; refuses (false) if there isn't enough. */
+  spend: (amount) => {
+    if (amount < 0 || amount > get().credits) return false;
+    const next: Saved = { credits: get().credits - amount, done: get().done };
+    write(next);
+    set(next);
+    return true;
+  },
 }));

@@ -13,6 +13,7 @@ import { CLIENT_JOBS } from '../jobs/client';
 import { useWallet } from '../jobs/wallet';
 import { REPAIR_JOBS } from '../repair/jobs';
 import { WIRING_JOBS } from '../wiring/wiring';
+import { useNav } from './nav';
 
 export interface WorkshopCard {
   id: string;
@@ -49,6 +50,7 @@ export function Workshop({ onOpen, onBack, onLab }: { onOpen: (c: WorkshopCard) 
       <button className="desk-back" onClick={onBack}>‹ Menu <kbd>Esc</kbd></button>
       <h1 className="workshop-title">WORKSHOP</h1>
       <p className="riso-tag">One job for each thing you can do at the bench. Pick one.{credits > 0 && <span className="workshop-wallet"> · takings {credits}</span>}</p>
+      <nav className="riso-menu workshop-links" aria-label="Business"><button onClick={() => useNav.getState().go('shop')}>Shop</button><button onClick={() => useNav.getState().go('career')}>Career</button></nav>
       <ol className="workshop-cards">
         {WORKSHOP.map((c, i) => (
           <li key={c.id}>

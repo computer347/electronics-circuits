@@ -17,6 +17,9 @@ const CodingBench = lazy(() => import('../coding/CodingBench').then((m) => ({ de
 const WiringBench = lazy(() => import('../wiring/WiringBench').then((m) => ({ default: m.WiringBench })));
 const ClientIntro = lazy(() => import('../jobs/ClientScene').then((m) => ({ default: m.ClientIntro })));
 const ClientOverlay = lazy(() => import('../jobs/ClientScene').then((m) => ({ default: m.ClientOverlay })));
+const CareerPage = lazy(() => import('../business/CareerPage').then((m) => ({ default: m.CareerPage })));
+const ShopPage = lazy(() => import('../business/ShopPage').then((m) => ({ default: m.ShopPage })));
+const AchievementToast = lazy(() => import('../business/AchievementToast'));
 
 /** What shows for the moment a screen's code is still loading. */
 function Loading() {
@@ -28,7 +31,8 @@ export function App() {
   return (
     <>
       <Suspense fallback={<Loading />}><Screens /></Suspense>
-      {screen !== 'home' && screen !== 'workshop' && <RotateTip />}
+      {screen !== 'home' && screen !== 'workshop' && screen !== 'career' && screen !== 'shop' && <RotateTip />}
+      <Suspense fallback={null}><AchievementToast /></Suspense>
     </>
   );
 }
@@ -57,12 +61,16 @@ function Screens() {
     const idle = (window as { requestIdleCallback?: (f: () => void) => number }).requestIdleCallback ?? ((f: () => void) => window.setTimeout(f, 1200));
     idle(() => { void loadDesk(); });
   }, [screen]);
+  const train = (levelId: string) => { useDesk.setState({ startOn: null }); useDesk.getState().enter(levelId); go('desk'); };
   const choose = (c: FrontChoice) => {
     if (c === 'workshop') { go('workshop'); return; }
+    if (c === 'career') { go('career'); return; }
     const startOn = c === 'play' ? 'map' : c === 'learn' ? 'theory' : c === 'practice' ? 'practice' : null;
     useDesk.setState({ startOn });
     go('desk');
   };
+  if (screen === 'career') return <CareerPage onBack={() => go('home')} onShop={() => go('shop')} onTrain={train} />;
+  if (screen === 'shop') return <ShopPage onBack={() => go('home')} onCareer={() => go('career')} />;
   if (screen === 'workshop') return <Workshop onBack={() => go('home')} onOpen={(c) => c.open && go(c.open.screen, c.open.job)} onLab={(p) => go('lab', p)} />;
   if (screen === 'lab' && job) return <LabBench key={job} part={job} onExit={() => go('workshop')} onNext={(p) => go('lab', p)} />;
   if (screen === 'repair' && job) return <RepairBench key={job} jobId={job} onExit={() => go('workshop')} />;

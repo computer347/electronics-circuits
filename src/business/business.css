@@ -1,0 +1,57 @@
+/* Career and shop pages: riso paper, a scrolling page, cards like the workshop's. */
+.riso.biz { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; align-content: start; overflow-y: auto; }
+.biz .desk-back { position: relative; top: 0; left: 0; justify-self: start; background: var(--r-ink); color: var(--r-paper); }
+.biz-head { display: grid; gap: 4px; }
+.biz-stats { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 22px; margin: 0; font-weight: 700; font-size: 14px; }
+.biz-credits { font-family: var(--r-display); font-weight: 400; font-size: 26px; color: var(--r-blue); }
+.biz-note { margin: 4px 0 0; padding: 6px 10px; justify-self: start; background: var(--r-yellow); font-weight: 700; font-size: 13px; }
+.biz-section { position: relative; z-index: 6; max-width: 1100px; }
+.biz-section h2 { margin: 0 0 12px; font-family: var(--r-display); font-weight: 400; font-size: clamp(30px, 4vw, 44px); color: var(--r-blue); }
+.biz-section h2 small { display: block; font-family: var(--r-mono); font-size: 12px; color: var(--r-ink); opacity: 0.75; }
+
+/* rank ladder */
+.biz-ladder { list-style: none; margin: 0 0 14px; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.biz-ladder li { padding: 8px 12px; font-family: var(--r-display); font-size: 20px; background: rgba(28, 10, 58, 0.06); color: rgba(28, 10, 58, 0.45); }
+.biz-ladder li.past { background: rgba(0, 120, 191, 0.15); color: var(--r-blue); }
+.biz-ladder li.now { background: var(--r-pink); color: #fff; box-shadow: 4px 4px 0 var(--r-ink); }
+.biz-next { padding: 12px 14px; background: #fffdf6; box-shadow: 4px 4px 0 var(--r-blue); max-width: 560px; margin: 0; }
+.biz-next ul { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 3px; font-size: 14px; }
+.biz-next li.ok { color: var(--r-blue); font-weight: 700; }
+
+/* certificates */
+.biz-certs, .biz-tools, .biz-achievements { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(min(250px, 100%), 1fr)); }
+.biz-certs li, .biz-tools li { position: relative; display: grid; gap: 5px; align-content: start; padding: 14px 14px 12px; background: #fffdf6; font-size: 13px; line-height: 1.45; box-shadow: 4px 4px 0 rgba(28, 10, 58, 0.25); }
+.biz-certs b, .biz-tools b { font-family: var(--r-display); font-weight: 400; font-size: 22px; line-height: 1.05; padding-right: 44px; }
+.biz-certs li.earned { box-shadow: 4px 4px 0 var(--r-blue); }
+.biz-certs li.dist { box-shadow: 4px 4px 0 var(--r-pink); background: #fff8dc; }
+.biz-seal { position: absolute; top: 10px; right: 10px; min-width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; font-weight: 700; font-size: 12px; background: rgba(28, 10, 58, 0.08); }
+.biz-certs li.earned .biz-seal { background: var(--r-blue); color: #fff; font-size: 16px; }
+.biz-certs li.dist .biz-seal { background: var(--r-yellow); color: var(--r-ink); font-size: 18px; box-shadow: 0 0 0 3px var(--r-pink); }
+.biz-bar { display: block; height: 6px; background: rgba(28, 10, 58, 0.1); }
+.biz-bar i { display: block; height: 100%; background: var(--r-blue); }
+.biz-certs .landing-link, .biz-tools .landing-link { justify-self: start; font-size: 13px; text-align: left; }
+
+/* tools and stock */
+.biz-tools li.owned { box-shadow: 4px 4px 0 var(--r-blue); }
+.biz-tools em { font-style: normal; font-weight: 700; color: var(--r-blue); }
+.biz-tools .desk-chip { justify-self: start; }
+.biz-stock { border-collapse: collapse; width: 100%; max-width: 760px; background: #fffdf6; font-size: 13px; box-shadow: 4px 4px 0 rgba(28, 10, 58, 0.25); }
+.biz-stock th, .biz-stock td { padding: 7px 10px; text-align: left; border-bottom: 1px solid rgba(28, 10, 58, 0.1); }
+.biz-stock th { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+.biz-stock tr.locked td { opacity: 0.5; }
+.biz-pay p { max-width: 70ch; line-height: 1.55; font-size: 14px; }
+.biz-small { font-size: 12px; opacity: 0.75; }
+
+/* achievements */
+.biz-achievements { grid-template-columns: repeat(auto-fill, minmax(min(210px, 100%), 1fr)); gap: 10px; }
+.biz-achievements li { display: grid; gap: 2px; padding: 10px 12px; font-size: 12px; background: rgba(28, 10, 58, 0.05); color: rgba(28, 10, 58, 0.55); }
+.biz-achievements li b { font-size: 14px; }
+.biz-achievements li.got { background: #fffdf6; color: var(--r-ink); box-shadow: 3px 3px 0 var(--r-yellow), 3px 3px 0 1px var(--r-ink); }
+
+/* a toast when an achievement is earned, anywhere in the game */
+.biz-toast { position: fixed; z-index: 90; right: 18px; bottom: 18px; display: grid; gap: 2px; padding: 10px 14px; max-width: min(320px, calc(100vw - 36px)); background: var(--r-yellow); color: var(--r-ink); font-family: var(--r-mono); box-shadow: 4px 4px 0 var(--r-pink); animation: biz-toast 4.5s ease forwards; }
+.biz-toast small { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.biz-toast b { font-family: var(--r-display); font-weight: 400; font-size: 22px; }
+.biz-toast span { font-size: 12px; }
+@keyframes biz-toast { 0% { opacity: 0; transform: translateY(10px); } 8%, 85% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .biz-toast { animation: none; } }
