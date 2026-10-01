@@ -60,3 +60,45 @@ A row of slots along the bottom of the screen replaces the parts tray: the level
 7. Client jobs: job cards, clock, dialogue; the torch job.
 8. The Parts Lab: one templated level per part.
 9. Back to the campaign: 0–10 transistor switch, then World 1.
+
+## Status (2026-10-01)
+
+All nine batches are built, each in its own commit on `desk-3d`:
+
+| Batch | Where it lives | Tests |
+|---|---|---|
+| 1 Catalogue, models, gallery | `src/parts/catalogue.ts`, `src/parts3d/`, `?gallery` | `tests/parts.test.ts` |
+| 2 Pot, NPN, MOSFET, regulator, diode on the breadboard; meter ▶| | `src/breadboard/model.ts` (h3, `legsOf`, `currentLegs`), `src/desk/meter.ts` | `tests/active.test.ts`, `tests/threeleg.test.ts` |
+| 3 Hotbar | `src/desk/hotbarSlots.ts`, `Hotbar.tsx` | `tests/hotbar.test.ts` |
+| 4 Board repair, "Dead power LED" | `src/repair/` (Uno netlist, pure repair state, RepairBench) | `tests/repair.test.ts` |
+| 5 Node coding, "Blink" | `src/coding/` | `tests/coding.test.ts` |
+| 6 Wiring, "Hook up the sensor" | `src/wiring/` (DHT11 netlist) | `tests/wiring.test.ts` |
+| 7 Client jobs, "The dead torch" | `src/jobs/` (dialogue, clock, pay, wallet) | `tests/client.test.ts` |
+| 8 Parts Lab, 39 levels | `src/lab/` (labs.ts templates, looks.tsx models) | `tests/lab.test.ts` |
+| 9 Level 0–10 Switch it, then World 1 | `src/levels/world0/10-switch-it.json`, `src/levels/world1/` | `tests/world0.test.ts`, `tests/world1.test.ts` |
+
+The front page's **Workshop** (key 4) opens the four activity jobs and the Parts Lab.
+
+Rules the content follows:
+
+- Every level, job and lab says what you can do afterwards and where you'll meet it in real life. Tests enforce this.
+- Every answer is checked against the solver or the 3D model, never only by hand. Examples:
+  - In the Parts Lab, the leg order and markings match what the model shows.
+  - The client job's story matches its circuit.
+  - The logic labs light their lamps from the solved transistor circuits.
+
+## World 1: logic, from parts you know
+
+World 1 builds logic from switches and transistors before it uses logic chips, so every gate is something you have already wired:
+
+1. Count in lights: binary place values.
+2. Both: AND from switches in series.
+3. Either will do: OR from switches in parallel.
+4. Not: a transistor inverter, with the pull-up sized by the player.
+5. Not both: NAND from two transistors.
+
+Next in World 1:
+
+- XOR (the real stairwell switch), then chips: a 74HC00 NAND on the breadboard. This needs DIP parts with more than three legs straddling the centre gap.
+- Half adder, latches and flip-flops.
+- The traffic-light FSM from SPEC.md.
