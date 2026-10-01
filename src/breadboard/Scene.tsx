@@ -12,7 +12,7 @@ import { isElectrolytic, LED_MAX_AMPS, type BoardAnalysis, type BoardPart, type 
 import { translateParts } from './move';
 import { PartMotion } from './PartMotion';
 import { CAP_Y, ledMid, wireCurve } from './paths';
-import { Potentiometer, TO220, TO92 } from '../parts3d/tht';
+import { Potentiometer, SlideSwitch, TO220, TO92 } from '../parts3d/tht';
 import { useBench } from './store';
 
 const LED_HEX = { red: '#ff3b30', yellow: '#ffd60a', green: '#39ff88', blue: '#3a8bff', white: '#f5f5ff' } as const;
@@ -270,10 +270,19 @@ function ThreeLegged({ part, mark }: { part: BoardPart; mark?: string }) {
   // Where each package's legs come out, in mm along the row, and how high the body sits.
   // The board's own parts are drawn a touch small so the holes stay readable; the big
   // packages follow suit (`k`) so a TO-220 doesn't hide half the board.
-  const spec = part.kind === 'npn' ? { legs: [-1.27, 0, 1.27], foot: 2, lift: 1.3, z: 0, k: 1 }
+  const spec = part.kind === 'spdt' ? { legs: [-2.54, 0, 2.54], foot: 3.5, lift: 1.4, z: 0, k: 0.8 }
+    : part.kind === 'npn' ? { legs: [-1.27, 0, 1.27], foot: 2, lift: 1.3, z: 0, k: 1 }
     : part.kind === 'pot' ? { legs: [-2.5, 0, 2.5], foot: 3, lift: 0.9, z: 4.5, k: 0.7 }
     : { legs: [-2.54, 0, 2.54], foot: 3, lift: 0.9, z: 0, k: 0.6 };
-  const body = part.kind === 'npn' ? <TO92 marking={part.marking ?? 'BC547'} />
+  // A changeover switch is the catalogue's slide switch: click it to slide it across.
+  const flip = part.kind === 'spdt' ? (e: ThreeEvent<PointerEvent>) => {
+    if (useBench.getState().tool !== 'select' || e.nativeEvent.button !== 0 || useBench.getState().moving) return;
+    e.stopPropagation();
+    useBench.getState().select(part.id);
+    useBench.getState().togglePress(part.id, !part.pressed);
+  } : undefined;
+  const body = part.kind === 'spdt' ? <SlideSwitch on={!!part.pressed} />
+    : part.kind === 'npn' ? <TO92 marking={part.marking ?? 'BC547'} />
     : part.kind === 'pot' ? <Potentiometer />
     : <TO220 marking={part.marking ?? (part.kind === 'regulator' ? 'LM7805' : 'IRLZ44N')} />;
   const s = MM * spec.k;
@@ -283,7 +292,7 @@ function ThreeLegged({ part, mark }: { part: BoardPart; mark?: string }) {
   const alongRow = (along: number, y: number): V3 => [m.x + along * s * cos, y, m.z - along * s * sin];
   const holes = [a, m, c];
   return (
-    <group {...handlers}>
+    <group {...handlers} onPointerDown={flip}>
       {holes.map((h, i) => {
         const top = alongRow(spec.legs[i]!, footY);
         return (
@@ -633,7 +642,7 @@ export function BreadboardContents({ analysis, dynamic }: { analysis: BoardAnaly
           case 'generator': el = <Generator part={p} mark={mark} color="#ffd21f" />; break;
           case 'diode': el = <Diode part={p} mark={mark} />; break;
           case 'toggle': el = <Toggle part={p} mark={mark} />; break;
-          case 'pot': case 'npn': case 'nmos': case 'regulator': el = <ThreeLegged part={p} mark={mark} />; break;
+          case 'pot': case 'npn': case 'nmos': case 'regulator': case 'spdt': el = <ThreeLegged part={p} mark={mark} />; break;
         }
         // Parts being dragged follow the pointer as they are; everything else animates its moves.
         return <PartMotion key={p.id} part={p} still={movingIds.has(p.id)}>{el}</PartMotion>;

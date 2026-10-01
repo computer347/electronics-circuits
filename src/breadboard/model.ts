@@ -8,10 +8,10 @@ import { contributions, LED_VF, solve, type Circuit, type Component, type Contri
 import { hole, type HoleId } from './layout';
 
 export type BoardPartKind = 'resistor' | 'led' | 'wire' | 'button' | 'battery' | 'capacitor' | 'generator'
-  | 'diode' | 'pot' | 'npn' | 'nmos' | 'regulator' | 'toggle';
+  | 'diode' | 'pot' | 'npn' | 'nmos' | 'regulator' | 'toggle' | 'spdt';
 
 /** Parts with three legs in a row: h1, h2, h3 (the datasheet's pin order). */
-export const THREE_LEGGED: readonly BoardPartKind[] = ['pot', 'npn', 'nmos', 'regulator'];
+export const THREE_LEGGED: readonly BoardPartKind[] = ['pot', 'npn', 'nmos', 'regulator', 'spdt'];
 
 export interface BoardPart {
   id: string;
@@ -35,7 +35,8 @@ export interface BoardPart {
   burnt?: boolean;
   /**
    * Third leg of a three-legged part. Pin orders follow the datasheets: potentiometer
-   * 1 / wiper / 3, NPN (BC547) E / B / C, MOSFET (IRLZ44N) G / D / S, regulator IN / GND / OUT.
+   * 1 / wiper / 3, NPN (BC547) E / B / C, MOSFET (IRLZ44N) G / D / S, regulator IN / GND / OUT,
+   * changeover switch A / common / B (slid to B when `pressed`).
    */
   h3?: HoleId;
   /** Potentiometers: wiper position, 0 (at leg 1) to 1 (at leg 3). */
@@ -59,6 +60,7 @@ export function currentLegs(p: BoardPart): [HoleId, HoleId] {
   if (!p.h3) return [p.h1, p.h2];
   switch (p.kind) {
     case 'npn': return [p.h3, p.h1];
+    case 'spdt': return [p.h2, p.pressed ? p.h3 : p.h1];
     case 'nmos': return [p.h2, p.h3];
     default: return [p.h1, p.h3];
   }
@@ -166,6 +168,13 @@ export function boardToCircuit(board: BoardState): BoardCircuit {
           components.push({ kind: 'nmos', id: p.id, a: b, b: nodeOf(p.h3), gate: a, vth: 2, ron: 0.03 });
           // The body diode, source to drain: every power MOSFET has one.
           components.push({ kind: 'diode', id: `${p.id}.body`, a: nodeOf(p.h3), b, vf: 0.7, maxReverseVolts: 1000 });
+        }
+        break;
+      case 'spdt':
+        // A changeover (SPDT) switch: common (h2) joins A (h1), or B (h3) once slid across.
+        if (p.h3) {
+          components.push({ kind: 'switch', id: `${p.id}.A`, a: b, b: a, closed: !p.pressed });
+          components.push({ kind: 'switch', id: `${p.id}.B`, a: b, b: nodeOf(p.h3), closed: !!p.pressed });
         }
         break;
       case 'regulator':

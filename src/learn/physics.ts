@@ -205,11 +205,12 @@ export function rcLab(volts: number, ohms: number, farads: number, bleedOhms?: n
 // ── World 1: gates built from switches and transistors ─────────────────────────────
 
 /** How many inputs each gate has. */
-export const GATE_INPUTS: Record<Gate, number> = { AND: 2, OR: 2, NOT: 1, NAND: 2 };
+export const GATE_INPUTS: Record<Gate, number> = { AND: 2, OR: 2, NOT: 1, NAND: 2, XOR: 2 };
 
 /**
  * The gate as the circuit the level builds, solved: AND is two switches in series, OR two in
- * parallel, NOT a transistor with a 1 kΩ pull-up, NAND two transistors in series under it.
+ * parallel, NOT a transistor with a 1 kΩ pull-up, NAND two transistors in series under it,
+ * XOR two changeover switches with their traveller wires crossed (a stairwell light).
  * The lamp is a red LED; it counts as lit above 1 mA.
  */
 export function logicLab(gate: Gate, inputs: boolean[]): { lit: boolean; amps: number } {
@@ -219,6 +220,9 @@ export function logicLab(gate: Gate, inputs: boolean[]): { lit: boolean; amps: n
     OR: ['V1 vcc 0 9', `SA vcc a ${sw(0)}`, `SB vcc a ${sw(1)}`, 'R1 a b 470', 'LED1 b 0 red'],
     NOT: ['V1 vcc 0 9', `SA vcc s ${sw(0)}`, 'RB s b 10000', 'Q1 o b 0 beta=200', 'RP vcc o 1000', 'LED1 o 0 red'],
     NAND: ['V1 vcc 0 9', `SA vcc s1 ${sw(0)}`, 'R1 s1 b1 10000', `SB vcc s2 ${sw(1)}`, 'R2 s2 b2 10000', 'Q1 o b1 m beta=200', 'Q2 m b2 0 beta=200', 'RP vcc o 1000', 'LED1 o 0 red'],
+    // Changeover A sides closed when an input is 0, B sides when 1; travellers p and q crossed.
+    XOR: ['V1 vcc 0 9', `SAa vcc p ${inputs[0] ? 'open' : 'closed'}`, `SAb vcc q ${inputs[0] ? 'closed' : 'open'}`,
+      `SBa q c ${inputs[1] ? 'open' : 'closed'}`, `SBb p c ${inputs[1] ? 'closed' : 'open'}`, 'R1 c d 470', 'LED1 d 0 red'],
   }[gate].join('\n');
   const r = solve(parseNetlist(net));
   const amps = Math.abs(r.currents.LED1 ?? 0);
@@ -227,5 +231,5 @@ export function logicLab(gate: Gate, inputs: boolean[]): { lit: boolean; amps: n
 
 /** The gate's truth, as logic: what the circuit is meant to do. */
 export const GATE_TRUTH: Record<Gate, (x: boolean[]) => boolean> = {
-  AND: (x) => !!x[0] && !!x[1], OR: (x) => !!x[0] || !!x[1], NOT: (x) => !x[0], NAND: (x) => !(x[0] && x[1]),
+  AND: (x) => !!x[0] && !!x[1], OR: (x) => !!x[0] || !!x[1], NOT: (x) => !x[0], NAND: (x) => !(x[0] && x[1]), XOR: (x) => !!x[0] !== !!x[1],
 };

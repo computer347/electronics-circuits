@@ -20,10 +20,11 @@ import both from './world1/02-both.json';
 import either from './world1/03-either.json';
 import notGate from './world1/04-not.json';
 import notBoth from './world1/05-not-both.json';
+import stairwell from './world1/06-stairwell.json';
 
 export class LevelError extends Error {}
 
-const TOOLS = new Set(['select', 'wire', 'resistor', 'led', 'button', 'toggle', 'battery', 'capacitor', 'generator', 'diode', 'pot', 'npn', 'nmos', 'regulator', 'probe', 'scope']);
+const TOOLS = new Set(['select', 'wire', 'resistor', 'led', 'button', 'toggle', 'spdt', 'battery', 'capacitor', 'generator', 'diode', 'pot', 'npn', 'nmos', 'regulator', 'probe', 'scope']);
 
 export function parseLevel(raw: unknown): LevelDef {
   const l = raw as LevelDef;
@@ -77,7 +78,7 @@ export const WORLD0_PLAN = [
 ];
 
 /** World 1: logic, built first from the parts World 0 taught (switches, transistors). */
-export const WORLD1: LevelDef[] = [countInLights, both, either, notGate, notBoth].map(parseLevel);
+export const WORLD1: LevelDef[] = [countInLights, both, either, notGate, notBoth, stairwell].map(parseLevel);
 
 export const WORLD1_PLAN = [
   { number: 1, title: 'Count in lights', topic: 'Binary' },
@@ -85,6 +86,7 @@ export const WORLD1_PLAN = [
   { number: 3, title: 'Either will do', topic: 'OR' },
   { number: 4, title: 'Not', topic: 'NOT (inverter)' },
   { number: 5, title: 'Not both', topic: 'NAND' },
+  { number: 6, title: 'Stairwell', topic: 'XOR' },
 ];
 
 export interface World { number: number; name: string; levels: LevelDef[]; plan: { number: number; title: string; topic: string }[] }

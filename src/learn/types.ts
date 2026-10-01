@@ -11,7 +11,7 @@ export type LabSpec =
   /** Four bits, worth 8 4 2 1: flip them and read the number. */
   | { kind: 'binary' };
 
-export type Gate = 'AND' | 'OR' | 'NOT' | 'NAND';
+export type Gate = 'AND' | 'OR' | 'NOT' | 'NAND' | 'XOR';
 
 export interface Step {
   title: string;

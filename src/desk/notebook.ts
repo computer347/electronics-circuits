@@ -174,6 +174,11 @@ export const FORMULAS: Record<string, Formula> = {
     terms: [['series pull-down', 'two transistors: both must be on to pull the output low'], ['universal', 'NOT, AND, OR, anything, can be built from NANDs']],
     when: 'The opposite of AND: low only when every input is high.',
   },
+  xor: {
+    name: 'XOR (exclusive OR)', expr: 'out = A XOR B = 1 when A ≠ B',
+    terms: [['changeover', 'a switch with a common leg that joins one of two others'], ['travellers', 'the two wires between the switches']],
+    when: 'Either input flips the output; it is the sum bit when adding two bits.',
+  },
   rc: {
     name: 'RC time constant', expr: 'τ = R × C',
     terms: [['τ', 'the time to reach 63 % of the final voltage (seconds)'], ['R', 'ohms'], ['C', 'farads (100 µF = 0.0001 F)'], ['V(t)', 'V × (1 − e^(−t/τ))']],
@@ -197,6 +202,7 @@ const LEVEL: Record<string, { parts: PartId[]; formulas: string[]; generators: s
   'w1-03-either': { parts: ['button', 'led'], formulas: ['logic', 'series'], generators: ['led-resistor', 'parallel-total'] },
   'w1-04-not': { parts: ['transistor', 'resistor'], formulas: ['inverter', 'npn', 'led'], generators: ['led-resistor', 'ohm'] },
   'w1-05-not-both': { parts: ['transistor'], formulas: ['nand', 'inverter', 'npn'], generators: ['led-resistor'] },
+  'w1-06-stairwell': { parts: ['led'], formulas: ['xor', 'logic'], generators: ['led-resistor'] },
 };
 
 /** A stable seed per level so the worked example is the same each time you open it. */

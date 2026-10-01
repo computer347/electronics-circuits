@@ -1,0 +1,131 @@
+{
+  "id": "w1-06-stairwell",
+  "world": 1,
+  "number": 6,
+  "title": "Stairwell",
+  "format": "build",
+  "skills": [
+    "logic.xor",
+    "switch.changeover"
+  ],
+  "brief": {
+    "story": "The club's stairwell light has a switch at the bottom (S1) and one at the top (S2). Either switch should flip the light, whatever the other one is doing. The electrician fitted both switches and the light, but never ran the two traveller wires between the switches.",
+    "goal": "Run the two traveller wires so the light is off with both switches down, and flipping either switch toggles it: XOR.",
+    "datasheet": {
+      "title": "XOR (exclusive OR)",
+      "rows": [
+        [
+          "A · B",
+          "out"
+        ],
+        [
+          "0 · 0",
+          "0"
+        ],
+        [
+          "0 · 1  /  1 · 0",
+          "1"
+        ],
+        [
+          "1 · 1",
+          "0"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "Each changeover switch joins its middle leg (common) to its left leg (A) or, slid across, its right leg (B). Current reaches the light only if both commons meet the same traveller wire.",
+    "The travellers join the switches' outer legs: S1's are in columns 4 and 6, S2's in columns 14 and 16.",
+    "Cross them: column 4 to column 16, and column 6 to column 14. Straight across (4 to 14, 6 to 16) makes a stairwell too, but with the light on when both are down."
+  ],
+  "board": {
+    "supply": {
+      "volts": 9,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "S1",
+        "kind": "spdt",
+        "h1": "e4",
+        "h2": "e5",
+        "h3": "e6",
+        "pressed": false
+      },
+      {
+        "id": "W1",
+        "kind": "wire",
+        "h1": "T+:3",
+        "h2": "a5",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "S2",
+        "kind": "spdt",
+        "h1": "e14",
+        "h2": "e15",
+        "h3": "e16",
+        "pressed": false
+      },
+      {
+        "id": "R1",
+        "kind": "resistor",
+        "h1": "a15",
+        "h2": "a19",
+        "ohms": 470
+      },
+      {
+        "id": "LED1",
+        "kind": "led",
+        "h1": "b19",
+        "h2": "b21",
+        "color": "yellow"
+      },
+      {
+        "id": "W2",
+        "kind": "wire",
+        "h1": "a21",
+        "h2": "T-:17",
+        "wireColor": "#2f6fe0"
+      }
+    ]
+  },
+  "locked": [
+    "S1",
+    "W1",
+    "S2",
+    "R1",
+    "LED1",
+    "W2"
+  ],
+  "tools": [
+    "wire",
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "truth-table",
+      "inputs": [
+        "S1",
+        "S2"
+      ],
+      "output": "LED1",
+      "table": [
+        0,
+        1,
+        1,
+        0
+      ],
+      "label": "LED1 = S1 XOR S2",
+      "explain": "The light is on when the switches disagree: each flip changes which traveller the commons share."
+    },
+    {
+      "kind": "no-burnt"
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 2
+  },
+  "debrief": "Two changeover switches and two crossed travellers make XOR: the light is on when the switches disagree, so either one flips it. Every stairwell and hallway with a switch at each end is wired this way. In a computer, XOR is how two bits are added (1 + 1 = 0, carry 1)."
+}

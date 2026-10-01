@@ -66,7 +66,7 @@ class UnionFind {
 
 const KIND: Record<BoardPart['kind'], RoomKind | null> = {
   resistor: 'resistor', led: 'led', wire: null, button: 'button', battery: 'battery', capacitor: 'capacitor', generator: 'generator',
-  diode: 'diode', pot: 'pot', npn: 'transistor', nmos: 'transistor', regulator: 'regulator', toggle: 'button',
+  diode: 'diode', pot: 'pot', npn: 'transistor', nmos: 'transistor', regulator: 'regulator', toggle: 'button', spdt: 'button',
 };
 /** A three-legged part walks like a two-legged one between its main legs (collector → emitter...). */
 const mainLegs = (p: BoardPart): BoardPart => {

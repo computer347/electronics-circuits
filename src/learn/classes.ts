@@ -705,7 +705,49 @@ const w1c5: LearnClass = {
   ],
 };
 
-export const WORLD1_CLASSES: LearnClass[] = [w1c1, w1c2, w1c3, w1c4, w1c5];
+const w1c6: LearnClass = {
+  id: 'c1-06-xor',
+  world: 1, number: 6,
+  title: 'XOR and two-way switching',
+  levelId: 'w1-06-stairwell',
+  minutes: 5,
+  goals: ['Read XOR from a truth table', 'Wire a light from two changeover switches'],
+  steps: [
+    {
+      title: 'One or the other, not both',
+      lab: { kind: 'logic', gate: 'XOR' },
+      tryThis: 'From any row, flip either switch: the lamp always changes.',
+      body: [
+        'XOR (exclusive OR) is 1 when its inputs **differ**: `01` and `10`. Both 0 or both 1 give 0. Its truth table is `0110`.',
+        'That makes every flip of either input change the output, which is exactly what a light with a switch at each end needs.',
+      ],
+    },
+    {
+      title: 'Changeover switches and travellers',
+      body: [
+        'A changeover (SPDT) switch has three legs: a **common** in the middle that joins either the left leg (A) or the right leg (B).',
+        'Two of them face each other, joined by two **traveller** wires. The light is on only if both commons land on the same traveller. Cross the travellers and that happens when the switches disagree: XOR.',
+      ],
+    },
+    {
+      title: 'Adding bits',
+      body: [
+        'Add two single bits: `0+0 = 0`, `0+1 = 1`, `1+0 = 1`, `1+1 = 10` (two). The right-hand digit is `0, 1, 1, 0`: XOR. The carry is AND.',
+        'An XOR and an AND together are a **half adder**: the first step from logic gates to a calculator.',
+      ],
+    },
+  ],
+  check: [
+    { kind: 'choice', prompt: 'A XOR B with A = 1, B = 1. What\'s the output?', options: ['0', '1'], correct: 0,
+      explain: 'The inputs agree, so XOR gives 0.' },
+    { kind: 'choice', prompt: 'Which column (outputs for 00, 01, 10, 11) is XOR?', options: ['0001', '0111', '0110', '1001'], correct: 2,
+      explain: '1 only where the inputs differ: 0110. (1001 is XNOR, its opposite.)' },
+    { kind: 'choice', prompt: 'In a stairwell, why use XOR rather than OR?', options: ['XOR is cheaper', 'With OR, one switch left on means the other can\'t turn the light off', 'OR needs a transistor', 'XOR uses less power'], correct: 1,
+      explain: 'With OR, once either switch is on the light stays on. XOR lets every flip change it.' },
+  ],
+};
+
+export const WORLD1_CLASSES: LearnClass[] = [w1c1, w1c2, w1c3, w1c4, w1c5, w1c6];
 export const ALL_CLASSES: LearnClass[] = [...WORLD0_CLASSES, ...WORLD1_CLASSES];
 
 export const classById = (id: string) => ALL_CLASSES.find((c) => c.id === id);

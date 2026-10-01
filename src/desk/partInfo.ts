@@ -19,11 +19,11 @@ export interface PartInfo {
 
 const KIND_NAME: Record<BoardPart['kind'], string> = {
   resistor: 'Resistor', led: 'LED', wire: 'Jumper wire', button: 'Push button', battery: 'Battery', capacitor: 'Capacitor', generator: 'Function generator',
-  diode: 'Diode', pot: 'Potentiometer', npn: 'NPN transistor', nmos: 'MOSFET', regulator: 'Voltage regulator', toggle: 'Toggle switch',
+  diode: 'Diode', pot: 'Potentiometer', npn: 'NPN transistor', nmos: 'MOSFET', regulator: 'Voltage regulator', toggle: 'Toggle switch', spdt: 'Changeover switch',
 };
 /** What each leg of a three-legged part is, in hole order. */
 export const LEG_NAMES: Partial<Record<BoardPart['kind'], [string, string, string]>> = {
-  pot: ['end 1', 'wiper', 'end 3'], npn: ['emitter', 'base', 'collector'], nmos: ['gate', 'drain', 'source'], regulator: ['in', 'ground', 'out'],
+  pot: ['end 1', 'wiper', 'end 3'], npn: ['emitter', 'base', 'collector'], nmos: ['gate', 'drain', 'source'], regulator: ['in', 'ground', 'out'], spdt: ['A', 'common', 'B'],
 };
 const tiny = (x: number) => (Math.abs(x) < 1e-9 ? 0 : x);
 /** A leg's voltage as a meter would show it: under a millivolt is 0. */
@@ -38,6 +38,7 @@ export function valueOf(p: BoardPart): string {
     case 'battery': return `${p.volts ?? 9} V`;
     case 'button': return p.pressed ? 'pressed' : 'open';
     case 'toggle': return p.pressed ? 'on (1)' : 'off (0)';
+    case 'spdt': return p.pressed ? 'to B (1)' : 'to A (0)';
     case 'pot': return `${formatSI(p.ohms ?? 10000, 'Ω')} · ${Math.round((p.position ?? 0.5) * 100)} %`;
     case 'diode': case 'npn': case 'nmos': return p.marking ?? '';
     case 'regulator': return `${p.marking ?? 'LM7805'} · ${p.vout ?? 5} V`;
@@ -49,7 +50,8 @@ export function partInfo(p: BoardPart, a: BoardAnalysis): PartInfo {
   const value = valueOf(p);
   const tag = value && p.kind !== 'led' ? `${p.id} · ${value}` : p.id;
   const ok = a.result.ok;
-  const amps = tiny(Math.abs(a.result.currents[p.id] ?? 0));
+  // A changeover switch is two contacts (A and B sides): its current is whichever is closed.
+  const amps = tiny(p.kind === 'spdt' ? Math.abs(a.result.currents[`${p.id}.A`] ?? 0) + Math.abs(a.result.currents[`${p.id}.B`] ?? 0) : Math.abs(a.result.currents[p.id] ?? 0));
   const [m1, m2] = currentLegs(p);
   const v1 = a.voltageAt(m1), v2 = a.voltageAt(m2);
   const across = v1 !== undefined && v2 !== undefined ? tiny(v1 - v2) : undefined;
@@ -58,7 +60,7 @@ export function partInfo(p: BoardPart, a: BoardAnalysis): PartInfo {
   if (ok) {
     rows.push(['Current through', formatSI(amps, 'A')]);
     // Switches are (nearly) wires when closed: say 0 V, and skip a power figure that's just rounding.
-    const isSwitch = p.kind === 'button' || p.kind === 'toggle';
+    const isSwitch = p.kind === 'button' || p.kind === 'toggle' || p.kind === 'spdt';
     if (across !== undefined && p.kind !== 'wire') rows.push(['Voltage across', formatSI(legVolts(Math.abs(across)), 'V')]);
     if (across !== undefined && p.kind !== 'wire' && !isSwitch && amps > 0) rows.push(['Power', formatSI(Math.abs(across) * amps, 'W')]);
   }

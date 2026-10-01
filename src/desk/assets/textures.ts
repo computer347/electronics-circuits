@@ -438,6 +438,29 @@ function drawPicture(g: CanvasRenderingContext2D, pic: TaskPicture) {
     g.fillStyle = INK.ink; g.font = `bold 26px ${FONT_MONO}`; g.fillText('pull-up', ox + 14, 120);
     g.fillText(pic === 'not' ? 'out = NOT A' : 'out = NOT (A AND B)', 150, 380);
   }
+  if (pic === 'xor') {
+    // Two changeover switches facing each other, travellers crossed, the lamp after the second.
+    const dot = (x: number, y: number) => { g.save(); g.fillStyle = INK.ink; g.beginPath(); g.arc(x, y, 9, 0, Math.PI * 2); g.fill(); g.restore(); };
+    battery(g, left, 190, '9 V');
+    line(g, [[left, 190], [left, top], [150, top], [150, 150]]);
+    // S1: common at (150,150), A above-right, B below-right; slid to A
+    dot(150, 150); dot(230, 100); dot(230, 200);
+    line(g, [[150, 150], [222, 106]]);
+    // S2: A and B on the left, common on the right; slid to A
+    dot(430, 100); dot(430, 200); dot(510, 150);
+    line(g, [[510, 150], [438, 106]]);
+    // the travellers, crossed: S1 A to S2 B, S1 B to S2 A
+    g.save(); g.strokeStyle = INK.pink; g.lineWidth = 6;
+    line(g, [[230, 100], [430, 200]]); line(g, [[230, 200], [430, 100]]);
+    g.restore();
+    line(g, [[510, 150], [right, 150], [right, 190]]);
+    led(g, right, 190);
+    line(g, [[right, 254], [right, bot], [left, bot], [left, 220]]);
+    g.fillStyle = INK.ink; g.font = `bold 26px ${FONT_MONO}`;
+    g.fillText('S1', 120, 196); g.fillText('S2', 490, 196);
+    g.fillStyle = INK.pink; g.fillText('travellers', 250, 260);
+    g.fillStyle = INK.ink; g.font = `bold 22px ${FONT_MONO}`; g.fillText('A', 238, 64); g.fillText('B', 238, 222); g.fillText('A', 408, 64); g.fillText('B', 408, 222);
+  }
   if (pic === 'rc') {
     battery(g, left, 190, '9 V');
     line(g, [[left, 190], [left, top], [140, top]]);

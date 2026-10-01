@@ -6,7 +6,7 @@
 import type { LevelDef } from '../levels/types';
 
 export type TaskPicture = 'led' | 'two-leds' | 'divider' | 'rc' | 'fork' | 'button' | 'cells' | 'bridge' | 'transistor'
-  | 'binary' | 'and' | 'or' | 'not' | 'nand';
+  | 'binary' | 'and' | 'or' | 'not' | 'nand' | 'xor';
 
 export interface TaskPage {
   label: string;
@@ -130,6 +130,13 @@ const EXTRA: Record<string, { headline: string; tip: string; picture: TaskPictur
     picture: 'nand',
     skill: 'Build a NAND gate from two transistors and a pull-up, and test all four input cases.',
     realLife: 'NAND is the building block of chips: flash memory is literally NAND flash, and any logic can be made from NAND gates alone.',
+  },
+  'w1-06-stairwell': {
+    headline: 'Either switch flips the light.',
+    tip: 'A changeover switch joins its common to one side or the other. The light is on when both commons meet the same traveller.',
+    picture: 'xor',
+    skill: 'Wire two-way switching with changeover switches, and read XOR from it.',
+    realLife: 'Every stairwell, hallway and long room with a switch at each end is wired like this, and XOR is how a computer adds two bits.',
   },
 };
 

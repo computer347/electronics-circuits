@@ -9,10 +9,10 @@ import { useBench, type Tool } from '../breadboard/store';
 import { formatSI } from '../lib/units';
 import type { LevelDef } from '../levels/types';
 
-const BOX_TOOLS: BoardPartKind[] = ['resistor', 'wire', 'led', 'capacitor', 'button', 'toggle', 'diode', 'pot', 'npn', 'nmos', 'regulator', 'battery', 'generator'];
+const BOX_TOOLS: BoardPartKind[] = ['resistor', 'wire', 'led', 'capacitor', 'button', 'toggle', 'spdt', 'diode', 'pot', 'npn', 'nmos', 'regulator', 'battery', 'generator'];
 export const TOOL_LABEL: Partial<Record<Tool, string>> = {
   select: 'Hand', resistor: 'Resistor', wire: 'Wire', led: 'LED', capacitor: 'Capacitor', button: 'Button', battery: 'Battery', generator: 'Signal gen',
-  diode: 'Diode', pot: 'Pot', npn: 'Transistor', nmos: 'MOSFET', regulator: 'Regulator', toggle: 'Toggle',
+  diode: 'Diode', pot: 'Pot', npn: 'Transistor', nmos: 'MOSFET', regulator: 'Regulator', toggle: 'Toggle', spdt: 'Changeover',
 };
 const FLIPPABLE: BoardPartKind[] = ['led', 'capacitor', 'battery', 'diode', 'pot', 'npn', 'nmos', 'regulator'];
 
@@ -30,6 +30,7 @@ export function ToolIcon({ tool }: { tool: Tool }) {
   if (tool === 'nmos' || tool === 'regulator') return <svg viewBox="0 0 32 20" aria-hidden><rect x="9" y="1" width="14" height="6" fill="#b8bec6" /><rect x="9" y="6" width="14" height="9" fill="#1c1c1e" /><path d="M12 15v5M16 15v5M20 15v5" {...s} /><text x="16" y="13" fontSize="5" fill="#ddd" textAnchor="middle">{tool === 'nmos' ? 'FET' : '5V'}</text></svg>;
   if (tool === 'probe') return <svg viewBox="0 0 32 20" aria-hidden><rect x="9" y="1" width="14" height="18" rx="2" fill="#f2c200" /><rect x="11" y="3" width="10" height="5" fill="#b9c7a3" /><circle cx="16" cy="13" r="3" fill="#222" /></svg>;
   if (tool === 'scope') return <svg viewBox="0 0 32 20" aria-hidden><rect x="3" y="2" width="26" height="16" rx="2" fill="#2b2e31" /><rect x="5" y="4" width="16" height="12" fill="#10231a" /><path d="M6 12 q3 -8 6 0 t6 0" fill="none" stroke="#ffd21f" strokeWidth="1.6" /><circle cx="25" cy="7" r="1.6" fill="#ddd" /><circle cx="25" cy="13" r="1.6" fill="#ddd" /></svg>;
+  if (tool === 'spdt') return <svg viewBox="0 0 32 20" aria-hidden><rect x="4" y="6" width="24" height="8" fill="#b9bdc2" /><rect x="7" y="2" width="7" height="6" fill="#1c1c1e" /><path d="M8 14v5M16 14v5M24 14v5" fill="none" stroke="currentColor" strokeWidth="2.2" /></svg>;
   if (tool === 'toggle') return <svg viewBox="0 0 32 20" aria-hidden><rect x="5" y="7" width="22" height="8" rx="1" fill="#b9bdc2" /><rect x="17" y="3" width="7" height="6" fill="#1c1c1e" /><path d="M9 15v4M23 15v4" fill="none" stroke="currentColor" strokeWidth="2.4" /></svg>;
   if (tool === 'button') return <svg viewBox="0 0 32 20" aria-hidden><rect x="8" y="6" width="16" height="10" fill="#222" /><circle cx="16" cy="11" r="3.5" fill="#0078bf" /></svg>;
   return <svg viewBox="0 0 32 20" aria-hidden><path d="M12 18 V6 a2 2 0 0 1 4 0 v6 M16 11 V4 a2 2 0 0 1 4 0 v8 M20 11 a2 2 0 0 1 4 0 v3 c0 4 -3 5 -6 5 h-3 c-2 0 -4 -2 -5 -4 l-2 -4 a2 2 0 0 1 3 -2 l1 2" {...s} /></svg>;

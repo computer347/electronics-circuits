@@ -20,8 +20,8 @@ const R = (id: string, h1: string, h2: string, ohms: number): BoardPart => ({ id
 const W = (id: string, h1: string, h2: string): BoardPart => ({ id, kind: 'wire', h1, h2 });
 
 describe('World 1', () => {
-  it('has five levels, numbered in order, after World 0', () => {
-    expect(WORLD1.map((l) => l.number)).toEqual([1, 2, 3, 4, 5]);
+  it('has six levels, numbered in order, after World 0', () => {
+    expect(WORLD1.map((l) => l.number)).toEqual([1, 2, 3, 4, 5, 6]);
     expect(WORLD1.every((l) => l.world === 1)).toBe(true);
   });
 
@@ -125,7 +125,7 @@ describe('World 1 notebook and classes', () => {
       expect(p.skill.length, l.id).toBeGreaterThan(25);
       expect(p.skill.length, l.id).toBeLessThan(90);
       expect(p.realLife.length, l.id).toBeGreaterThan(60);
-      expect(['binary', 'and', 'or', 'not', 'nand']).toContain(p.picture);
+      expect(['binary', 'and', 'or', 'not', 'nand', 'xor']).toContain(p.picture);
     }
   });
 
@@ -140,7 +140,7 @@ describe('World 1 notebook and classes', () => {
 describe('the logic labs in World 1’s theory', () => {
   it('light the lamp exactly as each gate’s truth table says, solved from real parts', async () => {
     const { logicLab, GATE_TRUTH, GATE_INPUTS } = await import('../src/learn/physics');
-    for (const gate of ['AND', 'OR', 'NOT', 'NAND'] as const) {
+    for (const gate of ['AND', 'OR', 'NOT', 'NAND', 'XOR'] as const) {
       const n = GATE_INPUTS[gate];
       for (let i = 0; i < 1 << n; i++) {
         const ins = Array.from({ length: n }, (_, k) => !!(i & (1 << k)));
@@ -159,6 +159,7 @@ describe('World 1 inside the circuit', () => {
       3: (b) => set(add(b, T('S1', 'T+:3', 'b2')), { SA: { pressed: true } }),
       4: (b) => add(b, R('R2', 'T+:9', 'a12', 1000)),
       5: (b) => add(b, W('W9', 'a8', 'a18')),
+      6: (b) => add(b, W('W8', 'a4', 'a16'), W('W9', 'a6', 'a14')),
     };
     for (const l of WORLD1) {
       for (const b of [startingBoard(l), fixes[l.number]!(startingBoard(l))]) {
@@ -166,5 +167,22 @@ describe('World 1 inside the circuit', () => {
         expect(w.plazas.length, l.id).toBeGreaterThan(0);
       }
     }
+  });
+});
+
+describe('1-6 Stairwell (XOR)', () => {
+  const b = L(6).board;
+  it('is XOR with the travellers crossed: off with both down, either flip toggles it', () => {
+    expect(check(6, add(b, W('W8', 'a4', 'a16'), W('W9', 'a6', 'a14'))).pass).toBe(true);
+  });
+  it('is XNOR with the travellers straight: on with both down, and says so', () => {
+    const r = check(6, add(b, W('W8', 'a4', 'a14'), W('W9', 'a6', 'a16')));
+    expect(r.pass).toBe(false);
+    expect(r.diagnosis?.message).toMatch(/S1 off, S2 off, LED1 should be dark but it's lit/);
+  });
+  it('slides the changeover switch’s common from A to B', () => {
+    const fixed = add(b, W('W8', 'a4', 'a16'), W('W9', 'a6', 'a14'));
+    expect(analyzeBoard(set(fixed, { S1: { pressed: true } })).result.currents['LED1']! * 1000).toBeGreaterThan(10);
+    expect(Math.abs(analyzeBoard(fixed).result.currents['LED1'] ?? 0)).toBeLessThan(1e-4);
   });
 });

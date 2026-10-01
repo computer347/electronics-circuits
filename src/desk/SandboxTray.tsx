@@ -25,7 +25,7 @@ const POSITIONS = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1];
 const REGULATORS: Record<number, string> = { 3.3: 'LM1117-3.3', 5: 'LM7805', 9: 'LM7809', 12: 'LM7812' };
 /** How a three-legged part goes in, leg by leg, as the hint under the tray says it. */
 const LEG_HINT: Partial<Record<Tool, string>> = {
-  pot: 'end · wiper · end', npn: 'E · B · C, flat face away from you', nmos: 'G · D · S', regulator: 'IN · GND · OUT',
+  pot: 'end · wiper · end', npn: 'E · B · C, flat face away from you', nmos: 'G · D · S', regulator: 'IN · GND · OUT', spdt: 'A · common · B',
 };
 const fmtF = (f: number) => (f >= 1e-6 ? `${Number((f * 1e6).toPrecision(3))} µF` : formatSI(f, 'F'));
 
