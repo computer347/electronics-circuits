@@ -33,6 +33,11 @@ function scanText(l: Link): string {
   if (l.kind === 'chasm') return 'No path: nothing connects here';
   if (l.kind === 'stair' && r?.fault === 'reversed') return `${l.id} · backwards: takes ${Math.abs(l.h1 - l.h0).toFixed(1)} V away`;
   if (l.kind === 'stair') return `${l.id === 'SUPPLY' ? 'Supply' : l.id} · lifts ${(l.h1 - l.h0).toFixed(1)} V · ${formatSI(amps, 'A')}`;
+  // A transistor's door is opened from the side, by its base, not by the voltage across it.
+  if (l.kind === 'door' && r?.kind === 'transistor') return r.fault === 'reversed' ? `${l.id} · in backwards: collector and emitter swapped`
+    : r.lit ? `${l.id} · switched on by its base · ${drop.toFixed(1)} V across · ${formatSI(amps, 'A')}`
+      : `${l.id} · switched off: no current into its base, so the door stays shut`;
+  if (l.kind === 'door' && r?.kind === 'diode') return r.fault === 'reversed' ? `${l.id} · blocking: it's in backwards` : r.lit ? `${l.id} · conducting · drops ${drop.toFixed(1)} V` : `${l.id} · not conducting`;
   if (l.kind === 'door') return r?.fault === 'reversed' ? `${l.id} · blocking · ${Math.abs(drop).toFixed(1)} V across it, nothing flows`
     : !r?.lit ? `${l.id} · dark: only ${Math.max(0, drop).toFixed(1)} V across it, not enough to open`
       : `${l.id} · drops ${drop.toFixed(1)} V · ${formatSI(amps, 'A')} · lit`;

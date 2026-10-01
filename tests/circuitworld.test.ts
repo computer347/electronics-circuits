@@ -180,3 +180,26 @@ describe('World 0 levels 6–9 as places', () => {
     expect(held.links.find((l) => l.id === 'LED1')!.passable).toBe(true);
   });
 });
+
+describe('the transistor in the circuit world (level 0-10)', () => {
+  const L10 = WORLD0.find((l) => l.number === 10)!;
+  const withBase = (pressed: boolean): BoardState => {
+    const b = startingBoard(L10);
+    return { ...b, parts: [...b.parts.map((p) => (p.kind === 'button' ? { ...p, pressed } : p)), { id: 'R1', kind: 'resistor', h1: 'c7', h2: 'c11', ohms: 10000 }] };
+  };
+
+  it('is a door on the loop, open only while the base is driven', () => {
+    const on = world(withBase(true));
+    const door = on.links.find((l) => l.id === 'Q1');
+    expect(door?.kind).toBe('door');
+    expect(door?.passable).toBe(true);
+    const off = world(withBase(false));
+    expect(off.links.find((l) => l.id === 'Q1')?.passable).toBe(false);
+  });
+
+  it('drops from the LED level to the floor through the transistor (about 0.2 V when on)', () => {
+    const w = world(withBase(true));
+    const q = w.links.find((l) => l.id === 'Q1')!;
+    expect(Math.abs(q.h0 - q.h1)).toBeLessThan(0.3);
+  });
+});
