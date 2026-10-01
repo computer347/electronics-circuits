@@ -60,7 +60,7 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin === location.origin) {
-    if (url.pathname.startsWith('/assets/') || url.pathname.startsWith('/icons/')) event.respondWith(cacheFirst(req));
+    if (/^/(assets|icons|landing)//.test(url.pathname)) event.respondWith(cacheFirst(req));
     else if (req.mode === 'navigate') event.respondWith(networkFirst(req));
   } else if (/fonts\.(googleapis|gstatic)\.com$/.test(url.hostname)) {
     event.respondWith(cacheFirst(req));
