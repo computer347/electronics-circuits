@@ -20,6 +20,7 @@ const ClientOverlay = lazy(() => import('../jobs/ClientScene').then((m) => ({ de
 const CareerPage = lazy(() => import('../business/CareerPage').then((m) => ({ default: m.CareerPage })));
 const ShopPage = lazy(() => import('../business/ShopPage').then((m) => ({ default: m.ShopPage })));
 const AchievementToast = lazy(() => import('../business/AchievementToast'));
+const MusicControl = lazy(() => import('../audio/MusicControl'));
 
 /** What shows for the moment a screen's code is still loading. */
 function Loading() {
@@ -33,6 +34,7 @@ export function App() {
       <Suspense fallback={<Loading />}><Screens /></Suspense>
       {screen !== 'home' && screen !== 'workshop' && screen !== 'career' && screen !== 'shop' && <RotateTip />}
       <Suspense fallback={null}><AchievementToast /></Suspense>
+      <Suspense fallback={null}><MusicControl /></Suspense>
     </>
   );
 }

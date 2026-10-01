@@ -598,5 +598,5 @@
 }
 
 /* Dev level jump (?unlock) */
-.dev-jump { position: fixed; z-index: 70; left: 16px; bottom: 16px; display: flex; flex-direction: column; gap: 4px; padding: 6px 8px; background: #ff48b0; color: #fff; font: 700 11px var(--r-mono); box-shadow: 3px 3px 0 var(--r-ink); }
+.dev-jump { position: fixed; z-index: 70; left: 14px; bottom: 62px; display: flex; flex-direction: column; gap: 4px; padding: 6px 8px; background: #ff48b0; color: #fff; font: 700 11px var(--r-mono); box-shadow: 3px 3px 0 var(--r-ink); }
 .dev-jump select { font: 700 12px var(--r-mono); max-width: 260px; }
