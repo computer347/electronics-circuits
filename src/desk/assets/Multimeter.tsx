@@ -1,7 +1,9 @@
 /**
- * Handheld multimeter: yellow holster, dark face, an LCD with the solver's reading (digits roll
- * to each new value), a rotary dial on DC volts and three jacks. Origin at the bottom centre;
- * the display is at the −z end.
+ * Handheld autoranging multimeter, modelled on the cheap meters beginners buy: yellow holster,
+ * dark face, an LCD with AUTO / AC / DC / ·))) annunciators and the solver's reading (digits
+ * roll to each new value), HOLD and SELECT buttons, a rotary dial printed OFF · V⎓ · V~ · Ω ·
+ * ▶|·))) · mA, and three labelled jacks: 10A, COM and VΩmA, with the CAT rating and fuse warning.
+ * Origin at the bottom centre; the display is at the −z end.
  */
 import { RoundedBox } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
@@ -9,19 +11,24 @@ import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { reducedMotion, useEased } from '../anim';
 import { DIAL, DIAL_LABEL, nextMode, type MeterMode, type Reading } from '../meter';
+import { printTexture } from '../../parts3d/common';
 import { drawLcd } from './textures';
 
 export const METER = { w: 0.09, d: 0.17, h: 0.032 } as const;
-/** Jack positions in the meter's own frame: COM (black) and V (red). */
-export const JACKS = { com: new THREE.Vector3(-0.018, METER.h + 0.004, 0.066), v: new THREE.Vector3(0.018, METER.h + 0.004, 0.066) };
+/** Jack positions in the meter's own frame: 10A (left), COM (black, middle), VΩmA (red, right). */
+export const JACKS = {
+  amps10: new THREE.Vector3(-0.026, METER.h + 0.004, 0.068),
+  com: new THREE.Vector3(0, METER.h + 0.004, 0.068),
+  v: new THREE.Vector3(0.026, METER.h + 0.004, 0.068),
+};
 
 /** Dial angle (radians, clockwise from pointing at the display) for each mode. */
-const DIAL_ANGLE: Record<MeterMode, number> = { off: -1.2, V: -0.6, 'Ω': 0, diode: 0.6, A: 1.2 };
+const DIAL_ANGLE: Record<MeterMode, number> = { off: -1.4, V: -0.84, Vac: -0.28, 'Ω': 0.28, diode: 0.84, A: 1.4 };
 const DIAL_R = 0.022;
 const LABEL_R = 0.034;
 const DIAL_Z = 0.016;
 
-/** The printed ring round the dial: OFF, V⎓, Ω, A, with a tick at each. */
+/** The printed ring round the dial: each position's symbol, a tick, and a sector arc. */
 let dialFace: THREE.CanvasTexture | null = null;
 function dialFaceTexture() {
   if (dialFace) return dialFace;
@@ -29,18 +36,49 @@ function dialFaceTexture() {
   c.width = c.height = 512;
   const g = c.getContext('2d')!;
   g.textAlign = 'center'; g.textBaseline = 'middle';
+  // The thin printed ring the positions sit on.
+  g.strokeStyle = 'rgba(230,230,230,0.6)'; g.lineWidth = 4;
+  g.beginPath(); g.arc(256, 256, 150, -Math.PI / 2 - 1.55, -Math.PI / 2 + 1.55); g.stroke();
   for (const m of DIAL) {
     const a = DIAL_ANGLE[m];
-    const x = 256 + Math.sin(a) * 180, y = 256 - Math.cos(a) * 180;
-    g.fillStyle = m === 'off' ? '#bdbdbd' : m === 'V' ? '#ffe800' : m === 'Ω' ? '#9fd0f2' : m === 'diode' ? '#7ee0a1' : '#ff48b0';
-    g.font = `bold ${m === 'off' ? 46 : m === 'diode' ? 54 : 70}px 'Space Mono', monospace`;
+    const x = 256 + Math.sin(a) * 186, y = 256 - Math.cos(a) * 186;
+    // White print, red for current like a real meter; OFF in grey.
+    g.fillStyle = m === 'off' ? '#bdbdbd' : m === 'A' ? '#ff6a5a' : '#f2f2f2';
+    g.font = `bold ${m === 'diode' ? 32 : m === 'off' ? 44 : 58}px 'Space Mono', monospace`;
     g.fillText(DIAL_LABEL[m], x, y);
-    g.strokeStyle = '#d8d8d8'; g.lineWidth = 8;
-    g.beginPath(); g.moveTo(256 + Math.sin(a) * 118, 256 - Math.cos(a) * 118); g.lineTo(256 + Math.sin(a) * 138, 256 - Math.cos(a) * 138); g.stroke();
+    g.strokeStyle = '#e6e6e6'; g.lineWidth = 8;
+    g.beginPath(); g.moveTo(256 + Math.sin(a) * 118, 256 - Math.cos(a) * 118); g.lineTo(256 + Math.sin(a) * 146, 256 - Math.cos(a) * 146); g.stroke();
   }
   dialFace = new THREE.CanvasTexture(c);
   dialFace.colorSpace = THREE.SRGBColorSpace;
   return dialFace;
+}
+
+/** Printing on the face: the jack labels, the warning, the buttons' names, a model name. */
+let facePrint: THREE.CanvasTexture | null = null;
+function facePrintTexture() {
+  if (facePrint) return facePrint;
+  const c = document.createElement('canvas');
+  c.width = 512; c.height = 1024;
+  const g = c.getContext('2d')!;
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  // c maps the face (0.076 × 0.15 m) to the canvas; meter z −0.075..0.075 → y 0..1024.
+  const X = (x: number) => (x / 0.076 + 0.5) * 512, Y = (z: number) => (z / 0.15 + 0.5) * 1024;
+  g.fillStyle = '#e8e8e8'; g.font = `bold 34px 'Space Mono', monospace`;
+  g.fillText('10A', X(-0.026), Y(0.054));
+  g.fillText('COM', X(0), Y(0.054));
+  g.fillText('VΩmA', X(0.026), Y(0.054));
+  g.font = `bold 20px 'Space Mono', monospace`;
+  g.fillStyle = '#ff6a5a'; g.fillText('10A MAX FUSED', X(-0.024), Y(0.0785));
+  g.fillStyle = '#e8e8e8'; g.fillText('CAT II 600V', X(0.022), Y(0.0785));
+  // the warning triangle
+  g.strokeStyle = '#ffd21f'; g.lineWidth = 5;
+  g.beginPath(); g.moveTo(X(0), Y(0.0745) - 18); g.lineTo(X(0) - 16, Y(0.0745) + 12); g.lineTo(X(0) + 16, Y(0.0745) + 12); g.closePath(); g.stroke();
+  g.fillStyle = '#ffd21f'; g.font = `bold 24px 'Space Mono', monospace`; g.fillText('!', X(0), Y(0.0745) + 2);
+  g.font = `bold 26px 'Anton', sans-serif`; g.fillText('SP-830A  AUTORANGING DMM', X(0), Y(-0.069));
+  facePrint = new THREE.CanvasTexture(c);
+  facePrint.colorSpace = THREE.SRGBColorSpace;
+  return facePrint;
 }
 
 /**
@@ -78,7 +116,7 @@ export function Multimeter({ reading, mode, onMode, interactive }: {
     const key = `${mode}|${text}|${reading.unit}`;
     if (key !== r.shown) {
       r.shown = key;
-      drawLcd(lcd.g, text, reading.unit, mode !== 'off');
+      drawLcd(lcd.g, text, reading.unit, mode !== 'off', mode);
       lcd.t.needsUpdate = true;
     }
   });
@@ -143,12 +181,30 @@ export function Multimeter({ reading, mode, onMode, interactive }: {
           <meshBasicMaterial color="#ff48b0" toneMapped={false} />
         </mesh>
       </group>
-      {/* jacks: COM, V/Ω, mA */}
-      {[[JACKS.com, '#111'], [JACKS.v, '#c0392b'], [new THREE.Vector3(0, METER.h + 0.004, 0.066), '#333']].map(([p, c], i) => (
-        <mesh key={i} position={p as THREE.Vector3}>
-          <cylinderGeometry args={[0.0055, 0.0055, 0.004, 20]} />
-          <meshStandardMaterial color={c as string} roughness={0.4} metalness={0.2} />
-        </mesh>
+      {/* the printing: jack names, warning, buttons, model */}
+      <mesh position={[0, METER.h + 0.0029, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[0.076, 0.15]} />
+        <meshBasicMaterial map={facePrintTexture()} transparent toneMapped={false} depthWrite={false} />
+      </mesh>
+      {/* HOLD and SELECT buttons under the display */}
+      {([[-0.021, '#f2b817', 'HOLD'], [0.021, '#3a8bd8', 'SELECT']] as const).map(([x, c, label]) => (
+        <group key={label} position={[x, METER.h + 0.003, -0.0315]}>
+          <RoundedBox args={[0.02, 0.004, 0.007]} radius={0.0016}>
+            <meshStandardMaterial color={c} roughness={0.5} />
+          </RoundedBox>
+          <mesh position={[0, 0.00205, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <planeGeometry args={[0.017, 0.0045]} />
+            <meshBasicMaterial map={printTexture([label], { size: 44, w: 256, h: 64, fg: '#141414' })} transparent toneMapped={false} />
+          </mesh>
+        </group>
+      ))}
+      {/* jacks: a coloured shroud round a dark socket with a brass contact inside */}
+      {[[JACKS.amps10, '#c0392b'], [JACKS.com, '#111'], [JACKS.v, '#c0392b']].map(([p, c], i) => (
+        <group key={i} position={p as THREE.Vector3}>
+          <mesh><cylinderGeometry args={[0.0058, 0.0062, 0.004, 24]} /><meshStandardMaterial color={c as string} roughness={0.4} /></mesh>
+          <mesh position={[0, 0.0021, 0]}><cylinderGeometry args={[0.0032, 0.0032, 0.0005, 20]} /><meshBasicMaterial color="#050505" /></mesh>
+          <mesh position={[0, 0.0022, 0]}><cylinderGeometry args={[0.0013, 0.0013, 0.0005, 12]} /><meshStandardMaterial color="#c9a227" metalness={0.8} roughness={0.3} /></mesh>
+        </group>
       ))}
     </group>
   );

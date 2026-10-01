@@ -541,14 +541,20 @@ function wrap(g: CanvasRenderingContext2D, text: string, x: number, y: number, w
 }
 
 /** Draw the meter's LCD into an existing canvas (it changes with every reading). */
-export function drawLcd(g: CanvasRenderingContext2D, text: string, unit: string, active: boolean) {
+export function drawLcd(g: CanvasRenderingContext2D, text: string, unit: string, active: boolean, mode = 'V') {
   const w = g.canvas.width, h = g.canvas.height;
   g.fillStyle = active ? '#b9c7a3' : '#737c68'; g.fillRect(0, 0, w, h);
   if (!active) return;
+  // The little status words a real meter's LCD shows: AUTO ranging, AC or DC, the beeper, a battery.
+  g.fillStyle = '#1d2418'; g.font = `bold ${h * 0.13}px ${FONT_MONO}`; g.textAlign = 'left'; g.textBaseline = 'middle';
+  g.fillText('AUTO', 14, h * 0.86);
+  if (mode === 'Vac') g.fillText('AC', 14, h * 0.2);
+  if (mode === 'diode') { g.fillText('▶|', 90, h * 0.86); g.fillText('·)))', 140, h * 0.86); }
+  g.strokeStyle = '#1d2418'; g.lineWidth = 3; g.strokeRect(w - 70, h * 0.1, 44, 20); g.fillRect(w - 26, h * 0.1 + 6, 5, 8); g.fillRect(w - 66, h * 0.1 + 4, 28, 12);
   const right = w - 120;
   g.fillStyle = 'rgba(40,50,30,0.12)'; g.font = `bold ${h * 0.6}px ${FONT_MONO}`; g.textBaseline = 'middle'; g.textAlign = 'right';
   g.fillText('8.888', right, h * 0.55);
   g.fillStyle = '#1d2418'; g.fillText(text, right, h * 0.55);
   g.textAlign = 'left'; g.font = `bold ${h * 0.26}px ${FONT_MONO}`; g.fillText(unit, right + 10, h * 0.62);
-  g.font = `bold ${h * 0.16}px ${FONT_MONO}`; g.fillText(/[VA]$/.test(unit) ? 'DC' : '', 14, h * 0.2);
+  g.font = `bold ${h * 0.16}px ${FONT_MONO}`; g.fillText(/[VA]$/.test(unit) && mode !== 'Vac' && mode !== 'diode' ? 'DC' : '', 14, h * 0.2);
 }

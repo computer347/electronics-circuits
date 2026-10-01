@@ -257,8 +257,8 @@ describe('meter dial and part cards', () => {
   it('clicks round every mode on the dial, wrapping', () => {
     const seen: string[] = [];
     let m: MeterMode = 'V';
-    for (let i = 0; i < 5; i++) { m = nextMode(m); seen.push(m); }
-    expect(seen).toEqual(['Ω', 'diode', 'A', 'off', 'V']);
+    for (let i = 0; i < 6; i++) { m = nextMode(m); seen.push(m); }
+    expect(seen).toEqual(['Vac', 'Ω', 'diode', 'A', 'off', 'V']);
     expect(nextMode('off', -1)).toBe('A');
   });
 
@@ -382,5 +382,17 @@ describe('front page star count', () => {
     expect(worldStars({})).toEqual({ got: 0, max: WORLD0.length * 3 });
     const rec = { [WORLD0[0]!.id]: { stars: 3 as const, seconds: 20, firstPassed: '2026-09-29' }, [L2.id]: { stars: 1 as const, seconds: 50, firstPassed: '2026-09-29' } };
     expect(worldStars(rec)).toEqual({ got: 4, max: WORLD0.length * 3 });
+  });
+});
+
+describe('the meter is a real autoranging meter', () => {
+  it('has V⎓ and V~ apart, and V~ on a DC circuit reads 0 and says to turn to V⎓', async () => {
+    const { readMeter, DIAL_LABEL } = await import('../src/desk/meter');
+    const { startingBoard, WORLD0 } = await import('../src/levels');
+    const b = startingBoard(WORLD0[1]!);
+    const r = readMeter(b, 'Vac', { red: 'h12', black: 'T-:5' }, { ok: true, voltageAt: () => 5, currents: {} });
+    expect(r.text).toBe('0.000');
+    expect(r.note).toMatch(/turn to V⎓/);
+    expect(DIAL_LABEL.V).toBe('V⎓');
   });
 });

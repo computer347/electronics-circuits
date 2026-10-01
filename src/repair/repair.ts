@@ -7,7 +7,7 @@
  * its pads doesn't conduct, Ω and diode tests need the power off, and an LED driven too hard
  * burns out for good.
  */
-import { scaled, ohmsAcross, diodeAcross, type MeterMode, type Reading } from '../desk/meter';
+import { AC_NOTE, scaled, ohmsAcross, diodeAcross, type MeterMode, type Reading } from '../desk/meter';
 import { solve, type Component, type SolveResult } from '../sim';
 import { NETLISTS, padSpots, type ElectricalPart, type PadSpot } from './netlists';
 
@@ -122,7 +122,8 @@ export function repairReading(job: RepairJob, s: RepairState, mode: MeterMode, r
   if (mode === 'off') return { text: '', unit: '' };
   const spots = spotsOf(job);
   const r = spots.find((x) => x.id === red), b = spots.find((x) => x.id === black);
-  if (!r || !b) return { text: '- - - -', unit: mode === 'A' ? 'mA' : mode === 'diode' ? 'V' : mode };
+  if (!r || !b) return { text: '- - - -', unit: mode === 'A' ? 'mA' : mode === 'diode' || mode === 'Vac' ? 'V' : mode };
+  if (mode === 'Vac') return { text: '0.000', unit: 'V', value: 0, note: AC_NOTE };
   if (mode === 'A') return { text: '- - - -', unit: 'mA', note: 'Current means breaking the circuit open, and a finished board has no gap to put the meter in. Measure the voltage across a resistor instead: V ÷ R is its current.' };
   if (mode === 'V') {
     const sol = solveRepair(job, s);

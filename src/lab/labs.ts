@@ -9,7 +9,7 @@
  * Parts under test are small circuits between leg nodes L1, L2, L3… so the same meter maths as
  * the desk reads them. Tests check every level against the solver and the 3D models.
  */
-import { diodeAcross, ohmsAcross, scaled, type MeterMode, type Reading } from '../desk/meter';
+import { AC_NOTE, diodeAcross, ohmsAcross, scaled, type MeterMode, type Reading } from '../desk/meter';
 import { formatSI } from '../lib/units';
 import { solve, type Component } from '../sim';
 
@@ -217,7 +217,8 @@ export const leg = (i: number) => `L${i + 1}`;
 export function labReading(spec: LabSpec, mode: MeterMode, red: number | null, black: number | null): Reading {
   if (spec.kind !== 'sort' && spec.kind !== 'pins') return { text: '', unit: '' };
   if (mode === 'off') return { text: '', unit: '' };
-  if (red === null || black === null) return { text: '- - - -', unit: mode === 'diode' ? 'V' : mode === 'A' ? 'mA' : mode };
+  if (red === null || black === null) return { text: '- - - -', unit: mode === 'diode' || mode === 'Vac' ? 'V' : mode === 'A' ? 'mA' : mode };
+  if (mode === 'Vac') return { text: '0.000', unit: 'V', value: 0, note: AC_NOTE };
   const comps = spec.circuit;
   const a = leg(red), b = leg(black);
   if (mode === 'V') {

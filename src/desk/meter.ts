@@ -15,11 +15,13 @@ import type { HoleId } from '../breadboard/layout';
 import { boardToCircuit, type BoardPart, type BoardState } from '../breadboard/model';
 import { GROUND_NAMES, solve, type Component } from '../sim';
 
-export type MeterMode = 'off' | 'V' | 'Ω' | 'diode' | 'A';
-/** Dial order, clockwise. */
-export const DIAL: MeterMode[] = ['off', 'V', 'Ω', 'diode', 'A'];
+export type MeterMode = 'off' | 'V' | 'Vac' | 'Ω' | 'diode' | 'A';
+/** Dial order, clockwise, as on an autoranging handheld meter. */
+export const DIAL: MeterMode[] = ['off', 'V', 'Vac', 'Ω', 'diode', 'A'];
 /** What the dial and the buttons print for each mode. */
-export const DIAL_LABEL: Record<MeterMode, string> = { off: 'OFF', V: 'V', 'Ω': 'Ω', diode: '▶|', A: 'A' };
+export const DIAL_LABEL: Record<MeterMode, string> = { off: 'OFF', V: 'V⎓', Vac: 'V~', 'Ω': 'Ω', diode: '▶|·)))', A: 'mA' };
+/** A V~ reading on a DC circuit: what a real meter shows, and why. */
+export const AC_NOTE = 'V~ measures AC (mains, a signal that swings). Batteries and this supply are DC: turn to V⎓.';
 /** The diode test's own source runs out of voltage here. */
 const DIODE_COMPLIANCE = 3;
 export const AMMETER_ID = 'METER';
@@ -129,11 +131,12 @@ export function readMeter(
   solved: { ok: boolean; voltageAt: (h: HoleId) => number | undefined; currents: Record<string, number> },
 ): Reading {
   if (mode === 'off') return { text: '', unit: '' };
-  if (!both(probes)) return { text: '- - - -', unit: mode === 'A' ? 'mA' : mode === 'diode' ? 'V' : mode };
+  if (!both(probes)) return { text: '- - - -', unit: mode === 'A' ? 'mA' : mode === 'diode' || mode === 'Vac' ? 'V' : mode };
+  if (mode === 'Vac') return { text: '0.000', unit: 'V', value: 0, note: AC_NOTE };
   if (mode === 'diode') {
     const v = diodeDrop(board, probes.red, probes.black);
     if (v === null) return { text: 'OL', unit: 'V', note: 'OL: nothing conducts this way at the meter’s 3 V. Try the probes the other way round.' };
-    return { text: v.toFixed(3), unit: 'V', value: v, note: v < 0.05 ? 'Near 0 V: the probes are joined (a short, or a wire).' : undefined };
+    return { text: v.toFixed(3), unit: 'V', value: v, note: v < 0.05 ? '·))) beep: the probes are joined (a wire, a closed switch, or a short). That’s the continuity test.' : undefined };
   }
   if (mode === 'V') {
     if (!solved.ok) return { text: '- - - -', unit: 'V' };

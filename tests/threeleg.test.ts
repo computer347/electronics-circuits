@@ -241,6 +241,7 @@ describe('meter modes stay consistent', () => {
   it('prints ▶| on the dial for the diode test', async () => {
     const { DIAL, DIAL_LABEL } = await import('../src/desk/meter');
     expect(DIAL).toContain('diode' as MeterMode);
-    expect(DIAL_LABEL.diode).toBe('▶|');
+    expect(DIAL_LABEL.diode).toBe('▶|·)))');
+    expect(DIAL_LABEL.Vac).toBe('V~');
   });
 });
