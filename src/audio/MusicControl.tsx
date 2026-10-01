@@ -29,7 +29,7 @@ export default function MusicControl() {
       </button>
       {open && (
         <>
-          <span className="music-name" aria-live="polite">{s.playing ? name : 'Music off'}</span>
+          <span className="music-name" aria-live="polite" title="Instruments: FluidR3 GM by Frank Wen (CC BY 3.0)">{s.playing ? `${name}${s.loading ? ' · loading…' : ''}` : 'Music off'}</span>
           <button className="music-next" onClick={() => music.next()} aria-label="Next track" title="Next track">⏭</button>
           <input className="music-vol" type="range" min={0} max={1} step={0.05} value={s.volume} onChange={(e) => music.setVolume(Number(e.target.value))} aria-label="Music volume" />
         </>

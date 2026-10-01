@@ -1,6 +1,6 @@
 /** The background jazz, as theory: chords, voicings, the walking bass, swing and the tracks. */
 import { describe, expect, it } from 'vitest';
-import { hz, parseChord, phrase, rng, swing, TRACKS, voice, walk } from '../src/audio/jazz';
+import { hz, motif, parseChord, phrase, playMotif, rng, swing, TRACKS, voice, walk } from '../src/audio/jazz';
 
 describe('the music theory', () => {
   it('reads chord symbols: roots, sharps and flats, qualities', () => {
@@ -54,9 +54,26 @@ describe('the music theory', () => {
     for (let i = 0; i < 200; i++) for (const p of phrase(parseChord('Cmaj7'), 0, r)) { expect(p.beat).toBeLessThan(4); expect(p.note).toBeGreaterThan(60); }
   });
 
-  it('has five tracks at a chill tempo, and A4 at 440 Hz', () => {
-    expect(TRACKS).toHaveLength(5);
-    for (const t of TRACKS) { expect(t.bpm).toBeGreaterThanOrEqual(60); expect(t.bpm).toBeLessThanOrEqual(80); }
+  it('has eleven tracks in four styles, at a relaxed tempo for each, on sampled instruments', () => {
+    expect(TRACKS).toHaveLength(11);
+    expect(new Set(TRACKS.map((t) => t.style))).toEqual(new Set(['swing', 'bossa', 'lofi', 'ballad']));
+    const range = { swing: [60, 80], ballad: [50, 66], lofi: [70, 90], bossa: [100, 125] } as const;
+    for (const t of TRACKS) {
+      expect(t.bpm, t.id).toBeGreaterThanOrEqual(range[t.style][0]);
+      expect(t.bpm, t.id).toBeLessThanOrEqual(range[t.style][1]);
+      expect(t.comp).not.toBe('bass');
+      for (const b of t.bars) expect(() => parseChord(b)).not.toThrow();
+    }
     expect(hz(69)).toBe(440);
+  });
+
+  it('gives every track its own melody motif, the same every time, inside two bars', () => {
+    const a = motif('night-shift'), b = motif('night-shift'), c = motif('copper-rain');
+    expect(a).toEqual(b);
+    expect(a).not.toEqual(c);
+    for (const t of TRACKS) for (const n of motif(t.id).notes) { expect(n.beat).toBeGreaterThanOrEqual(0); expect(n.beat + n.len).toBeLessThanOrEqual(8); }
+    const r = rng(3);
+    const notes = [0, 1].flatMap((bar) => playMotif(motif('night-shift'), bar as 0 | 1, parseChord('Am7'), 0, 72, 0.2, r));
+    for (const n of notes) { expect(n.note).toBeGreaterThanOrEqual(60); expect(n.note).toBeLessThanOrEqual(88); expect(n.beat).toBeLessThan(4); }
   });
 });

@@ -100,23 +100,83 @@ export function phrase(c: Chord, key: number, r: Rng): { beat: number; note: num
   return out;
 }
 
+export type Style = 'swing' | 'bossa' | 'lofi' | 'ballad';
+/** Sampled instruments (public/music/samples): electric piano, acoustic bass, vibraphone, nylon guitar, grand piano. */
+export type Instrument = 'epiano' | 'bass' | 'vibes' | 'guitar' | 'piano';
+
 export interface Track {
   id: string;
   name: string;
   bpm: number;
-  /** Key, as a pitch class (for the melody's pentatonic). */
+  /** Key, as a pitch class (for the melody's pentatonic; minor keys use their relative major). */
   key: number;
   /** One chord a bar. */
   bars: string[];
+  style: Style;
+  /** Who plays the chords, and who plays the tune. */
+  comp: Instrument;
+  lead: Instrument;
 }
 
 export const TRACKS: Track[] = [
-  { id: 'solder-smoke', name: 'Solder Smoke', bpm: 72, key: 0, bars: ['Dm7', 'G7', 'Cmaj7', 'A7', 'Dm7', 'G7', 'Cmaj7', 'Cmaj7'] },
-  { id: 'late-bench', name: 'Late Bench', bpm: 66, key: 0, bars: ['Fmaj7', 'Em7', 'Dm7', 'Cmaj7', 'Fmaj7', 'Em7', 'Dm7', 'G7'] },
-  { id: 'warm-resistor', name: 'Warm Resistor', bpm: 76, key: 7, bars: ['Am7', 'D7', 'Gmaj7', 'Cmaj7', 'F#m7b5', 'B7', 'Em7', 'Em7'] },
-  { id: 'blue-led', name: 'Blue LED', bpm: 70, key: 3, bars: ['Ebmaj7', 'Cm7', 'Fm7', 'Bb7', 'Ebmaj7', 'Cm7', 'Fm7', 'Bb7'] },
-  { id: 'low-tide-lab', name: 'Low Tide Lab', bpm: 68, key: 5, bars: ['Bbmaj7', 'Bbmaj7', 'Am7', 'D7', 'Gm7', 'C7', 'Fmaj7', 'F6'] },
+  { id: 'solder-smoke', name: 'Solder Smoke', bpm: 72, key: 0, style: 'swing', comp: 'epiano', lead: 'vibes', bars: ['Dm7', 'G7', 'Cmaj7', 'A7', 'Dm7', 'G7', 'Cmaj7', 'Cmaj7'] },
+  { id: 'late-bench', name: 'Late Bench', bpm: 66, key: 0, style: 'swing', comp: 'epiano', lead: 'vibes', bars: ['Fmaj7', 'Em7', 'Dm7', 'Cmaj7', 'Fmaj7', 'Em7', 'Dm7', 'G7'] },
+  { id: 'warm-resistor', name: 'Warm Resistor', bpm: 76, key: 7, style: 'swing', comp: 'piano', lead: 'vibes', bars: ['Am7', 'D7', 'Gmaj7', 'Cmaj7', 'F#m7b5', 'B7', 'Em7', 'Em7'] },
+  { id: 'blue-led', name: 'Blue LED', bpm: 70, key: 3, style: 'swing', comp: 'epiano', lead: 'vibes', bars: ['Ebmaj7', 'Cm7', 'Fm7', 'Bb7', 'Ebmaj7', 'Cm7', 'Fm7', 'Bb7'] },
+  { id: 'low-tide-lab', name: 'Low Tide Lab', bpm: 68, key: 5, style: 'swing', comp: 'epiano', lead: 'piano', bars: ['Bbmaj7', 'Bbmaj7', 'Am7', 'D7', 'Gm7', 'C7', 'Fmaj7', 'F6'] },
+  { id: 'copper-rain', name: 'Copper Rain', bpm: 116, key: 0, style: 'bossa', comp: 'guitar', lead: 'vibes', bars: ['Dm7', 'G7', 'Cmaj7', 'Cmaj7', 'Cm7', 'F7', 'Bbmaj7', 'Bbmaj7'] },
+  { id: 'sunday-soldering', name: 'Sunday Soldering', bpm: 110, key: 5, style: 'bossa', comp: 'guitar', lead: 'piano', bars: ['Fmaj7', 'Gm7', 'C7', 'Fmaj7', 'Am7', 'D7', 'Gm7', 'C7'] },
+  { id: 'night-shift', name: 'Night Shift', bpm: 78, key: 0, style: 'lofi', comp: 'epiano', lead: 'vibes', bars: ['Am7', 'Fmaj7', 'Dm7', 'E7', 'Am7', 'Fmaj7', 'Dm7', 'E7'] },
+  { id: 'low-battery', name: 'Low Battery', bpm: 74, key: 3, style: 'lofi', comp: 'epiano', lead: 'piano', bars: ['Ebmaj7', 'Dm7', 'Cm7', 'Bb6', 'Ebmaj7', 'Dm7', 'Cm7', 'Bb6'] },
+  { id: 'pull-up', name: 'Pull-up', bpm: 82, key: 5, style: 'lofi', comp: 'piano', lead: 'epiano', bars: ['Gm7', 'C7', 'Fmaj7', 'Dm7', 'Gm7', 'C7', 'Fmaj7', 'Fmaj7'] },
+  { id: 'ground-loop', name: 'Ground Loop', bpm: 58, key: 0, style: 'ballad', comp: 'piano', lead: 'vibes', bars: ['Cmaj7', 'Am7', 'Dm7', 'G7', 'Em7', 'A7', 'Dm7', 'G7'] },
 ];
+
+/**
+ * A track's melody motif: a two-bar rhythm with a melodic shape (steps up or down through the
+ * chord and pentatonic tones), the same every time the track plays, so the tune has a hook.
+ */
+export interface Motif { notes: { beat: number; len: number; step: number }[] }
+
+export function motif(trackId: string): Motif {
+  const r = rng([...trackId].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 11));
+  const notes: Motif['notes'] = [];
+  let beat = [0, 0.5, 1][Math.floor(r() * 3)]!;
+  while (beat < 7) {
+    const len = [0.5, 0.5, 1, 1, 1.5, 2][Math.floor(r() * 6)]!;
+    notes.push({ beat, len: Math.min(len, 8 - beat), step: [-2, -1, -1, 1, 1, 2, 0][Math.floor(r() * 7)]! });
+    beat += len + (r() < 0.3 ? 0.5 : 0);
+  }
+  return { notes };
+}
+
+/**
+ * The motif played over a chord: each step moves through the pool of chord and pentatonic
+ * tones, starting near `start`. `bar` is 0 or 1 (which half of the motif). Variation lets the
+ * answer phrase differ from the call.
+ */
+export function playMotif(m: Motif, bar: 0 | 1, c: Chord, key: number, start: number, vary: number, r: Rng): { beat: number; note: number; len: number }[] {
+  const pent = [0, 2, 4, 7, 9].map((i) => (key + i) % 12);
+  const chord = [c.third, c.fifth, c.seventh, c.ninth].map((i) => (c.root + i) % 12);
+  const pool = [...new Set([...chord, ...pent])];
+  const ladder: number[] = [];
+  for (let n = 60; n <= 88; n++) if (pool.includes(n % 12)) ladder.push(n);
+  let idx = ladder.reduce((best, n, i) => (Math.abs(n - start) < Math.abs(ladder[best]! - start) ? i : best), 0);
+  const out: { beat: number; note: number; len: number }[] = [];
+  for (const n of m.notes) {
+    idx = Math.max(0, Math.min(ladder.length - 1, idx + n.step + (r() < vary ? (r() < 0.5 ? 1 : -1) : 0)));
+    const inBar = n.beat - bar * 4;
+    if (inBar >= 0 && inBar < 4) out.push({ beat: inBar, note: ladder[idx]!, len: n.len });
+  }
+  return out;
+}
+
+/** Bossa nova: the guitar's syncopated comping (two-bar cycle), the bass's root–fifth, the rim clave. */
+export const BOSSA_COMP = [[0, 1.5, 3], [0.5, 2, 3.5]] as const;
+export const BOSSA_BASS = [{ beat: 0, len: 1.5, tone: 'root' }, { beat: 1.5, len: 0.5, tone: 'fifth' }, { beat: 2, len: 1.5, tone: 'fifth' }, { beat: 3.5, len: 0.5, tone: 'root' }] as const;
+export const BOSSA_CLAVE = [[0, 1.5, 3], [1, 2]] as const;
+/** Lo-fi: a lazy boom-bap kick, snare on 2 and 4, eighth hats; the chord held across the bar. */
+export const LOFI_KICK = [[0, 2.5], [0, 1.75, 2.5]] as const;
 
 /** Hz from a MIDI note. */
 export const hz = (note: number) => 440 * 2 ** ((note - 69) / 12);
