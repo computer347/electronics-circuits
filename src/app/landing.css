@@ -1,0 +1,72 @@
+/* The front page as a landing page: the riso poster first, then short sections, then the button again. */
+
+.landing { position: fixed; inset: 0; overflow-x: hidden; overflow-y: auto; background: var(--r-paper); color: var(--r-ink); font-family: var(--r-mono); scroll-behavior: smooth; }
+.landing-grain { position: fixed; z-index: 30; }
+.landing h2, .landing h3 { font-weight: 400; }
+
+/* the poster: one screen tall */
+.landing-hero {
+  position: relative; min-height: 100svh; box-sizing: border-box; overflow: hidden;
+  display: grid; grid-template-rows: 1fr auto auto auto auto; gap: 18px; padding: clamp(20px, 5vw, 64px);
+}
+.landing-hero .riso-wave { bottom: 22vh; }
+.landing-tag { z-index: 6; justify-self: start; max-width: 46ch; padding: 6px 10px 6px 0; font-size: clamp(14px, 1.5vw, 18px); line-height: 1.5; background: rgba(241, 236, 225, 0.88); box-shadow: 10px 0 0 rgba(241, 236, 225, 0.88); }
+.landing-cta { display: inline-flex; align-items: center; gap: 0.4em; }
+.landing-cta.big { font-size: clamp(28px, 4vw, 48px); padding: 18px 36px; }
+.landing-facts { position: relative; z-index: 6; display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 0; padding: 0; list-style: none; font-size: 13px; }
+.landing-facts b { font-family: var(--r-display); font-weight: 400; font-size: 22px; color: var(--r-blue); margin-right: 4px; }
+.landing-down { position: relative; z-index: 6; justify-self: start; font-weight: 700; font-size: 13px; color: var(--r-ink); text-decoration: none; border-bottom: 2px solid var(--r-pink); }
+.landing-down:hover { color: var(--r-pink); }
+
+/* sections */
+.landing-section { position: relative; z-index: 6; max-width: 1080px; margin: 0 auto; padding: clamp(40px, 6vw, 72px) clamp(20px, 5vw, 64px); }
+.landing-section + .landing-section { border-top: 3px solid var(--r-ink); }
+.landing-kicker { margin: 0 0 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--r-pink); }
+.landing-section h2 { margin: 0 0 28px; font-family: var(--r-display); font-size: clamp(36px, 5.5vw, 64px); line-height: 0.95; color: var(--r-blue); text-shadow: 0.03em 0.03em 0 rgba(255, 72, 176, 0.55); }
+.landing-section h3 { margin: 0 0 6px; font-family: var(--r-display); font-size: 26px; letter-spacing: 0.02em; }
+.landing-section p { line-height: 1.55; }
+
+/* how a level works */
+.landing-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 18px; }
+.landing-steps li { position: relative; padding: 18px 16px 14px; background: #fffdf6; box-shadow: 5px 5px 0 var(--r-blue); }
+.landing-steps li:nth-child(even) { box-shadow: 5px 5px 0 var(--r-pink); }
+.landing-steps p { margin: 0; font-size: 13px; }
+.landing-step-n { position: absolute; top: -12px; right: 12px; width: 30px; height: 30px; display: grid; place-items: center; background: var(--r-yellow); font-family: var(--r-display); font-size: 18px; box-shadow: 2px 2px 0 var(--r-ink); }
+.landing-icon { display: block; width: 44px; height: 44px; margin-bottom: 8px; color: var(--r-ink); }
+.landing-icon svg { width: 100%; height: 100%; }
+
+/* worlds */
+.landing-worlds { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr)); gap: 22px; }
+.landing-world { padding: 22px 20px 18px; background: #fffdf6; box-shadow: 6px 6px 0 var(--r-ink); border-top: 8px solid var(--r-pink); }
+.landing-world.w1 { border-top-color: var(--r-blue); }
+.landing-world-n { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.landing-world h3 { font-size: 40px; margin: 2px 0; }
+.landing-world-meta { margin: 0 0 12px; font-size: 13px; color: #5b5068; }
+.landing-chips { list-style: none; margin: 0 0 14px; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.landing-chips li { padding: 3px 8px; font-size: 11px; font-weight: 700; background: rgba(0, 120, 191, 0.1); }
+.landing-world.w0 .landing-chips li { background: rgba(255, 72, 176, 0.12); }
+.landing-note { margin: 22px 0 0; font-size: 13px; max-width: 70ch; }
+
+/* notebook and workshop */
+.landing-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 22px; margin-bottom: 20px; }
+.landing-cols > div { padding: 16px; border-left: 6px solid var(--r-yellow); background: rgba(255, 255, 255, 0.5); }
+.landing-cols p { margin: 0; font-size: 13px; }
+.landing-jobs { list-style: none; margin: 0 0 20px; padding: 0; display: grid; gap: 10px; max-width: 760px; }
+.landing-jobs li { padding: 10px 14px; background: #fffdf6; font-size: 14px; line-height: 1.5; box-shadow: 3px 3px 0 var(--r-blue); }
+.landing-jobs b { font-family: var(--r-display); font-weight: 400; font-size: 20px; letter-spacing: 0.02em; color: var(--r-pink); margin-right: 6px; }
+.landing-link { border: 0; border-radius: 0; padding: 4px 0; background: none; color: var(--r-ink); font: 700 15px var(--r-mono); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 5px; cursor: pointer; }
+.landing-link:hover { color: var(--r-pink); }
+
+/* the end */
+.landing-end { position: relative; z-index: 6; padding: clamp(56px, 9vw, 110px) clamp(20px, 5vw, 64px); background: var(--r-yellow); text-align: center; display: grid; justify-items: center; gap: 18px; border-top: 3px solid var(--r-ink); }
+.landing-end-line { margin: 0; font-family: var(--r-display); font-size: clamp(28px, 4.5vw, 54px); line-height: 1; color: var(--r-ink); }
+.landing-small { margin: 0; font-size: 12px; opacity: 0.75; }
+.landing button:focus-visible, .landing a:focus-visible { outline: 3px solid var(--r-pink); outline-offset: 3px; }
+
+@media (max-width: 560px) {
+  .landing-hero { gap: 14px; }
+  .landing-cta { font-size: 22px; padding: 12px 20px; }
+  .landing-cta.big { font-size: 24px; padding: 14px 22px; }
+  .landing .riso-menu { flex-wrap: wrap; gap: 6px 16px; }
+}
+@media (prefers-reduced-motion: reduce) { .landing { scroll-behavior: auto; } }
