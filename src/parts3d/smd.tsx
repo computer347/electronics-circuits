@@ -3,6 +3,7 @@
  * SOT-23 and SOT-223, SOIC-8 and QFP chips, crystals, USB-B and micro-USB sockets and a DC
  * barrel jack. They sit on y = 0 (the top of a PCB).
  */
+import * as THREE from 'three';
 import { EPOXY, GullWing, printTexture, SHIELD, TIN } from './common';
 
 export type ChipSize = '0402' | '0603' | '0805';
@@ -16,7 +17,7 @@ export function ChipResistor({ size = '0603', code = '102' }: { size?: ChipSize;
     <group>
       <mesh position={[0, h / 2, 0]} castShadow><boxGeometry args={[l - 2 * end, h, w]} /><meshStandardMaterial color="#141414" roughness={0.5} /></mesh>
       {[-1, 1].map((k) => <mesh key={k} position={[k * (l / 2 - end / 2), h / 2, 0]}><boxGeometry args={[end, h, w]} /><meshStandardMaterial {...TIN} /></mesh>)}
-      {size !== '0402' && <mesh position={[0, h + 0.005, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[l * 0.55, w * 0.7]} /><meshBasicMaterial map={printTexture([code], { size: 80, w: 128, h: 64 })} transparent /></mesh>}
+      {size !== '0402' && code && <mesh position={[0, h + 0.005, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[l * 0.58, w * 0.7]} /><meshBasicMaterial map={printTexture([code], { size: code.length > 3 ? 64 : 80, w: code.length > 3 ? 192 : 128, h: 64 })} transparent /></mesh>}
     </group>
   );
 }
@@ -103,8 +104,13 @@ export function QFP({ n = 32, size = 7, marking = ['ATMEGA', '328P'] }: { n?: nu
 export function Crystal({ mhz = '16.000' }: { mhz?: string }) {
   return (
     <group>
-      <mesh position={[0, 1.8, 0]} castShadow scale={[1, 1, 0.42]}><cylinderGeometry args={[5.5, 5.5, 3.6, 32]} /><meshStandardMaterial {...SHIELD} /></mesh>
-      <mesh position={[0, 3.61, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[7, 2]} /><meshBasicMaterial map={printTexture([mhz], { size: 60, w: 256, h: 64, fg: '#333' })} transparent /></mesh>
+      {/* HC-49/S: a stadium-shaped metal can, 11 × 4.6 mm, on a black insulating base */}
+      <mesh position={[0, 0.25, 0]}><boxGeometry args={[11.6, 0.5, 5]} /><meshStandardMaterial color="#1a1a1a" roughness={0.7} /></mesh>
+      <mesh position={[0, 0.5, 0]} rotation={[-Math.PI / 2, 0, 0]} castShadow>
+        <extrudeGeometry args={[stadium(5.5, 2.3), { depth: 3.0, bevelEnabled: true, bevelThickness: 0.25, bevelSize: 0.25, bevelSegments: 3, curveSegments: 20 }]} />
+        <meshStandardMaterial {...SHIELD} />
+      </mesh>
+      <mesh position={[0, 3.77, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[7, 2]} /><meshBasicMaterial map={printTexture([mhz], { size: 60, w: 256, h: 64, fg: '#333' })} transparent /></mesh>
     </group>
   );
 }
@@ -113,8 +119,11 @@ export function UsbB() {
   return (
     <group>
       <mesh position={[0, 5.5, 0]} castShadow><boxGeometry args={[16, 11, 12]} /><meshStandardMaterial {...SHIELD} /></mesh>
-      <mesh position={[8.01, 5.5, 0]} rotation={[0, Math.PI / 2, 0]}><planeGeometry args={[8.5, 7.5]} /><meshStandardMaterial color="#e8e8e8" roughness={0.5} /></mesh>
-      <mesh position={[8.02, 5.5, 0]} rotation={[0, Math.PI / 2, 0]}><planeGeometry args={[5.5, 4.5]} /><meshStandardMaterial color="#1a1a1a" /></mesh>
+      {/* the USB-B mouth: square with its two top corners bevelled (it only fits one way), a
+          white tongue carrying the four contacts inside */}
+      <mesh position={[8.01, 5.5, 0]} rotation={[0, Math.PI / 2, 0]}><shapeGeometry args={[usbBMouth()]} /><meshStandardMaterial color="#141414" side={2} /></mesh>
+      <mesh position={[7.4, 5.0, 0]}><boxGeometry args={[1.2, 2.2, 4.2]} /><meshStandardMaterial color="#efefef" roughness={0.5} /></mesh>
+      {[-1.2, 1.2].map((z) => <mesh key={z} position={[8.03, 6.16, z]} rotation={[0, Math.PI / 2, 0]}><planeGeometry args={[0.8, 0.3]} /><meshStandardMaterial color="#d8b45a" metalness={0.8} roughness={0.3} /></mesh>)}
     </group>
   );
 }
@@ -123,7 +132,9 @@ export function MicroUsb() {
   return (
     <group>
       <mesh position={[0, 1.4, 0]} castShadow><boxGeometry args={[5.5, 2.8, 7.5]} /><meshStandardMaterial {...SHIELD} /></mesh>
-      <mesh position={[0, 1.4, -3.76]}><planeGeometry args={[5, 1.9]} /><meshStandardMaterial color="#1a1a1a" /></mesh>
+      {/* the micro-USB mouth is a trapezoid: wider on top, so the plug only goes in one way */}
+      <mesh position={[0, 1.4, -3.76]} rotation={[0, Math.PI, 0]}><shapeGeometry args={[microUsbMouth()]} /><meshStandardMaterial color="#141414" side={2} /></mesh>
+      <mesh position={[0, 1.7, -3.2]}><boxGeometry args={[3.6, 0.35, 1.2]} /><meshStandardMaterial color="#1f1f1f" /></mesh>
     </group>
   );
 }
@@ -147,4 +158,64 @@ export function SmdButton({ w = 6, color = '#1c1c1e' }: { w?: number; color?: st
       {[-1, 1].map((k) => <mesh key={k} position={[k * (w / 2 + 0.4), 0.2, 0]}><boxGeometry args={[0.8, 0.3, w * 0.6]} /><meshStandardMaterial {...TIN} /></mesh>)}
     </group>
   );
+}
+
+/** USB-B socket opening (8 × 7.3 mm, top corners cut). */
+function usbBMouth() {
+  const sh = new THREE.Shape();
+  const w = 4, h = 3.65, c = 1.2;
+  sh.moveTo(-w, -h); sh.lineTo(w, -h); sh.lineTo(w, h - c); sh.lineTo(w - c, h); sh.lineTo(-w + c, h); sh.lineTo(-w, h - c); sh.closePath();
+  return sh;
+}
+
+/** Micro-USB opening (6.9 × 1.85 mm, a trapezoid wider at the top). */
+function microUsbMouth() {
+  const sh = new THREE.Shape();
+  sh.moveTo(-2.4, -0.9); sh.lineTo(2.4, -0.9); sh.lineTo(3.0, 0.9); sh.lineTo(-3.0, 0.9); sh.closePath();
+  return sh;
+}
+
+/** A stadium (two half-circles joined by straight sides): half-length a, radius r. */
+function stadium(a: number, r: number) {
+  const sh = new THREE.Shape();
+  sh.moveTo(-a + r, -r); sh.lineTo(a - r, -r); sh.absarc(a - r, 0, r, -Math.PI / 2, Math.PI / 2, false);
+  sh.lineTo(-a + r, r); sh.absarc(-a + r, 0, r, Math.PI / 2, (3 * Math.PI) / 2, false);
+  return sh;
+}
+
+/**
+ * QFN: a flat square chip with no legs, just pads round the edge underneath (and a big ground
+ * pad in the middle). The ESP8266 and the CP2102 come like this; you can't probe their pins.
+ */
+export function QFN({ n = 32, size = 5, marking = ['ESP8266EX'] }: { n?: number; size?: number; marking?: string[] }) {
+  const per = n / 4, pitch = (size - 0.8) / (per - 1);
+  const pads: [number, number, number, number][] = [];
+  for (let i = 0; i < per; i++) {
+    const o = -((per - 1) * pitch) / 2 + i * pitch;
+    pads.push([o, size / 2, pitch * 0.5, 0.35], [o, -size / 2, pitch * 0.5, 0.35], [size / 2, o, 0.35, pitch * 0.5], [-size / 2, o, 0.35, pitch * 0.5]);
+  }
+  return (
+    <group>
+      <mesh position={[0, 0.45, 0]} castShadow><boxGeometry args={[size, 0.85, size]} /><meshStandardMaterial {...EPOXY} /></mesh>
+      <mesh position={[-size / 2 + 0.6, 0.88, size / 2 - 0.6]} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[0.25, 12]} /><meshBasicMaterial color="#555" /></mesh>
+      <mesh position={[0, 0.88, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[size * 0.85, size * 0.5]} /><meshBasicMaterial map={printTexture(marking, { size: 38, w: 256, h: 128 })} transparent /></mesh>
+      {pads.map(([x, z, w, d], i) => <mesh key={i} position={[x, 0.05, z]}><boxGeometry args={[w, 0.1, d]} /><meshStandardMaterial {...TIN} /></mesh>)}
+    </group>
+  );
+}
+
+/** A small SMD crystal (3.2 × 2.5 mm): a ceramic base with a soldered metal lid. */
+export function Xtal3225({ mhz = '26.000' }: { mhz?: string }) {
+  return (
+    <group>
+      <mesh position={[0, 0.25, 0]}><boxGeometry args={[3.2, 0.5, 2.5]} /><meshStandardMaterial color="#d9cfc0" roughness={0.7} /></mesh>
+      <mesh position={[0, 0.62, 0]} castShadow><boxGeometry args={[2.9, 0.25, 2.2]} /><meshStandardMaterial {...SHIELD} /></mesh>
+      <mesh position={[0, 0.755, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[2.6, 1]} /><meshBasicMaterial map={printTexture([mhz], { size: 52, w: 256, h: 96, fg: '#444' })} transparent /></mesh>
+    </group>
+  );
+}
+
+/** A jumper cap on two header pins (black, or yellow on a Blue Pill). */
+export function JumperCap({ color = '#e8c228' }: { color?: string }) {
+  return <mesh position={[1.27, 6.5, 0]} castShadow><boxGeometry args={[4.9, 6, 2.4]} /><meshStandardMaterial color={color} roughness={0.5} /></mesh>;
 }

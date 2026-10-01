@@ -75,6 +75,11 @@ export function pcbArt(def: BoardDef, finish: 'hasl' | 'enig' = 'hasl') {
     g.fillStyle = '#1a1a1a'; g.beginPath(); g.arc(X(v.x), Z(v.z), 0.17 * PX, 0, Math.PI * 2); g.fill();
     b.fillStyle = '#999'; b.beginPath(); b.arc(X(v.x), Z(v.z), 0.45 * PX, 0, Math.PI * 2); b.fill();
   }
+  // the board's own copper shapes (antennas), under the mask like the traces
+  if (def.copper) {
+    g.save(); g.scale(PX / 12, PX / 12); g.strokeStyle = shade.trace; g.fillStyle = shade.trace; def.copper(g, 12, def.w, def.d); g.restore();
+    b.save(); b.scale(PX / 12, PX / 12); b.strokeStyle = '#999'; b.fillStyle = '#999'; def.copper(b, 12, def.w, def.d); b.restore();
+  }
   // 5. exposed pads, tinned or gold, with their drills
   const metal = finish === 'enig' ? '#d8b45a' : '#c9ccd2';
   for (const p of layout.pads) {
@@ -89,14 +94,14 @@ export function pcbArt(def: BoardDef, finish: 'hasl' | 'enig' = 'hasl') {
   g.strokeStyle = '#f2f2ee'; g.fillStyle = '#f2f2ee'; g.lineWidth = 0.18 * PX;
   g.font = `bold ${1.15 * PX}px 'Space Mono', monospace`; g.textAlign = 'center'; g.textBaseline = 'middle';
   for (const p of def.parts) {
-    if (p.kind === 'header' || p.kind === 'headerF' || p.kind === 'display' || p.kind === 'wroom') continue;
+    if (p.kind === 'header' || p.kind === 'headerF' || p.kind === 'display' || p.kind === 'wroom' || p.kind === 'jumper') continue;
     if (!footprint(p).length) continue;
     const box = partBox(p);
     const pad = 0.5;
     if (p.kind !== 'chipR' && p.kind !== 'chipC' && p.kind !== 'chipLed') {
       g.strokeRect(X(box.x0 - pad), Z(box.z0 - pad), (box.x1 - box.x0 + 2 * pad) * PX, (box.z1 - box.z0 + 2 * pad) * PX);
     }
-    if (p.kind === 'qfp' || p.kind === 'soic8') { g.beginPath(); g.arc(X(box.x0 - pad - 0.6), Z(box.z1 + pad + 0.6), 0.35 * PX, 0, Math.PI * 2); g.fill(); }
+    if (p.kind === 'qfp' || p.kind === 'soic8' || p.kind === 'qfn') { g.beginPath(); g.arc(X(box.x0 - pad - 0.6), Z(box.z1 + pad + 0.6), 0.35 * PX, 0, Math.PI * 2); g.fill(); }
     // The reference name, beside the part where it fits on the board.
     const below = box.z1 + 1.2 < def.d / 2 - 1;
     g.fillText(designators.get(p.id) ?? p.id, X((box.x0 + box.x1) / 2), Z(below ? box.z1 + 1.1 : box.z0 - 1.1));
@@ -123,7 +128,7 @@ export function pcbArt(def: BoardDef, finish: 'hasl' | 'enig' = 'hasl') {
 
 /** The letter a board prints before each part's number, by kind (IEEE 315 style). */
 const PREFIX: Partial<Record<string, string>> = {
-  chipR: 'R', chipC: 'C', elec: 'C', chipLed: 'D', sot23: 'Q', sot223: 'U', soic8: 'U', qfp: 'U', wroom: 'U', crystal: 'Y',
+  chipR: 'R', chipC: 'C', elec: 'C', chipLed: 'D', sot23: 'Q', sot223: 'U', soic8: 'U', qfp: 'U', qfn: 'U', wroom: 'U', crystal: 'Y', xtal3225: 'Y', jumper: 'JP',
   usbB: 'J', microUsb: 'J', usbA: 'J', dcJack: 'J', header: 'J', headerF: 'J', button: 'SW', transducer: 'X', dhtBody: 'U',
 };
 

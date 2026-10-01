@@ -104,9 +104,14 @@ export function BenchSupply({ position, rotY, volts, amps, on, pressed, plusTo, 
     const b = to as THREE.Vector3;
     const out = (from as THREE.Vector3).clone().add(new THREE.Vector3(0, -0.005, 0.04)).applyMatrix4(world);
     const onDesk = a.clone().lerp(b, 0.55).setY(0.006);
-    const curve = new THREE.CatmullRomCurve3([a, out, onDesk, b.clone().add(new THREE.Vector3(0, 0.02, 0)), b]);
-    return { geom: new THREE.TubeGeometry(curve, 64, 0.0024, 8, false), color: color as string };
-  }), [world, plusTo, minusTo]);
+    // A real lead: a banana plug in the binding post, cable over the desk, then a crocodile clip
+    // biting a short wire that's pushed into the breadboard's rail.
+    const pin = b.clone().add(new THREE.Vector3(0, 0.012, 0));
+    const clipAt = pin.clone().add(new THREE.Vector3(0, 0.006, 0));
+    const curve = new THREE.CatmullRomCurve3([a.clone().add(new THREE.Vector3(0, 0, 0.012).applyQuaternion(new THREE.Quaternion().setFromEuler(new THREE.Euler(0, rotY, 0)))), out, onDesk, clipAt.clone().add(new THREE.Vector3(0, 0.03, 0.03)), clipAt.clone().add(new THREE.Vector3(0, 0.012, 0.014))]);
+    const end = curve.getPoint(1), dir = curve.getTangent(1);
+    return { geom: new THREE.TubeGeometry(curve, 64, 0.0024, 8, false), color: color as string, end, dir, pin: b, clipAt };
+  }), [world, plusTo, minusTo, rotY]);
 
   return (
     <>
@@ -134,8 +139,40 @@ export function BenchSupply({ position, rotY, volts, amps, on, pressed, plusTo, 
         <Post at={POSTS.plus} color="#c0392b" />
         <Post at={POSTS.ground} color="#2e9e4f" />
         <Post at={POSTS.minus} color="#1b1b1b" />
+        {/* banana plugs pushed into the + and − posts: an insulated sleeve the lead comes out of */}
+        {([[POSTS.plus, '#d8322c'], [POSTS.minus, '#1b1b1b']] as const).map(([at, c]) => (
+          <group key={c} position={at} rotation={[Math.PI / 2, 0, 0]}>
+            <mesh position={[0, -0.012, 0]} castShadow><cylinderGeometry args={[0.0042, 0.0048, 0.016, 16]} /><meshStandardMaterial color={c} roughness={0.45} /></mesh>
+            <mesh position={[0, -0.0215, 0]}><cylinderGeometry args={[0.003, 0.0042, 0.004, 16]} /><meshStandardMaterial color={c} roughness={0.45} /></mesh>
+          </group>
+        ))}
       </group>
-      {leads.map((l, i) => <mesh key={i} geometry={l.geom} castShadow><meshStandardMaterial color={l.color} roughness={0.5} /></mesh>)}
+      {leads.map((l, i) => (
+        <group key={i}>
+          <mesh geometry={l.geom} castShadow><meshStandardMaterial color={l.color} roughness={0.5} /></mesh>
+          <CrocClip at={l.clipAt} dir={l.dir} color={l.color} pin={l.pin} />
+        </group>
+      ))}
     </>
+  );
+}
+
+/**
+ * The board end of a supply lead: a crocodile clip in its rubber boot, its jaws biting a short
+ * bare wire pushed into the rail hole (you can't push a fat lead into a breadboard).
+ */
+function CrocClip({ at, dir, color, pin }: { at: THREE.Vector3; dir: THREE.Vector3; color: string; pin: THREE.Vector3 }) {
+  const quat = useMemo(() => new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().negate().normalize()), [dir]);
+  return (
+    <group>
+      {/* the bare wire standing in the hole */}
+      <mesh position={pin.clone().add(new THREE.Vector3(0, 0.009, 0))}><cylinderGeometry args={[0.0007, 0.0007, 0.018, 8]} /><meshStandardMaterial color="#c9ccd2" metalness={0.85} roughness={0.3} /></mesh>
+      <group position={at} quaternion={quat}>
+        {/* the rubber boot, then the steel jaws */}
+        <mesh position={[0, -0.014, 0]} castShadow><cylinderGeometry args={[0.0042, 0.0034, 0.022, 12]} /><meshStandardMaterial color={color} roughness={0.6} /></mesh>
+        <mesh position={[0, 0.002, 0.0012]} rotation={[0.18, 0, 0]}><boxGeometry args={[0.004, 0.012, 0.0012]} /><meshStandardMaterial color="#b9bdc2" metalness={0.85} roughness={0.3} /></mesh>
+        <mesh position={[0, 0.002, -0.0012]} rotation={[-0.18, 0, 0]}><boxGeometry args={[0.004, 0.012, 0.0012]} /><meshStandardMaterial color="#b9bdc2" metalness={0.85} roughness={0.3} /></mesh>
+      </group>
+    </group>
   );
 }

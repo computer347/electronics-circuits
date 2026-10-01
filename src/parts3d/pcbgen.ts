@@ -78,7 +78,18 @@ export function footprint(p: Placed): { x: number; z: number; w: number; d: numb
     case 'wroom': return Array.from({ length: 13 }, (_, i) => -6 + i * 1.27).flatMap((z) => [{ x: -9, z: z + 3, w: 1.6, d: 0.9 }, { x: 9, z: z + 3, w: 1.6, d: 0.9 }]);
     case 'transducer': return [{ x: -1.27, z: 0, w: 1.6, d: 1.6, round: true, drill: 0.8 }, { x: 1.27, z: 0, w: 1.6, d: 1.6, round: true, drill: 0.8 }];
     case 'dhtBody': return [-2.54, 0, 2.54, 5.08].map((x) => ({ x: x - 1.27, z: 0, w: 1.6, d: 1.6, round: true, drill: 0.8 }));
-    case 'display': return [];
+    case 'display': case 'jumper': return [];
+    case 'qfn': {
+      const n = Number(q.n ?? 32), size = Number(q.size ?? 5), per = n / 4;
+      const pitch = (size - 0.8) / (per - 1), r = size / 2;
+      const out: { x: number; z: number; w: number; d: number }[] = [{ x: 0, z: 0, w: size * 0.6, d: size * 0.6 }];
+      for (let i = 0; i < per; i++) {
+        const o = -((per - 1) * pitch) / 2 + i * pitch;
+        out.push({ x: o, z: r, w: pitch * 0.5, d: 0.8 }, { x: o, z: -r, w: pitch * 0.5, d: 0.8 }, { x: r, z: o, w: 0.8, d: pitch * 0.5 }, { x: -r, z: o, w: 0.8, d: pitch * 0.5 });
+      }
+      return out;
+    }
+    case 'xtal3225': return [[-1.1, -0.8], [1.1, -0.8], [-1.1, 0.8], [1.1, 0.8]].map(([x, z]) => ({ x: x!, z: z!, w: 1.2, d: 1.0 }));
   }
   return [];
 }

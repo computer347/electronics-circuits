@@ -12,10 +12,11 @@ import { HeaderRow, Pcb, printTexture, SHIELD, silkTexture } from './common';
 import { ChipCap, ChipLed, ChipResistor, Crystal, DcJack, MicroUsb, QFP, SmdButton, SOIC8, SOT223, SOT23, UsbB, type ChipSize } from './smd';
 import { Electrolytic } from './tht';
 import { pcbArt } from './pcbArt';
+import { JumperCap, QFN, Xtal3225 } from './smd';
 
 export type PlacedKind =
   | 'chipR' | 'chipC' | 'chipLed' | 'sot23' | 'sot223' | 'soic8' | 'qfp' | 'crystal' | 'usbB' | 'microUsb' | 'dcJack'
-  | 'button' | 'header' | 'headerF' | 'elec' | 'wroom' | 'display' | 'transducer' | 'dhtBody' | 'usbA';
+  | 'button' | 'header' | 'headerF' | 'elec' | 'wroom' | 'display' | 'transducer' | 'dhtBody' | 'usbA' | 'qfn' | 'xtal3225' | 'jumper';
 
 export interface Placed {
   id: string;
@@ -43,6 +44,8 @@ export interface BoardDef {
   nets?: Record<string, string[]>;
   /** Pad plating: tinned (hasl, silver) or gold (enig). */
   finish?: 'hasl' | 'enig';
+  /** Copper the board draws itself, under the mask (antenna loops and meanders), in mm via `px`. */
+  copper?: (g: CanvasRenderingContext2D, px: number, w: number, d: number) => void;
 }
 
 function PlacedModel({ p, onHover }: { p: Placed; onHover?: (p: Placed | null) => void }) {
@@ -62,6 +65,9 @@ function PlacedModel({ p, onHover }: { p: Placed; onHover?: (p: Placed | null) =
     case 'dcJack': m = <DcJack />; break;
     case 'button': m = <SmdButton w={q.w} color={q.color} />; break;
     case 'header': m = <HeaderRow n={q.n ?? 8} at={[0, 0, 0]} />; break;
+    case 'qfn': m = <QFN n={q.n} size={q.size} marking={q.marking} />; break;
+    case 'xtal3225': m = <Xtal3225 mhz={q.mhz} />; break;
+    case 'jumper': m = <JumperCap color={q.color} />; break;
     case 'headerF': m = <HeaderRow n={q.n ?? 8} at={[0, 0, 0]} female />; break;
     case 'elec': m = <group scale={q.scale ?? 0.8}><Electrolytic uF={q.uF} volts={q.volts} /></group>; break;
     case 'wroom': m = <Wroom />; break;
@@ -255,10 +261,19 @@ export const ESP32_DEVKIT: BoardDef = {
 export const ESP01: BoardDef = {
   id: 'esp-01', name: 'ESP-01 (ESP8266)', w: 24.8, d: 14.3, color: '#141414',
   silk: (g, px, w, d) => { const T = toCanvas(w, d); g.font = `bold ${1.2 * px}px 'Space Mono', monospace`; g.fillText('ESP-01', T.x(-2) * px, T.z(5.8) * px); },
+  // The Wi-Fi antenna is a zig-zag of copper at the far end of the board, no part at all.
+  copper: (g, px, w, d) => {
+    const T = toCanvas(w, d);
+    g.lineWidth = 0.5 * px; g.beginPath();
+    let x = -11.5;
+    g.moveTo(T.x(x) * px, T.z(5.5) * px);
+    for (let i = 0; i < 5; i++) { g.lineTo(T.x(x) * px, T.z(-5.5) * px); g.lineTo(T.x(x + 0.9) * px, T.z(-5.5) * px); g.lineTo(T.x(x + 0.9) * px, T.z(5) * px); g.lineTo(T.x(x + 1.8) * px, T.z(5) * px); x += 1.8; }
+    g.stroke();
+  },
   parts: [
-    { id: 'U_ESP', kind: 'qfp', at: [1, -1], name: 'ESP8266EX (Wi-Fi SoC)', props: { n: 32, size: 5, marking: ['ESP8266EX'] } },
-    { id: 'U_FLASH', kind: 'soic8', at: [1, 4.5], name: 'SPI flash', props: { marking: '25Q08' } },
-    { id: 'Y1', kind: 'crystal', at: [-4.5, -4], name: 'Crystal 26 MHz', value: { amount: 26e6, unit: 'Hz' }, props: { mhz: '26.000' } },
+    { id: 'U_ESP', kind: 'qfn', at: [0, -1.5], name: 'ESP8266EX (Wi-Fi SoC, QFN)', props: { n: 32, size: 5, marking: ['ESP8266EX'] } },
+    { id: 'U_FLASH', kind: 'soic8', at: [0, 4.5], name: 'SPI flash (1 MB)', props: { marking: '25Q80' } },
+    { id: 'Y1', kind: 'xtal3225', at: [-4.5, -4], name: 'Crystal 26 MHz', value: { amount: 26e6, unit: 'Hz' }, props: { mhz: '26.0' } },
     { id: 'LED_PWR', kind: 'chipLed', at: [-3.5, 3.5], name: 'Power LED', props: { color: '#ff3b30', lit: true } },
     { id: 'LED_TX', kind: 'chipLed', at: [-3.5, 5.3], name: 'TX LED', props: { color: '#3a8bff' } },
     { id: 'H1', kind: 'header', at: [8.5, -3.8], rot: -90, name: 'Pins GND, IO2, IO0, RX', props: { n: 4 } },
@@ -281,6 +296,7 @@ export const BLUE_PILL: BoardDef = {
     { id: 'U_REG', kind: 'sot223', at: [17.5, -5.5], name: '3.3 V regulator', props: { marking: 'RT9193' } },
     { id: 'SW_RST', kind: 'button', at: [-8, 4.5], name: 'Reset button', props: { w: 4 } },
     { id: 'H_BOOT', kind: 'header', at: [-17.5, 3], rot: 90, name: 'BOOT jumpers', props: { n: 3 } },
+    { id: 'J_BOOT0', kind: 'jumper', at: [-17.5, 3], rot: 90, name: 'BOOT0 jumper (on 0: run your program)', props: { color: '#e8c228' } },
     { id: 'LED_PWR', kind: 'chipLed', at: [17, 4], name: 'Power LED', props: { color: '#ff3b30', lit: true } },
     { id: 'LED_C13', kind: 'chipLed', at: [19.5, 4], name: 'PC13 LED', props: { color: '#39d86a' } },
     r0603('R_PWR', [17, 6.3], 1000, '102', 90),
@@ -292,13 +308,16 @@ export const BLUE_PILL: BoardDef = {
 };
 
 export const RC522: BoardDef = {
-  id: 'rc522', name: 'RFID reader RC522', w: 60, d: 39.5, color: '#1aa7c8',
+  id: 'rc522', name: 'RFID reader RC522', w: 60, d: 39.5, color: '#1d4fb3',
   holes: [[-26, -16], [-26, 16], [18, -16], [18, 16]],
+  // The antenna is the coil of copper round most of the board: the card is read through it.
+  copper: (g, px, w, d) => {
+    const T = toCanvas(w, d);
+    g.lineWidth = 0.8 * px;
+    for (let i = 0; i < 4; i++) { const m = 3 + i * 1.6; g.beginPath(); g.roundRect((T.x(-28) + m) * px, (T.z(-17) + m) * px, (40 - 2 * m) * px, (34 - 2 * m) * px, 2 * px); g.stroke(); }
+  },
   silk: (g, px, w, d) => {
     const T = toCanvas(w, d);
-    // the antenna coil
-    g.lineWidth = 0.6 * px;
-    for (let i = 0; i < 4; i++) { const m = 3 + i * 1.6; g.strokeRect((T.x(-28) + m) * px, (T.z(-17) + m) * px, (40 - 2 * m) * px, (34 - 2 * m) * px); }
     g.font = `bold ${2 * px}px 'Space Mono', monospace`;
     g.save(); g.translate(T.x(-22) * px, T.z(0) * px); g.rotate(-Math.PI / 2); g.fillText('RFID-RC522', -10 * px, 0); g.restore();
     pinLabels(g, px, ['SDA', 'SCK', 'MOSI', 'MISO', 'IRQ', 'GND', 'RST', '3.3V'], T.x(27), T.z(-8.9), 2.54, 1.0, false);

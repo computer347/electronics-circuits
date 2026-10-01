@@ -5,7 +5,7 @@ import { boardPads, footprint, generateBoard, layoutBoard, partBox, resistorCode
 describe('procedural PCB', () => {
   it('gives every part on every board its footprint, with pads on the board', () => {
     for (const b of BOARDS) {
-      for (const p of b.parts) if (p.kind !== 'display') expect(footprint(p).length, `${b.id} ${p.id} (${p.kind})`).toBeGreaterThan(0);
+      for (const p of b.parts) if (p.kind !== 'display' && p.kind !== 'jumper') expect(footprint(p).length, `${b.id} ${p.id} (${p.kind})`).toBeGreaterThan(0);
       for (const pad of boardPads(b)) {
         expect(Math.abs(pad.x), `${b.id} ${pad.id}`).toBeLessThan(b.w / 2 + 3);
         expect(Math.abs(pad.z), `${b.id} ${pad.id}`).toBeLessThan(b.d / 2 + 3);
