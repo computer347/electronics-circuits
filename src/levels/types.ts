@@ -55,6 +55,11 @@ export type SpecCheck = (
    * is the switch the player adds: any toggle on the board that isn't named.
    */
   | { kind: 'truth-table'; inputs: string[]; output: string; table: (0 | 1)[]; label?: string }
+  /**
+   * Memory: switches and buttons set step by step (each step starts from the last, gates
+   * remembering their states), with LEDs expected lit or dark after each step.
+   */
+  | { kind: 'sequence'; steps: { set: Record<string, boolean>; expect: Record<string, boolean>; say: string }[]; label?: string }
 ) & { explain?: string };
 
 export interface DatasheetCard {

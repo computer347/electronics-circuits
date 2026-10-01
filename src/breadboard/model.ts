@@ -4,7 +4,7 @@
  * drives the top rails.
  */
 
-import { contributions, LED_VF, solve, type Circuit, type Component, type Contributions, type LedColor, type SolveResult, type Waveform } from '../sim';
+import { contributions, type ActiveState, LED_VF, solve, type Circuit, type Component, type Contributions, type LedColor, type SolveResult, type Waveform } from '../sim';
 import { hole, type HoleId } from './layout';
 import { CHIPS, DEFAULT_CHIP, GND_PIN, VCC_PIN } from './chips';
 
@@ -213,9 +213,17 @@ export interface BoardAnalysis {
   circuit: Circuit;
 }
 
-export function analyzeBoard(board: BoardState): BoardAnalysis {
+/**
+ * The bench's memory between solves: the last state of every transistor and logic gate. A
+ * latch's output depends on what happened before, so the live bench solves from these (pass
+ * `{ remember: benchMemory }`); tests and checks leave it out and start fresh.
+ */
+export const benchMemory: { states: Record<string, ActiveState> } = { states: {} };
+
+export function analyzeBoard(board: BoardState, opts: { remember?: { states: Record<string, ActiveState> } } = {}): BoardAnalysis {
   const { circuit, nodeOf } = boardToCircuit(board);
-  const result = solve(circuit);
+  const result = solve(circuit, opts.remember ? { activeGuess: opts.remember.states } : {});
+  if (opts.remember) opts.remember.states = result.activeStates;
   const newlyBurnt = result.faults
     .filter((f) => (f.kind === 'overcurrent' || f.kind === 'reverse-overvoltage') && f.component)
     .map((f) => f.component!);

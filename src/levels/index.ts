@@ -23,6 +23,7 @@ import notBoth from './world1/05-not-both.json';
 import stairwell from './world1/06-stairwell.json';
 import powerTheChip from './world1/07-power-the-chip.json';
 import halfAdder from './world1/08-half-adder.json';
+import remember from './world1/09-remember.json';
 
 export class LevelError extends Error {}
 
@@ -44,6 +45,7 @@ export function parseLevel(raw: unknown): LevelDef {
   for (const c of l.spec) {
     if ((c.kind === 'led-current' || c.kind === 'switched-led') && !ids.has(c.part)) fail(`spec refers to missing part ${c.part}`);
     if (c.kind === 'part-current' && !ids.has(c.part.split('.')[0]!)) fail(`spec refers to missing part ${c.part}`);
+    if (c.kind === 'sequence') for (const st of c.steps) for (const id of [...Object.keys(st.set), ...Object.keys(st.expect)]) if (!ids.has(id)) fail(`sequence refers to missing part ${id}`);
     if (c.kind === 'led-pattern') for (const id of Object.keys(c.leds)) if (!ids.has(id)) fail(`spec refers to missing LED ${id}`);
     if (c.kind === 'truth-table') {
       for (const id of [...c.inputs, c.output]) if (id !== '?' && !ids.has(id)) fail(`truth table refers to missing part ${id}`);
@@ -80,7 +82,7 @@ export const WORLD0_PLAN = [
 ];
 
 /** World 1: logic, built first from the parts World 0 taught (switches, transistors). */
-export const WORLD1: LevelDef[] = [countInLights, both, either, notGate, notBoth, stairwell, powerTheChip, halfAdder].map(parseLevel);
+export const WORLD1: LevelDef[] = [countInLights, both, either, notGate, notBoth, stairwell, powerTheChip, halfAdder, remember].map(parseLevel);
 
 export const WORLD1_PLAN = [
   { number: 1, title: 'Count in lights', topic: 'Binary' },
@@ -91,6 +93,7 @@ export const WORLD1_PLAN = [
   { number: 6, title: 'Stairwell', topic: 'XOR' },
   { number: 7, title: 'Power the chip', topic: 'Logic chips' },
   { number: 8, title: 'Half adder', topic: 'Adding bits' },
+  { number: 9, title: 'Remember', topic: 'Latch (memory)' },
 ];
 
 export interface World { number: number; name: string; levels: LevelDef[]; plan: { number: number; title: string; topic: string }[] }

@@ -189,6 +189,11 @@ export const FORMULAS: Record<string, Formula> = {
     terms: [['sum', 'the right-hand digit of A + B'], ['carry', 'the 1 carried to the next column (1 + 1 = 10)']],
     when: 'Two bits in, two out; a full adder adds a carry in as well.',
   },
+  latch: {
+    name: 'SR latch', expr: 'Q = NAND(S̄, Q̄) · Q̄ = NAND(R̄, Q)',
+    terms: [['S̄ (set)', 'pulled low by START: Q goes to 1'], ['R̄ (reset)', 'pulled low by STOP: Q goes to 0'], ['both high', 'hold: Q stays what it was']],
+    when: 'Feedback makes memory: each output holds the other gate’s input.',
+  },
   rc: {
     name: 'RC time constant', expr: 'τ = R × C',
     terms: [['τ', 'the time to reach 63 % of the final voltage (seconds)'], ['R', 'ohms'], ['C', 'farads (100 µF = 0.0001 F)'], ['V(t)', 'V × (1 − e^(−t/τ))']],
@@ -215,6 +220,7 @@ const LEVEL: Record<string, { parts: PartId[]; formulas: string[]; generators: s
   'w1-06-stairwell': { parts: ['led'], formulas: ['xor', 'logic'], generators: ['led-resistor'] },
   'w1-07-power-the-chip': { parts: ['multimeter'], formulas: ['chip', 'nand'], generators: ['led-resistor'] },
   'w1-08-half-adder': { parts: ['led'], formulas: ['adder', 'xor', 'chip'], generators: ['led-resistor'] },
+  'w1-09-remember': { parts: ['button'], formulas: ['latch', 'nand', 'chip'], generators: ['led-resistor'] },
 };
 
 /** A stable seed per level so the worked example is the same each time you open it. */

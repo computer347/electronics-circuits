@@ -20,8 +20,8 @@ const R = (id: string, h1: string, h2: string, ohms: number): BoardPart => ({ id
 const W = (id: string, h1: string, h2: string): BoardPart => ({ id, kind: 'wire', h1, h2 });
 
 describe('World 1', () => {
-  it('has eight levels, numbered in order, after World 0', () => {
-    expect(WORLD1.map((l) => l.number)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+  it('has nine levels, numbered in order, after World 0', () => {
+    expect(WORLD1.map((l) => l.number)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
     expect(WORLD1.every((l) => l.world === 1)).toBe(true);
   });
 
@@ -125,7 +125,7 @@ describe('World 1 notebook and classes', () => {
       expect(p.skill.length, l.id).toBeGreaterThan(25);
       expect(p.skill.length, l.id).toBeLessThan(90);
       expect(p.realLife.length, l.id).toBeGreaterThan(60);
-      expect(['binary', 'and', 'or', 'not', 'nand', 'xor', 'chip', 'adder']).toContain(p.picture);
+      expect(['binary', 'and', 'or', 'not', 'nand', 'xor', 'chip', 'adder', 'latch']).toContain(p.picture);
     }
   });
 
@@ -162,6 +162,7 @@ describe('World 1 inside the circuit', () => {
       6: (b) => add(b, W('W8', 'a4', 'a16'), W('W9', 'a6', 'a14')),
       7: (b) => set(add(b, W('W8', 'j10', 'T+:8'), W('W9', 'a16', 'B-:13')), { SA: { pressed: true } }),
       8: (b) => set(add(b, W('W8', 'c3', 'a14'), W('W9', 'd4', 'a15')), { SA: { pressed: true }, SB: { pressed: true } }),
+      9: (b) => add(b, W('W8', 'a12', 'a13'), W('W9', 'a15', 'a11')),
     };
     for (const l of WORLD1) {
       for (const b of [startingBoard(l), fixes[l.number]!(startingBoard(l))]) {
@@ -226,5 +227,28 @@ describe('the half-adder lab', () => {
     expect(adderLab(true, false)).toEqual({ sum: true, carry: false });
     expect(adderLab(false, true)).toEqual({ sum: true, carry: false });
     expect(adderLab(true, true)).toEqual({ sum: false, carry: true });
+  });
+});
+
+describe('1-9 Remember (SR latch)', () => {
+  const b = L(9).board;
+  const latch = add(b, W('W8', 'a12', 'a13'), W('W9', 'a15', 'a11'));
+  it('remembers once the two NANDs are cross-coupled', () => {
+    expect(check(9, latch).pass).toBe(true);
+  });
+  it('with only one feedback wire, STOP can never win: the floating pin 2 reads 0 and holds RUN on', () => {
+    const r = check(9, add(b, W('W8', 'a12', 'a13')));
+    expect(r.pass).toBe(false);
+    expect(r.diagnosis?.message).toMatch(/Holding STOP: RUN should be dark/);
+  });
+  it('keeps its bit on the live bench between solves, and starts fresh without memory', async () => {
+    const { benchMemory } = await import('../src/breadboard/model');
+    const mem = { states: {} as typeof benchMemory.states };
+    const press = (id: string, v: boolean, from: BoardState) => set(from, { [id]: { pressed: v } });
+    const on = (x: BoardState) => Math.abs(analyzeBoard(x, { remember: mem }).result.currents['RUN'] ?? 0) > 1e-3;
+    let s = press('STOP', true, latch); expect(on(s)).toBe(false);
+    s = press('STOP', false, s); expect(on(s)).toBe(false);
+    s = press('START', true, s); expect(on(s)).toBe(true);
+    s = press('START', false, s); expect(on(s)).toBe(true);
   });
 });

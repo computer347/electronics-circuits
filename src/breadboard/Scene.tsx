@@ -400,10 +400,13 @@ function Button({ part, mark }: { part: BoardPart; mark?: string }) {
   };
   return (
     <group onPointerDown={down} onContextMenu={handlers.onContextMenu}>
+      {/* A 6 mm button is about 2.4 holes square, whatever holes its legs reach: they bend to them. */}
       <Segment from={a} to={[a[0], 0.25, a[2]]} />
+      <Segment from={[a[0], 0.25, a[2]]} to={[mid[0] + Math.sign(a[0] - mid[0]) * Math.min(1, Math.abs(a[0] - mid[0])), 0.3, mid[2] + Math.sign(a[2] - mid[2]) * Math.min(1, Math.abs(a[2] - mid[2]))]} />
       <Segment from={b} to={[b[0], 0.25, b[2]]} />
+      <Segment from={[b[0], 0.25, b[2]]} to={[mid[0] + Math.sign(b[0] - mid[0]) * Math.min(1, Math.abs(b[0] - mid[0])), 0.3, mid[2] + Math.sign(b[2] - mid[2]) * Math.min(1, Math.abs(b[2] - mid[2]))]} />
       <mesh position={[mid[0], 0.3, mid[2]]}>
-        <boxGeometry args={[Math.max(1.0, Math.abs(b[0] - a[0]) + 0.4), 0.3, Math.max(1.0, Math.abs(b[2] - a[2]) + 0.4)]} />
+        <boxGeometry args={[Math.min(2.4, Math.max(1.0, Math.abs(b[0] - a[0]) + 0.4)), 0.3, Math.min(2.4, Math.max(1.0, Math.abs(b[2] - a[2]) + 0.4))]} />
         <meshStandardMaterial color="#1a1f1c" roughness={0.7} emissive={mark ?? '#000'} emissiveIntensity={mark ? 0.35 : 0} />
       </mesh>
       <mesh position={[mid[0], part.pressed ? 0.5 : 0.62, mid[2]]}>

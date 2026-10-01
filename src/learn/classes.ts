@@ -830,7 +830,46 @@ const w1c8: LearnClass = {
   ],
 };
 
-export const WORLD1_CLASSES: LearnClass[] = [w1c1, w1c2, w1c3, w1c4, w1c5, w1c6, w1c7, w1c8];
+const w1c9: LearnClass = {
+  id: 'c1-09-latch',
+  world: 1, number: 9,
+  title: 'Memory from feedback',
+  levelId: 'w1-09-remember',
+  minutes: 6,
+  goals: ['Explain how feedback makes memory', 'Set, reset and hold an SR latch'],
+  steps: [
+    {
+      title: 'Outputs that loop back',
+      body: [
+        'Every gate so far only looked at its inputs now. Feed two NAND gates\' outputs back into each other and the circuit starts to depend on what happened **before**: it remembers.',
+        'Gate 1 makes Q from START and Q̄; gate 2 makes Q̄ from STOP and Q. Each holds the other in place.',
+      ],
+    },
+    {
+      title: 'Set, reset, hold',
+      body: [
+        'The buttons pull their inputs **low** when pressed (they idle high through pull-ups). START low forces Q to 1: **set**. STOP low forces Q to 0: **reset**.',
+        'Both released (both high), each gate\'s output just repeats what the other says: Q **holds**. That\'s one bit of memory.',
+      ],
+    },
+    {
+      title: 'From latches to computers',
+      body: [
+        'A workshop machine\'s START/STOP control is this latch, often built with a relay. Add a clock input so the latch only listens at a tick, and it becomes a **flip-flop**: eight make a register, billions make RAM.',
+      ],
+    },
+  ],
+  check: [
+    { kind: 'choice', prompt: 'You press START and let go. What does RUN do?', options: ['Goes off when you let go', 'Stays on', 'Flickers', 'Depends on STOP being held'], correct: 1,
+      explain: 'The latch holds the bit: released, both inputs are high and Q stays at 1.' },
+    { kind: 'choice', prompt: 'What makes a latch remember?', options: ['A capacitor', 'Feedback: each gate\'s output feeds the other', 'The pull-up resistors', 'A battery'], correct: 1,
+      explain: 'The cross-coupled outputs hold each other in place.' },
+    { kind: 'choice', prompt: 'The buttons pull their inputs to 0 when pressed. What does that make START?', options: ['Active high', 'Active low', 'A pull-down', 'An output'], correct: 1,
+      explain: 'It acts when its line goes low: active low, written S̄.' },
+  ],
+};
+
+export const WORLD1_CLASSES: LearnClass[] = [w1c1, w1c2, w1c3, w1c4, w1c5, w1c6, w1c7, w1c8, w1c9];
 export const ALL_CLASSES: LearnClass[] = [...WORLD0_CLASSES, ...WORLD1_CLASSES];
 
 export const classById = (id: string) => ALL_CLASSES.find((c) => c.id === id);

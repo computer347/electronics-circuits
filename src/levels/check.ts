@@ -303,6 +303,24 @@ function checkOne(c: SpecCheck, board: BoardState, analysis: BoardAnalysis, fixe
         why: bad.length ? { part: c.output, message: `With ${combo(bad[0]!.i)}, ${c.output} should be ${bad[0]!.want ? 'lit' : 'dark'} but it's ${bad[0]!.got ? 'lit' : 'dark'}.` } : undefined,
       };
     }
+    case 'sequence': {
+      // Play the steps in order: each one starts from the board and gate states the last left.
+      let b: BoardState = board;
+      const memory = { states: {} as Record<string, import('../sim').ActiveState> };
+      for (const [i, step] of c.steps.entries()) {
+        b = { ...b, parts: b.parts.map((p) => (p.id in step.set ? { ...p, pressed: step.set[p.id] } : p)) };
+        const a = analyzeBoard(b, { remember: memory });
+        const lit = (id: string) => a.result.ok && Math.abs(a.result.currents[id] ?? 0) > LIT_AMPS;
+        const wrong = Object.entries(step.expect).find(([id, on]) => lit(id) !== on);
+        if (wrong) {
+          return {
+            line: { ok: false, label: c.label ?? 'It remembers', measured: `fails at step ${i + 1}` },
+            why: { part: wrong[0], message: `${step.say}: ${wrong[0]} should be ${wrong[1] ? 'lit' : 'dark'} but it's ${wrong[1] ? 'dark' : 'lit'}.` },
+          };
+        }
+      }
+      return { line: { ok: true, label: c.label ?? 'It remembers', measured: `${c.steps.length} steps` } };
+    }
     case 'part-current': {
       const held: BoardState = { ...board, parts: board.parts.map((p) => (p.kind === 'button' ? { ...p, pressed: true } : p)) };
       const a = analyzeBoard(held);

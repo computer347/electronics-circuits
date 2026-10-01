@@ -1,0 +1,239 @@
+{
+  "id": "w1-09-remember",
+  "world": 1,
+  "number": 9,
+  "title": "Remember",
+  "format": "build",
+  "skills": [
+    "logic.latch",
+    "logic.feedback",
+    "chip.pinout"
+  ],
+  "brief": {
+    "story": "The club's 3D printer needs a start/stop control: press START and it runs until someone presses STOP, like every machine in a workshop. A button only lights the LED while it's held. The circuit has to remember. IC1 (74HC00) has START on pin 1 and STOP on pin 5, each held high by a pull-up and pulled low by its button, and the RUN LED on pin 3.",
+    "goal": "Cross-couple two NAND gates into a latch: START turns RUN on and it stays on after you let go; STOP turns it off and it stays off.",
+    "datasheet": {
+      "title": "SR latch from two NANDs",
+      "rows": [
+        [
+          "Gate 1",
+          "pins 1 (START), 2 → 3 (RUN)"
+        ],
+        [
+          "Gate 2",
+          "pins 4, 5 (STOP) → 6"
+        ],
+        [
+          "Feedback",
+          "3 → 4 and 6 → 2"
+        ],
+        [
+          "Buttons",
+          "pull to 0 when pressed"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "A latch is two gates feeding each other: each one's output goes into one of the other's inputs. That loop is the memory.",
+    "Gate 1's output is pin 3 (column 12); gate 2's spare input is pin 4 (column 13). Gate 2's output is pin 6 (column 15); gate 1's spare input is pin 2 (column 11).",
+    "Two wires: column 12 to column 13, and column 15 to column 11 (rows a–d)."
+  ],
+  "board": {
+    "supply": {
+      "volts": 5,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "IC1",
+        "kind": "dip",
+        "h1": "e10",
+        "h2": "f16",
+        "pins": [
+          "e10",
+          "e11",
+          "e12",
+          "e13",
+          "e14",
+          "e15",
+          "e16",
+          "f16",
+          "f15",
+          "f14",
+          "f13",
+          "f12",
+          "f11",
+          "f10"
+        ],
+        "marking": "74HC00"
+      },
+      {
+        "id": "WP",
+        "kind": "wire",
+        "h1": "T+:25",
+        "h2": "B+:25",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WN",
+        "kind": "wire",
+        "h1": "T-:24",
+        "h2": "B-:24",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "WV",
+        "kind": "wire",
+        "h1": "g10",
+        "h2": "T+:8",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WG",
+        "kind": "wire",
+        "h1": "a16",
+        "h2": "B-:13",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "RS",
+        "kind": "resistor",
+        "h1": "B+:7",
+        "h2": "a10",
+        "ohms": 10000
+      },
+      {
+        "id": "START",
+        "kind": "button",
+        "h1": "b10",
+        "h2": "B-:6",
+        "pressed": false
+      },
+      {
+        "id": "RR",
+        "kind": "resistor",
+        "h1": "B+:16",
+        "h2": "b14",
+        "ohms": 10000
+      },
+      {
+        "id": "STOP",
+        "kind": "button",
+        "h1": "c14",
+        "h2": "B-:17",
+        "pressed": false
+      },
+      {
+        "id": "R1",
+        "kind": "resistor",
+        "h1": "b12",
+        "h2": "b20",
+        "ohms": 330
+      },
+      {
+        "id": "RUN",
+        "kind": "led",
+        "h1": "c20",
+        "h2": "c22",
+        "color": "green"
+      },
+      {
+        "id": "WL",
+        "kind": "wire",
+        "h1": "a22",
+        "h2": "B-:18",
+        "wireColor": "#2f6fe0"
+      }
+    ]
+  },
+  "locked": [
+    "IC1",
+    "WP",
+    "WN",
+    "WV",
+    "WG",
+    "RS",
+    "START",
+    "RR",
+    "STOP",
+    "R1",
+    "RUN",
+    "WL"
+  ],
+  "tools": [
+    "wire",
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "sequence",
+      "label": "START sets RUN, STOP resets it, and it remembers",
+      "steps": [
+        {
+          "set": {
+            "START": true
+          },
+          "expect": {
+            "RUN": true
+          },
+          "say": "Holding START"
+        },
+        {
+          "set": {
+            "START": false
+          },
+          "expect": {
+            "RUN": true
+          },
+          "say": "After letting go of START"
+        },
+        {
+          "set": {
+            "STOP": true
+          },
+          "expect": {
+            "RUN": false
+          },
+          "say": "Holding STOP"
+        },
+        {
+          "set": {
+            "STOP": false
+          },
+          "expect": {
+            "RUN": false
+          },
+          "say": "After letting go of STOP"
+        },
+        {
+          "set": {
+            "START": true
+          },
+          "expect": {
+            "RUN": true
+          },
+          "say": "Pressing START again"
+        },
+        {
+          "set": {
+            "START": false
+          },
+          "expect": {
+            "RUN": true
+          },
+          "say": "And letting go"
+        }
+      ],
+      "explain": "Memory comes from feedback: each gate's output holds the other gate's input where it is."
+    },
+    {
+      "kind": "no-burnt"
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 2
+  },
+  "debrief": "Two NAND gates feeding each other hold a bit: an SR latch. It's how a machine's START/STOP control keeps running after you let go, how a computer keeps a 1 or a 0 between instructions, and, clocked, the flip-flops in every register and RAM cell."
+}

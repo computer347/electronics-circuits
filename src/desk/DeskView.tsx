@@ -5,7 +5,7 @@
  */
 import { Canvas } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { analyzeBoard } from '../breadboard/model';
+import { analyzeBoard, benchMemory } from '../breadboard/model';
 import { useBench } from '../breadboard/store';
 import { CircuitWorld } from '../circuitworld/CircuitWorld';
 import { classForLevel } from '../learn/classes';
@@ -106,7 +106,8 @@ export function DeskView({ onMenu }: { onMenu: () => void }) {
   const board = useMemo(() => ({ supply, parts }), [supply, parts]);
   const meterMode = useDesk((s) => s.meterMode);
   // With the dial on A the meter is part of the circuit (a wire between the probes), so solve it in.
-  const analysis = useMemo(() => analyzeBoard(meteredBoard(board, meterMode, probes)), [board, meterMode, probes]);
+  // The live bench remembers its gates' states between solves, so a latch keeps its bit.
+  const analysis = useMemo(() => analyzeBoard(meteredBoard(board, meterMode, probes), { remember: benchMemory }), [board, meterMode, probes]);
   // Boards that change over time (capacitors, generators) run the live transient bench: the
   // scope draws it, LEDs follow it, and the meter's volts come from it.
   const dynamic = isDynamicBoard(board);

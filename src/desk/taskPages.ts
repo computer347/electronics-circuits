@@ -6,7 +6,7 @@
 import type { LevelDef } from '../levels/types';
 
 export type TaskPicture = 'led' | 'two-leds' | 'divider' | 'rc' | 'fork' | 'button' | 'cells' | 'bridge' | 'transistor'
-  | 'binary' | 'and' | 'or' | 'not' | 'nand' | 'xor' | 'chip' | 'adder';
+  | 'binary' | 'and' | 'or' | 'not' | 'nand' | 'xor' | 'chip' | 'adder' | 'latch';
 
 export interface TaskPage {
   label: string;
@@ -151,6 +151,13 @@ const EXTRA: Record<string, { headline: string; tip: string; picture: TaskPictur
     picture: 'adder',
     skill: 'Build a half adder from XOR and AND chips, and read sum and carry.',
     realLife: 'Adders are the heart of every calculator and CPU: chained, they add numbers of any size.',
+  },
+  'w1-09-remember': {
+    headline: 'Make it remember.',
+    tip: 'Feed each gate’s output into the other gate’s spare input. The loop holds whatever the last button said.',
+    picture: 'latch',
+    skill: 'Build a latch from two cross-coupled NANDs: a circuit that remembers.',
+    realLife: 'Every machine’s START/STOP control works like this, and so does each bit of a computer’s registers and memory.',
   },
 };
 

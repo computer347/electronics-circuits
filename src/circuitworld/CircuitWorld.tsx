@@ -12,7 +12,7 @@ import { Html } from '@react-three/drei';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from 'react';
 import * as THREE from 'three';
-import { analyzeBoard } from '../breadboard/model';
+import { analyzeBoard, benchMemory } from '../breadboard/model';
 import { useBench } from '../breadboard/store';
 import { reducedMotion } from '../desk/anim';
 import { formatSI } from '../lib/units';
@@ -271,7 +271,7 @@ export function CircuitWorld({ onCleared, onGiveUp, rail }: {
 }) {
   const parts = useBench((s) => s.parts);
   const supply = useBench((s) => s.supply);
-  const world = useMemo(() => { const b = { supply, parts }; return buildWorld(b, analyzeBoard(b)); }, [supply, parts]);
+  const world = useMemo(() => { const b = { supply, parts }; return buildWorld(b, analyzeBoard(b, { remember: benchMemory })); }, [supply, parts]);
   const keys = useKeys();
   const shared = useRef<Shared>({ walker: spawnWalker(world), keys, route: [], mouseScan: false, onTarget: () => {}, onBlockedNear: () => {} }).current;
   const [target, setTarget] = useState<Target | null>(null);

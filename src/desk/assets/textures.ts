@@ -480,6 +480,24 @@ function drawPicture(g: CanvasRenderingContext2D, pic: TaskPicture) {
     if (pic === 'adder') { g.fillStyle = INK.ink; g.font = `bold 28px ${FONT_MONO}`; g.fillText('sum = A XOR B', 570, 170); g.fillText('carry = A AND B', 570, 230); }
     g.textAlign = 'left';
   }
+  if (pic === 'latch') {
+    // Two NAND gates, outputs crossed back into each other's inputs.
+    const nand = (x: number, y: number, label: string) => {
+      g.beginPath(); g.moveTo(x, y - 50); g.lineTo(x + 60, y - 50); g.arc(x + 60, y, 50, -Math.PI / 2, Math.PI / 2); g.lineTo(x, y + 50); g.closePath(); g.stroke();
+      g.beginPath(); g.arc(x + 122, y, 10, 0, Math.PI * 2); g.stroke();
+      g.fillStyle = INK.ink; g.font = `bold 24px ${FONT_MONO}`; g.fillText(label, x + 22, y + 8);
+    };
+    nand(220, 120, 'G1'); nand(220, 300, 'G2');
+    line(g, [[100, 95], [220, 95]]); line(g, [[100, 325], [220, 325]]);
+    line(g, [[352, 120], [470, 120]]); line(g, [[352, 300], [470, 300]]);
+    g.save(); g.strokeStyle = INK.pink; g.lineWidth = 6;
+    line(g, [[420, 120], [420, 190], [180, 230], [180, 275], [220, 275]]);
+    line(g, [[420, 300], [420, 230], [180, 190], [180, 145], [220, 145]]);
+    g.restore();
+    g.fillStyle = INK.ink; g.font = `bold 26px ${FONT_MONO}`;
+    g.fillText('START', 10, 104); g.fillText('STOP', 20, 334); g.fillText('RUN (Q)', 480, 128); g.fillText('Q̄', 480, 308);
+    g.fillStyle = INK.pink; g.fillText('feedback', 470, 214);
+  }
   if (pic === 'rc') {
     battery(g, left, 190, '9 V');
     line(g, [[left, 190], [left, top], [140, top]]);
