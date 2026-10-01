@@ -19,6 +19,8 @@ import { isDynamicBoard } from '../breadboard/model';
 import { SandboxTray } from './SandboxTray';
 import { ScopeControls } from './ScopeControls';
 import { isUnlocked, followingLevel, nextLevel } from './levelPick';
+import { devUnlockAll } from '../lib/dev';
+import { DevLevelJump } from './DevLevelJump';
 import { DIAL, DIAL_LABEL, meteredBoard, readMeter } from './meter';
 import { spreads } from './notebook';
 import { NotebookPages } from './NotebookPages';
@@ -275,6 +277,7 @@ export function DeskView({ onMenu }: { onMenu: () => void }) {
 
   return (
     <div className={`desk ${desk.focus || desk.phase !== 'desk' ? 'dimmed' : ''}`}>
+      {devUnlockAll && <DevLevelJump current={sandbox ? null : level.id} onPick={(id) => { setMapWorld(null); playLevel(id); }} />}
       {fonts && (
         <Canvas className="desk-canvas" shadows camera={{ fov: 42, near: 0.005, far: 20, position: [0, 0.7, 0.4] }} dpr={DPR}
           onPointerMissed={() => useHover.getState().set(null)}>

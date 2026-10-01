@@ -5,11 +5,12 @@
  */
 import { ALL_LEVELS, WORLDS } from '../levels';
 import type { LevelRecord } from '../levels/progress';
+import { devUnlockAll } from '../lib/dev';
 
 const worldOf = (n: number) => WORLDS.find((w) => w.number === n);
 
 export const isUnlocked = (number: number, records: Record<string, LevelRecord>, world = 0) =>
-  number === 1 || !!worldOf(world)?.levels.find((l) => l.number === number - 1 && records[l.id]);
+  devUnlockAll || number === 1 || !!worldOf(world)?.levels.find((l) => l.number === number - 1 && records[l.id]);
 
 /** The first level not passed yet, in world order, or null when everything is done. */
 export function nextLevel(records: Record<string, LevelRecord>): string | null {

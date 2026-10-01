@@ -596,3 +596,7 @@
   .rotate-tip { position: fixed; z-index: 60; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; gap: 10px; align-items: center; padding: 8px 12px; background: var(--r-ink); color: var(--r-paper); font: 700 12px var(--r-mono); box-shadow: 3px 3px 0 var(--r-pink); white-space: nowrap; }
   .rotate-tip button { border: 0; border-radius: 0; padding: 2px 8px; background: var(--r-paper); color: var(--r-ink); font: 700 12px var(--r-mono); }
 }
+
+/* Dev level jump (?unlock) */
+.dev-jump { position: fixed; z-index: 70; left: 16px; bottom: 16px; display: flex; flex-direction: column; gap: 4px; padding: 6px 8px; background: #ff48b0; color: #fff; font: 700 11px var(--r-mono); box-shadow: 3px 3px 0 var(--r-ink); }
+.dev-jump select { font: 700 12px var(--r-mono); max-width: 260px; }
