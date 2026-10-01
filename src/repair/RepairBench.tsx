@@ -171,7 +171,7 @@ function Scene({ job, state, onHover, onHoverSpot }: {
       {(tool === 'iron' || tool.startsWith('spare:')) && footprints.map((p) => {
         const f = state.fitted[p.id];
         const empty = !!f && !f.present;
-        const size = p.kind === 'elec' ? 8 : 2.6;
+        const size = p.kind === 'elec' || p.kind === 'elecSmd' ? 8 : 2.6;
         return (
           <mesh key={p.id} position={[p.at[0], TOP + 0.4, p.at[1]]} rotation={[0, ((p.rot ?? 0) * Math.PI) / 180, 0]}
             onPointerOver={(e) => { e.stopPropagation(); setHot(p.id); onHover(empty ? `${p.id} · empty pads${tool.startsWith('spare:') ? ': click to put the spare here' : ''}` : `${tooltip(p, (x, u) => formatSI(x, u))}${partState(f)}${tool === 'iron' ? ' · hold to ' + (f?.soldered ? 'take it off' : 'solder it') : ''}`); }}

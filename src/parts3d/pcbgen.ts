@@ -90,6 +90,11 @@ export function footprint(p: Placed): { x: number; z: number; w: number; d: numb
       return out;
     }
     case 'tsop48': return [-1, 1].flatMap((k) => Array.from({ length: 24 }, (_, i) => ({ x: k * 9.7, z: -5.75 + i * 0.5, w: 1.3, d: 0.28 })));
+    case 'dip28': return Array.from({ length: 28 }, (_, i) => (i < 14
+      ? { x: 16.51 - i * 2.54, z: -3.81, w: i === 0 ? 1.7 : 1.7, d: 1.7, round: i !== 0, drill: 0.9 }
+      : { x: -16.51 + (i - 14) * 2.54, z: 3.81, w: 1.7, d: 1.7, round: true, drill: 0.9 }));
+    case 'resonator': return [-1.2, 0, 1.2].map((x) => ({ x, z: 0, w: 0.6, d: 1.9 }));
+    case 'elecSmd': return [{ x: -2.3, z: 0, w: 2.4, d: 1.6 }, { x: 2.3, z: 0, w: 2.4, d: 1.6 }];
     case 'xtal3225': return [[-1.1, -0.8], [1.1, -0.8], [-1.1, 0.8], [1.1, 0.8]].map(([x, z]) => ({ x: x!, z: z!, w: 1.2, d: 1.0 }));
   }
   return [];
@@ -114,7 +119,7 @@ export function boardPads(def: BoardDef): Pad[] {
 }
 
 const dist = (a: Pad, b: Pad) => Math.abs(a.x - b.x) + Math.abs(a.z - b.z);
-const isPassive = (k: PlacedKind) => k === 'chipR' || k === 'chipC' || k === 'chipLed' || k === 'elec';
+const isPassive = (k: PlacedKind) => k === 'chipR' || k === 'chipC' || k === 'chipLed' || k === 'elec' || k === 'elecSmd';
 
 /**
  * Plausible nets when a board doesn't name its own: ground and supply through every chip and
@@ -130,7 +135,7 @@ export function autoNets(def: BoardDef, pads = boardPads(def)): Record<string, s
   const take = (net: string, pad: Pad | undefined) => { if (pad && !used.has(pad.id)) { used.add(pad.id); (nets[net] ??= []).push(pad.id); } };
   for (const part of def.parts) {
     const ps = byPart.get(part.id) ?? [];
-    if (part.kind === 'chipC' || part.kind === 'elec') { take('VCC', ps[0]); take('GND', ps[1]); }
+    if (part.kind === 'chipC' || part.kind === 'elec' || part.kind === 'elecSmd') { take('VCC', ps[0]); take('GND', ps[1]); }
     if (part.kind === 'qfp' || part.kind === 'soic8') {
       // A couple of supply and ground pins on every chip.
       const k = Math.max(1, Math.floor(ps.length / 8));
@@ -218,7 +223,7 @@ export function partBox(p: Placed): { x0: number; x1: number; z0: number; z1: nu
   const pads = footprint(p);
   const xs = pads.map((f) => [f.x - f.w / 2, f.x + f.w / 2]).flat(), zs = pads.map((f) => [f.z - f.d / 2, f.z + f.d / 2]).flat();
   const q = (p.props ?? {}) as Record<string, number | undefined>;
-  const body = p.kind === 'qfp' ? Number(q.size ?? 7) / 2 : p.kind === 'crystal' ? 5.5 : p.kind === 'tsop48' ? 6 : 1;
+  const body = p.kind === 'qfp' ? Number(q.size ?? 7) / 2 : p.kind === 'crystal' ? 5.5 : p.kind === 'tsop48' ? 6 : p.kind === 'elecSmd' ? 3.3 : p.kind === 'dip28' ? 5 : 1;
   const x0 = Math.min(-body, ...xs), x1 = Math.max(body, ...xs), z0 = Math.min(-body, ...zs), z1 = Math.max(body, ...zs);
   const turned = Math.round(((p.rot ?? 0) % 180) / 90) % 2 !== 0;
   const [a0, a1, b0, b1] = turned ? [z0, z1, x0, x1] : [x0, x1, z0, z1];

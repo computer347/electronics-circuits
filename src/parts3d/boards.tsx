@@ -12,11 +12,11 @@ import { HeaderRow, Pcb, printTexture, SHIELD, silkTexture } from './common';
 import { ChipCap, ChipLed, ChipResistor, Crystal, DcJack, MicroUsb, QFP, SmdButton, SOIC8, SOT223, SOT23, UsbB, type ChipSize } from './smd';
 import { Electrolytic } from './tht';
 import { pcbArt } from './pcbArt';
-import { JumperCap, QFN, TSOP48, Xtal3225 } from './smd';
+import { ElecSmd, JumperCap, QFN, Resonator, TSOP48, Xtal3225 } from './smd';
 
 export type PlacedKind =
   | 'chipR' | 'chipC' | 'chipLed' | 'sot23' | 'sot223' | 'soic8' | 'qfp' | 'crystal' | 'usbB' | 'microUsb' | 'dcJack'
-  | 'button' | 'header' | 'headerF' | 'elec' | 'wroom' | 'display' | 'transducer' | 'dhtBody' | 'usbA' | 'qfn' | 'xtal3225' | 'jumper' | 'tsop48';
+  | 'button' | 'header' | 'headerF' | 'elec' | 'wroom' | 'display' | 'transducer' | 'dhtBody' | 'usbA' | 'qfn' | 'xtal3225' | 'jumper' | 'tsop48' | 'dip28' | 'resonator' | 'elecSmd';
 
 export interface Placed {
   id: string;
@@ -61,7 +61,8 @@ function PlacedModel({ p, onHover }: { p: Placed; onHover?: (p: Placed | null) =
     case 'qfp': m = <QFP n={q.n} size={q.size} marking={q.marking} />; break;
     case 'crystal': m = <Crystal mhz={q.mhz} />; break;
     case 'usbB': m = <UsbB />; break;
-    case 'microUsb': m = <MicroUsb />; break;
+    // a mini-USB socket is the same idea, a size up: wider, taller, deeper
+    case 'microUsb': m = q.mini ? <group scale={[1.35, 1.45, 1.05]}><MicroUsb /></group> : <MicroUsb />; break;
     case 'dcJack': m = <DcJack />; break;
     case 'button': m = <SmdButton w={q.w} color={q.color} />; break;
     case 'header': m = <HeaderRow n={q.n ?? 8} at={[0, 0, 0]} />; break;
@@ -69,6 +70,9 @@ function PlacedModel({ p, onHover }: { p: Placed; onHover?: (p: Placed | null) =
     case 'xtal3225': m = <Xtal3225 mhz={q.mhz} />; break;
     case 'jumper': m = <JumperCap color={q.color} />; break;
     case 'tsop48': m = <TSOP48 marking={q.marking} />; break;
+    case 'dip28': m = <SocketedDip marking={q.marking} />; break;
+    case 'resonator': m = <Resonator />; break;
+    case 'elecSmd': m = <ElecSmd uF={q.uF} volts={q.volts} />; break;
     case 'headerF': m = <HeaderRow n={q.n ?? 8} at={[0, 0, 0]} female />; break;
     case 'elec': m = <group scale={q.scale ?? 0.8}><Electrolytic uF={q.uF} volts={q.volts} /></group>; break;
     case 'wroom': m = <Wroom />; break;
@@ -167,6 +171,28 @@ function Transducer() {
   );
 }
 
+/**
+ * A DIP-28 chip pressed into a turned-pin socket, as on the Uno: the socket's black frame with
+ * its open middle, the chip sitting on top, and the half-moon notch at +x. Pin 1 is next to the
+ * notch on the −z side; the pins count along −z to the far end, then back along +z.
+ */
+function SocketedDip({ marking = ['ATMEGA328P-PU'] }: { marking?: string[] }) {
+  const L = 35.6, W = 7.4;
+  const xs = Array.from({ length: 14 }, (_, i) => 16.51 - i * 2.54);
+  return (
+    <group>
+      {[-1, 1].map((k) => <mesh key={k} position={[0, 1.5, k * 3.81]} castShadow><boxGeometry args={[L + 1.6, 3, 2.4]} /><meshStandardMaterial color="#141414" roughness={0.7} /></mesh>)}
+      {[-1, 1].map((k) => <mesh key={`e${k}`} position={[k * (L / 2 + 0.3), 1.5, 0]}><boxGeometry args={[1.6, 3, 7.6]} /><meshStandardMaterial color="#141414" roughness={0.7} /></mesh>)}
+      {xs.flatMap((x) => [-1, 1].map((k) => <mesh key={`${x}${k}`} position={[x, 3.02, k * 3.81]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.35, 0.6, 12]} /><meshStandardMaterial color="#c9a54a" metalness={0.8} roughness={0.3} /></mesh>))}
+      <mesh position={[0, 4.9, 0]} castShadow><boxGeometry args={[L, 3.4, W]} /><meshStandardMaterial color="#17181a" roughness={0.6} /></mesh>
+      <mesh position={[L / 2 + 0.01, 6.61, 0]} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[1.1, 20, Math.PI / 2, Math.PI]} /><meshBasicMaterial color="#050505" /></mesh>
+      <mesh position={[L / 2 - 2.2, 6.62, -2.2]} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[0.5, 16]} /><meshBasicMaterial color="#2a2c2e" /></mesh>
+      <mesh position={[-1, 6.62, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[24, 4.4]} /><meshBasicMaterial map={printTexture(marking, { size: 40, w: 640, h: 120, fg: '#c8c8c8' })} transparent /></mesh>
+      {xs.flatMap((x) => [-1, 1].map((k) => <mesh key={`l${x}${k}`} position={[x, 3.6, k * 3.95]}><boxGeometry args={[0.5, 1.4, 0.3]} /><meshStandardMaterial {...SHIELD} /></mesh>))}
+    </group>
+  );
+}
+
 let meshTex: THREE.CanvasTexture | null = null;
 function meshTexture() {
   if (meshTex) return meshTex;
@@ -221,52 +247,103 @@ const c0603 = (id: string, at: [number, number], farads: number, rot = 0): Place
   ({ id, kind: 'chipC', at, rot, name: 'Capacitor 0603', value: { amount: farads, unit: 'F', tol: 0.1 }, props: { size: '0603' } });
 
 export const ARDUINO_UNO: BoardDef = {
-  id: 'arduino-uno', name: 'Arduino Uno', w: 68.6, d: 53.3, color: '#00879a',
-  holes: [[-20.3, 24.1], [30.5, 24.1], [31.8, -21.6], [-19.1, -24.1]],
+  // Arduino Uno R3, laid out from Arduino's top-view drawing (≈10.6 px/mm): the ATmega328P in
+  // a DIP-28 socket above the power and analog headers (notch towards the ICSP end, so pin 1 is
+  // top right and A0–A5 sit by their header), the 16U2 QFN by the USB socket with its own 16 MHz
+  // crystal, the regulator's tab towards the left edge, two SMD electrolytics by the barrel jack.
+  id: 'arduino-uno', name: 'Arduino Uno R3', w: 68.6, d: 53.3, color: '#00879a',
+  holes: [[-20.3, 24.2], [-19, -24], [31.8, 19.1], [31.8, -8.8]],
   silk: (g, px, w, d) => {
     const T = toCanvas(w, d);
-    g.save(); g.font = `bold ${6 * px}px 'Anton', sans-serif`; g.fillText('UNO', T.x(8) * px, T.z(-10.5) * px); g.restore();
-    g.font = `bold ${1.8 * px}px 'Space Mono', monospace`;
-    g.fillText('DIGITAL (PWM~)', T.x(2) * px, T.z(-19) * px);
-    g.fillText('POWER', T.x(-5) * px, T.z(20) * px);
-    g.fillText('ANALOG IN', T.x(15) * px, T.z(20) * px);
-    g.fillText('ON', T.x(22.5) * px, T.z(9.5) * px);
-    g.fillText('L', T.x(-6) * px, T.z(-13.5) * px);
-    g.fillText('TX', T.x(-6) * px, T.z(-9.5) * px); g.fillText('RX', T.x(-6) * px, T.z(-7) * px);
-    pinLabels(g, px, ['SCL', 'SDA', 'AREF', 'GND', '13', '12', '~11', '~10', '~9', '8'], T.x(-13.3), T.z(-22.5), 2.54, 1.1, true);
-    pinLabels(g, px, ['7', '~6', '~5', '4', '~3', '2', 'TX1', 'RX0'], T.x(13.6), T.z(-22.5), 2.54, 1.1, true);
-    pinLabels(g, px, ['', 'IOREF', 'RESET', '3.3V', '5V', 'GND', 'GND', 'VIN'], T.x(-9.1), T.z(22.5), 2.54, 1.0, true);
-    pinLabels(g, px, ['A0', 'A1', 'A2', 'A3', 'A4', 'A5'], T.x(11.7), T.z(22.5), 2.54, 1.1, true);
-    g.beginPath(); g.arc(T.x(-14) * px, T.z(2) * px, 3 * px, 0, Math.PI * 2); g.stroke();
+    g.save(); g.font = `${4.2 * px}px 'Space Mono', monospace`; g.textAlign = 'center';
+    g.lineWidth = 0.35 * px; g.strokeRect(T.x(9.5) * px, T.z(-15.4) * px, 12.6 * px, 5.6 * px);
+    g.fillText('UNO', T.x(15.8) * px, T.z(-12.4) * px);
+    // the infinity logo with − and +, and the name under it
+    g.lineWidth = 0.9 * px;
+    for (const cx of [-3.4, 2.4]) { g.beginPath(); g.arc(T.x(cx) * px, T.z(-13.2) * px, 2.6 * px, 0, Math.PI * 2); g.stroke(); }
+    g.font = `bold ${2.2 * px}px 'Space Mono', monospace`; g.fillText('−', T.x(-3.4) * px, T.z(-12.6) * px); g.fillText('+', T.x(2.4) * px, T.z(-12.6) * px);
+    g.font = `bold ${2 * px}px 'Space Mono', monospace`; g.fillText('Arduino', T.x(-0.5) * px, T.z(-8.2) * px);
+    g.restore();
+    g.font = `bold ${1.4 * px}px 'Space Mono', monospace`;
+    g.fillText('DIGITAL (PWM~)', T.x(17.7) * px, T.z(-17.6) * px);
+    g.fillText('POWER', T.x(10.2) * px, T.z(18.9) * px);
+    g.fillText('ANALOG IN', T.x(25.8) * px, T.z(18.9) * px);
+    g.fillText('ON', T.x(28.3) * px, T.z(-10) * px);
+    g.fillText('L', T.x(-9.3) * px, T.z(-14.7) * px);
+    g.fillText('TX', T.x(-9.6) * px, T.z(-10) * px); g.fillText('RX', T.x(-9.6) * px, T.z(-7.7) * px);
+    g.fillText('ICSP', T.x(27) * px, T.z(-1.4) * px); g.fillText('ICSP2', T.x(-16.3) * px, T.z(-15.6) * px);
+    g.fillText('RESET', T.x(-29) * px, T.z(-19.6) * px);
+    pinLabels(g, px, ['SCL', 'SDA', 'AREF', 'GND', '13', '12', '~11', '~10', '~9', '8'], T.x(-15.5), T.z(-21.2), 2.54, 1.1, true);
+    pinLabels(g, px, ['7', '~6', '~5', '4', '~3', '2', 'TX1', 'RX0'], T.x(11.4), T.z(-21.2), 2.54, 1.1, true);
+    pinLabels(g, px, ['', 'IOREF', 'RESET', '3.3V', '5V', 'GND', 'GND', 'VIN'], T.x(-6.35), T.z(21.4), 2.54, 1.0, true);
+    pinLabels(g, px, ['A0', 'A1', 'A2', 'A3', 'A4', 'A5'], T.x(16.5), T.z(21.4), 2.54, 1.1, true);
   },
   parts: [
-    { id: 'J_USB', kind: 'usbB', at: [-28.5, -14.5], rot: 180, name: 'USB-B socket' },
-    { id: 'J_PWR', kind: 'dcJack', at: [-29.5, 17], rot: 180, name: 'DC barrel jack (7–12 V)' },
-    { id: 'U_MCU', kind: 'qfp', at: [4, 2], rot: 45, name: 'ATmega328P microcontroller', props: { n: 32, size: 7, marking: ['ATMEGA', '328P'] } },
-    { id: 'U_USB', kind: 'qfp', at: [-14.5, -13], name: 'ATmega16U2 (USB to serial)', props: { n: 32, size: 5, marking: ['16U2'] } },
-    { id: 'Y1', kind: 'crystal', at: [-7, 8], name: 'Crystal 16 MHz', value: { amount: 16e6, unit: 'Hz' }, props: { mhz: '16.000' } },
-    { id: 'U_REG', kind: 'sot223', at: [-17, 16], name: '5 V regulator', props: { marking: 'NCP1117', volts: '5.0' } },
-    { id: 'C_IN', kind: 'elec', at: [-19.5, 7], name: 'Electrolytic 47 µF', value: { amount: 47e-6, unit: 'F', tol: 0.2 }, props: { uF: 47, volts: 25, scale: 0.55 } },
-    { id: 'C_OUT', kind: 'elec', at: [-14.5, 7], name: 'Electrolytic 47 µF', value: { amount: 47e-6, unit: 'F', tol: 0.2 }, props: { uF: 47, volts: 25, scale: 0.55 } },
-    { id: 'SW_RST', kind: 'button', at: [-27, -23], name: 'Reset button' },
-    { id: 'LED_ON', kind: 'chipLed', at: [22.5, 12], name: 'Power LED (ON)', props: { color: '#39d86a', lit: true } },
-    r0603('R_ON', [22.5, 14.5], 1000, '102', 90, 'Resistor 0603 · power LED'),
-    { id: 'LED_L', kind: 'chipLed', at: [-3, -13.5], name: 'Pin 13 LED (L)', props: { color: '#ffb000' } },
-    r0603('R_L', [-0.5, -13.5], 1000, '102'),
-    { id: 'LED_TX', kind: 'chipLed', at: [-3, -9.5], name: 'TX LED', props: { color: '#ffb000' } },
-    { id: 'LED_RX', kind: 'chipLed', at: [-3, -7], name: 'RX LED', props: { color: '#ffb000' } },
-    r0603('R_TX', [-0.5, -9.5], 1000, '102'), r0603('R_RX', [-0.5, -7], 1000, '102'),
-    r0603('R_RST', [-22, -19.5], 10000, '103'),
-    r0603('R_USB1', [-19, -19.5], 22, '220', 90), r0603('R_USB2', [-17.5, -19.5], 22, '220', 90),
-    c0603('C1', [8, -5.5], 100e-9), c0603('C2', [11.5, 4.5], 100e-9, 90), c0603('C3', [-3.5, 11], 22e-12), c0603('C4', [-3.5, 5], 22e-12),
-    c0603('C5', [-11, -8], 100e-9), c0603('C6', [-22, 10.5], 100e-9, 90),
+    { id: 'J_USB', kind: 'usbB', at: [-28.5, -11.1], rot: 180, name: 'USB-B socket' },
+    { id: 'J_PWR', kind: 'dcJack', at: [-29.5, 18.5], rot: 180, name: 'DC barrel jack (7–12 V)' },
+    { id: 'U_MCU', kind: 'dip28', at: [12, 10.1], name: 'ATmega328P microcontroller (DIP-28, in a socket)', props: { marking: ['ATMEGA328P-PU', '1352'] } },
+    { id: 'X_RES', kind: 'resonator', at: [6.5, 3.2], name: 'Ceramic resonator 16 MHz (the 328P’s clock)', value: { amount: 16e6, unit: 'Hz' } },
+    { id: 'U_USB', kind: 'qfn', at: [-14.4, -8.3], name: 'ATmega16U2 (USB to serial)', props: { n: 32, size: 5, marking: ['MEGA16U2', '-MU'] } },
+    { id: 'Y1', kind: 'crystal', at: [-14, 1], name: 'Crystal 16 MHz (the 16U2’s clock)', value: { amount: 16e6, unit: 'Hz' }, props: { mhz: '16.000' } },
+    { id: 'U_REG', kind: 'sot223', at: [-25.7, 9.1], rot: 90, name: '5 V regulator', props: { marking: 'NCP1117', volts: '5.0' } },
+    { id: 'C_IN', kind: 'elecSmd', at: [-17, 18.6], name: 'Electrolytic 47 µF (SMD can)', value: { amount: 47e-6, unit: 'F', tol: 0.2 }, props: { uF: 47, volts: 25 } },
+    { id: 'C_OUT', kind: 'elecSmd', at: [-9.6, 18.6], name: 'Electrolytic 47 µF (SMD can)', value: { amount: 47e-6, unit: 'F', tol: 0.2 }, props: { uF: 47, volts: 25 } },
+    { id: 'SW_RST', kind: 'button', at: [-29, -23.5], name: 'Reset button', props: { color: '#b3261e' } },
+    { id: 'LED_ON', kind: 'chipLed', at: [25, -10], name: 'Power LED (ON)', props: { color: '#39d86a', lit: true } },
+    r0603('R_ON', [25, -7.4], 1000, '102', 0, 'Resistor 0603 · power LED'),
+    { id: 'LED_L', kind: 'chipLed', at: [-6.3, -14.7], name: 'Pin 13 LED (L)', props: { color: '#ffb000' } },
+    r0603('R_L', [-3.4, -14.7], 1000, '102'),
+    { id: 'LED_TX', kind: 'chipLed', at: [-6.3, -10], name: 'TX LED', props: { color: '#ffb000' } },
+    { id: 'LED_RX', kind: 'chipLed', at: [-6.3, -7.7], name: 'RX LED', props: { color: '#ffb000' } },
+    r0603('R_TX', [-3.4, -10], 1000, '102'), r0603('R_RX', [-3.4, -7.7], 1000, '102'),
+    r0603('R_RST', [-23, -19.5], 10000, '103'),
+    r0603('R_USB1', [-19.6, -12.6], 22, '220'), r0603('R_USB2', [-19.6, -10.4], 22, '220'),
+    c0603('C1', [8, -5.5], 100e-9), c0603('C2', [11.5, 3], 100e-9, 90), c0603('C3', [-6, -0.4], 22e-12), c0603('C4', [-6, 2.4], 22e-12),
+    c0603('C5', [-10, -8.3], 100e-9, 90), c0603('C6', [-20, 12], 100e-9, 90),
     { id: 'Q1', kind: 'sot23', at: [-22, 1], name: 'Power switch MOSFET', props: { marking: 'FDN' } },
-    { id: 'H_DIG1', kind: 'headerF', at: [-13.3, -25.4], name: 'Digital pins 8–13', props: { n: 10 } },
-    { id: 'H_DIG2', kind: 'headerF', at: [13.6, -25.4], name: 'Digital pins 0–7', props: { n: 8 } },
-    { id: 'H_PWR', kind: 'headerF', at: [-9.1, 25.4], name: 'Power pins', props: { n: 8 } },
-    { id: 'H_AN', kind: 'headerF', at: [11.7, 25.4], name: 'Analog in A0–A5', props: { n: 6 } },
-    { id: 'H_ICSP', kind: 'header', at: [30.5, -1.3], rot: 90, name: 'ICSP header', props: { n: 3 } },
-    { id: 'H_ICSP2', kind: 'header', at: [28, -1.3], rot: 90, name: 'ICSP header', props: { n: 3 } },
+    { id: 'H_DIG1', kind: 'headerF', at: [-15.5, -24.13], name: 'Digital pins 8–13', props: { n: 10 } },
+    { id: 'H_DIG2', kind: 'headerF', at: [11.4, -24.13], name: 'Digital pins 0–7', props: { n: 8 } },
+    { id: 'H_PWR', kind: 'headerF', at: [-6.35, 24.13], name: 'Power pins', props: { n: 8 } },
+    { id: 'H_AN', kind: 'headerF', at: [16.5, 24.13], name: 'Analog in A0–A5', props: { n: 6 } },
+    { id: 'H_ICSP', kind: 'header', at: [31.7, 1.1], rot: 90, name: 'ICSP header (programs the 328P)', props: { n: 3 } },
+    { id: 'H_ICSP2', kind: 'header', at: [29.2, 1.1], rot: 90, name: 'ICSP header (programs the 328P)', props: { n: 3 } },
+    { id: 'H_U2A', kind: 'header', at: [-18.8, -21], name: 'ICSP2 header (programs the 16U2)', props: { n: 3 } },
+    { id: 'H_U2B', kind: 'header', at: [-18.8, -18.4], name: 'ICSP2 header (programs the 16U2)', props: { n: 3 } },
+  ],
+};
+
+/**
+ * Arduino Nano (a common clone), laid out from a photo of its top: the ATmega328P here IS a
+ * TQFP-32, turned 45°, with a small 16 MHz crystal beside it, the reset button in the middle,
+ * RX / TX / POW / L LEDs with their 1 kΩ resistors, and a mini-USB socket at one end. The
+ * USB-serial chip (CH340) and the regulator are on the underside. Pins: two rows of 15,
+ * 0.6" apart, to straddle a breadboard's centre channel.
+ */
+export const ARDUINO_NANO: BoardDef = {
+  id: 'arduino-nano', name: 'Arduino Nano', w: 43.2, d: 18, color: '#1d3f9c',
+  holes: [[-20, -7.4], [-20, 7.4], [20, -7.4], [20, 7.4]],
+  silk: (g, px, w, d) => {
+    const T = toCanvas(w, d);
+    pinLabels(g, px, ['TX1', 'RX0', 'RST', 'GND', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8', 'D9', 'D10', 'D11', 'D12'], T.x(-17.78), T.z(-5.2), 2.54, 0.9, true);
+    pinLabels(g, px, ['VIN', 'GND', 'RST', '5V', 'A7', 'A6', 'A5', 'A4', 'A3', 'A2', 'A1', 'A0', 'REF', '3V3', 'D13'], T.x(-17.78), T.z(5.6), 2.54, 0.9, true);
+    g.save(); g.font = `bold ${1.8 * px}px 'Space Mono', monospace`; g.translate(T.x(-0.6) * px, T.z(0.3) * px); g.rotate(Math.PI / 2); g.fillText('NANO', 0, 0); g.restore();
+    g.font = `bold ${0.9 * px}px 'Space Mono', monospace`;
+    [['RX', -3.2], ['TX', -1.1], ['POW', 1.1], ['L', 3.4]].forEach(([l, z]) => g.fillText(l as string, T.x(-14) * px, T.z(z as number) * px));
+  },
+  parts: [
+    { id: 'U_MCU', kind: 'qfp', at: [6.3, 0.3], rot: 45, name: 'ATmega328P microcontroller (TQFP-32)', props: { n: 32, size: 7, marking: ['MEGA328P', 'AU 1716'] } },
+    { id: 'Y1', kind: 'xtal3225', at: [0.5, -4.1], rot: 45, name: 'Crystal 16 MHz', value: { amount: 16e6, unit: 'Hz' }, props: { mhz: '16.000' } },
+    { id: 'SW_RST', kind: 'button', at: [-4.1, 0.3], name: 'Reset button', props: { w: 4 } },
+    { id: 'LED_RX', kind: 'chipLed', at: [-11.7, -3.2], name: 'RX LED', props: { color: '#ff3b30' } },
+    { id: 'LED_TX', kind: 'chipLed', at: [-11.7, -1.1], name: 'TX LED', props: { color: '#39d86a' } },
+    { id: 'LED_PWR', kind: 'chipLed', at: [-11.7, 1.1], name: 'Power LED (POW)', props: { color: '#39d86a', lit: true } },
+    { id: 'LED_L', kind: 'chipLed', at: [-11.7, 3.4], name: 'Pin 13 LED (L)', props: { color: '#ff3b30' } },
+    r0603('R1', [-8.5, -3.2], 1000, '102'), r0603('R2', [-8.5, -1.1], 1000, '102'), r0603('R3', [-8.5, 1.1], 1000, '102'), r0603('R4', [-8.5, 3.4], 1000, '102'),
+    c0603('C1', [11.6, -3.6], 100e-9, 90), c0603('C2', [1.2, 4.4], 100e-9, 45),
+    { id: 'J_USB', kind: 'microUsb', at: [20.4, 0], rot: 90, name: 'Mini-USB socket', props: { mini: true } },
+    { id: 'H_ICSP', kind: 'header', at: [-19.6, 2.54], rot: 90, name: 'ICSP header', props: { n: 3 } },
+    { id: 'H_L', kind: 'header', at: [-17.78, -7.62], name: 'Pins D0–D12', props: { n: 15 } },
+    { id: 'H_R', kind: 'header', at: [-17.78, 7.62], name: 'Pins VIN, 5V, A0–A7, D13', props: { n: 15 } },
   ],
 };
 
@@ -419,7 +496,7 @@ export const USB_STICK: BoardDef = {
   ],
 };
 
-export const BOARDS: BoardDef[] = [ARDUINO_UNO, ESP32_DEVKIT, ESP01, BLUE_PILL, RC522, OLED_096, DHT11, HCSR04, USB_STICK];
+export const BOARDS: BoardDef[] = [ARDUINO_UNO, ARDUINO_NANO, ESP32_DEVKIT, ESP01, BLUE_PILL, RC522, OLED_096, DHT11, HCSR04, USB_STICK];
 
 /** A placed part's tooltip, like the reference: "Resistor 0603 · 1 kΩ ±5 % · 0.95–1.05 kΩ". */
 export function tooltip(p: Placed, fmt: (x: number, unit: string) => string): string {

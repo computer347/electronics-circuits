@@ -92,7 +92,7 @@ export const CATALOGUE: CatalogueEntry[] = [
   { id: 'soic8', name: 'SOIC-8 chip', family: 'smd', package: 'SOIC-8', pins: ['1', '2', '3', '4', '5', '6', '7', '8'], model: 'soic8',
     job: 'An 8-pin chip (flash memory, op-amp, driver).', facts: [{ label: 'Dot', text: 'pin 1; count anticlockwise from it' }] },
   { id: 'qfp32', name: 'QFP-32 chip', family: 'smd', package: 'TQFP-32', pins: [], model: 'qfp32',
-    job: 'A chip with legs on all four sides, like the Uno\'s ATmega328P.', facts: [{ label: 'Dot', text: 'pin 1 corner' }] },
+    job: 'A chip with legs on all four sides, like the Nano\'s ATmega328P (the Uno R3 has the same chip as a DIP-28).', facts: [{ label: 'Dot', text: 'pin 1 corner' }] },
   { id: 'qfp48', name: 'QFP-48 chip', family: 'smd', package: 'LQFP-48', pins: [], model: 'qfp48',
     job: 'A bigger microcontroller package, like the Blue Pill\'s STM32.', facts: [{ label: '48 pins', text: '12 on each side' }] },
   { id: 'crystal', name: 'Crystal', family: 'smd', package: 'HC-49', pins: ['1', '2'], model: 'crystal',

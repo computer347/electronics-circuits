@@ -134,7 +134,7 @@ export function pcbArt(def: BoardDef, finish: 'hasl' | 'enig' = 'hasl') {
 
 /** The letter a board prints before each part's number, by kind (IEEE 315 style). */
 const PREFIX: Partial<Record<string, string>> = {
-  chipR: 'R', chipC: 'C', elec: 'C', chipLed: 'D', sot23: 'Q', tsop48: 'U', sot223: 'U', soic8: 'U', qfp: 'U', qfn: 'U', wroom: 'U', crystal: 'Y', xtal3225: 'Y', jumper: 'JP',
+  chipR: 'R', chipC: 'C', elec: 'C', chipLed: 'D', sot23: 'Q', tsop48: 'U', dip28: 'U', resonator: 'Y', elecSmd: 'C', sot223: 'U', soic8: 'U', qfp: 'U', qfn: 'U', wroom: 'U', crystal: 'Y', xtal3225: 'Y', jumper: 'JP',
   usbB: 'J', microUsb: 'J', usbA: 'J', dcJack: 'J', header: 'J', headerF: 'J', button: 'SW', transducer: 'X', dhtBody: 'U',
 };
 

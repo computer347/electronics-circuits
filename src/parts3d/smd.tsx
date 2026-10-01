@@ -3,6 +3,7 @@
  * SOT-23 and SOT-223, SOIC-8 and QFP chips, crystals, USB-B and micro-USB sockets and a DC
  * barrel jack. They sit on y = 0 (the top of a PCB).
  */
+import { useMemo } from 'react';
 import * as THREE from 'three';
 import { EPOXY, GullWing, printTexture, SHIELD, TIN } from './common';
 
@@ -237,6 +238,40 @@ export function TSOP48({ marking = ['NAND', '8GB'] }: { marking?: string[] }) {
         <GullWing key={`l${z}`} at={[-9.2, z]} dir={[-1, 0]} w={0.2} len={0.8} h={0.5} />,
         <GullWing key={`r${z}`} at={[9.2, z]} dir={[1, 0]} w={0.2} len={0.8} h={0.5} />,
       ])}
+    </group>
+  );
+}
+
+/** A 3-pad ceramic resonator (CSTCE, 3.2 × 1.3 mm): a crystal and its two load capacitors in one beige block. */
+export function Resonator() {
+  return (
+    <group>
+      <mesh position={[0, 0.5, 0]} castShadow><boxGeometry args={[3.2, 1.0, 1.3]} /><meshStandardMaterial color="#cdb68f" roughness={0.6} /></mesh>
+      {[-1.2, 0, 1.2].map((x) => <mesh key={x} position={[x, 0.15, 0]}><boxGeometry args={[0.4, 0.3, 1.36]} /><meshStandardMaterial {...TIN} /></mesh>)}
+      <mesh position={[0, 1.01, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[2.6, 1]} /><meshBasicMaterial map={printTexture(['16.00'], { size: 56, w: 256, h: 96, fg: '#4a3a20' })} transparent /></mesh>
+    </group>
+  );
+}
+
+/**
+ * An SMD aluminium electrolytic (6.3 mm can, 5.4 mm tall): the can stands on a black plastic
+ * base whose two cut corners mark the + side (−x here, pad 1), and the black half-moon printed
+ * on the lid marks −.
+ */
+export function ElecSmd({ uF = 47, volts = 25 }: { uF?: number; volts?: number }) {
+  const base = useMemo(() => {
+    const s = new THREE.Shape(), h = 3.3, c = 1.1;
+    s.moveTo(-h + c, -h); s.lineTo(h, -h); s.lineTo(h, h); s.lineTo(-h + c, h); s.lineTo(-h, h - c); s.lineTo(-h, -h + c); s.closePath();
+    return s;
+  }, []);
+  return (
+    <group>
+      <mesh position={[0, 0, 0]} rotation={[-Math.PI / 2, 0, 0]}><extrudeGeometry args={[base, { depth: 0.9, bevelEnabled: false }]} /><meshStandardMaterial color="#151515" roughness={0.7} /></mesh>
+      <mesh position={[0, 3.15, 0]} castShadow><cylinderGeometry args={[3.15, 3.15, 4.5, 32]} /><meshStandardMaterial color="#c9ccd2" metalness={0.7} roughness={0.35} /></mesh>
+      <mesh position={[0, 5.41, 0]} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[3.0, 32]} /><meshStandardMaterial color="#d6d8dc" metalness={0.6} roughness={0.35} /></mesh>
+      <mesh position={[0, 5.42, 0]} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[3.0, 32, -Math.PI / 2 + 0.75, Math.PI - 1.5]} /><meshBasicMaterial color="#111" /></mesh>
+      <mesh position={[-0.7, 5.43, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[3.6, 2.6]} /><meshBasicMaterial map={printTexture([`${uF}`, `${volts}V`], { size: 52, w: 192, h: 140, fg: '#222' })} transparent /></mesh>
+      {[-1, 1].map((k) => <mesh key={k} position={[k * 2.9, 0.1, 0]}><boxGeometry args={[1.2, 0.2, 1.0]} /><meshStandardMaterial {...TIN} /></mesh>)}
     </group>
   );
 }

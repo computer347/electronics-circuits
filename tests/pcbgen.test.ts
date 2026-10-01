@@ -59,9 +59,9 @@ describe('procedural PCB', () => {
     expect(left[1]! - left[0]!).toBeCloseTo(0.5, 6);
   });
 
-  it('lays the ESP32 DevKit and the USB stick out with no two parts on top of each other', () => {
-    for (const id of ['esp32-devkit', 'usb-stick']) {
-      const parts = BOARDS.find((b) => b.id === id)!.parts.filter((p) => p.kind !== 'header' && p.kind !== 'wroom' && p.kind !== 'usbA');
+  it('lays the Uno, Nano, ESP32 DevKit and USB stick out with no two parts on top of each other', () => {
+    for (const id of ['esp32-devkit', 'usb-stick', 'arduino-uno', 'arduino-nano']) {
+      const parts = BOARDS.find((b) => b.id === id)!.parts.filter((p) => p.kind !== 'header' && p.kind !== 'wroom' && p.kind !== 'usbA' && (p.rot ?? 0) % 90 === 0); // boxes are axis-aligned: parts at 45° are left out
       for (let i = 0; i < parts.length; i++) for (let j = i + 1; j < parts.length; j++) {
         const x = partBox(parts[i]!), y = partBox(parts[j]!);
         expect(x.x0 < y.x1 && y.x0 < x.x1 && x.z0 < y.z1 && y.z0 < x.z1, `${id}: ${parts[i]!.id} / ${parts[j]!.id}`).toBe(false);
