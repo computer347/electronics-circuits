@@ -15,10 +15,15 @@ import pushToLight from './world0/07-push-to-light.json';
 import stackThemUp from './world0/08-stack-them-up.json';
 import balanceTheBridge from './world0/09-balance-the-bridge.json';
 import switchIt from './world0/10-switch-it.json';
+import countInLights from './world1/01-count-in-lights.json';
+import both from './world1/02-both.json';
+import either from './world1/03-either.json';
+import notGate from './world1/04-not.json';
+import notBoth from './world1/05-not-both.json';
 
 export class LevelError extends Error {}
 
-const TOOLS = new Set(['select', 'wire', 'resistor', 'led', 'button', 'battery', 'capacitor', 'generator', 'diode', 'pot', 'npn', 'nmos', 'regulator', 'probe', 'scope']);
+const TOOLS = new Set(['select', 'wire', 'resistor', 'led', 'button', 'toggle', 'battery', 'capacitor', 'generator', 'diode', 'pot', 'npn', 'nmos', 'regulator', 'probe', 'scope']);
 
 export function parseLevel(raw: unknown): LevelDef {
   const l = raw as LevelDef;
@@ -36,6 +41,11 @@ export function parseLevel(raw: unknown): LevelDef {
   for (const c of l.spec) {
     if ((c.kind === 'led-current' || c.kind === 'switched-led') && !ids.has(c.part)) fail(`spec refers to missing part ${c.part}`);
     if (c.kind === 'part-current' && !ids.has(c.part.split('.')[0]!)) fail(`spec refers to missing part ${c.part}`);
+    if (c.kind === 'led-pattern') for (const id of Object.keys(c.leds)) if (!ids.has(id)) fail(`spec refers to missing LED ${id}`);
+    if (c.kind === 'truth-table') {
+      for (const id of [...c.inputs, c.output]) if (id !== '?' && !ids.has(id)) fail(`truth table refers to missing part ${id}`);
+      if (c.table.length !== 1 << c.inputs.length) fail('truth table has the wrong number of rows');
+    }
     if ((c.kind === 'led-current' || c.kind === 'switched-led') && !(c.min < c.max)) fail(`spec window for ${c.part} is empty`);
     if (c.kind === 'voltage' && (!HOLE_BY_ID.has(c.hole) || (c.ref && !HOLE_BY_ID.has(c.ref)))) fail('spec refers to a missing hole');
     if (c.kind === 'charge-time' && !l.board.parts.some((p) => p.id === c.part && p.kind === 'capacitor')) fail(`charge-time refers to ${c.part}, which isn't a capacitor`);
@@ -66,7 +76,28 @@ export const WORLD0_PLAN = [
   { number: 10, title: 'Switch it', topic: 'Transistor switch' },
 ];
 
-export const levelById = (id: string) => WORLD0.find((l) => l.id === id);
+/** World 1: logic, built first from the parts World 0 taught (switches, transistors). */
+export const WORLD1: LevelDef[] = [countInLights, both, either, notGate, notBoth].map(parseLevel);
+
+export const WORLD1_PLAN = [
+  { number: 1, title: 'Count in lights', topic: 'Binary' },
+  { number: 2, title: 'Both', topic: 'AND' },
+  { number: 3, title: 'Either will do', topic: 'OR' },
+  { number: 4, title: 'Not', topic: 'NOT (inverter)' },
+  { number: 5, title: 'Not both', topic: 'NAND' },
+];
+
+export interface World { number: number; name: string; levels: LevelDef[]; plan: { number: number; title: string; topic: string }[] }
+
+/** Every world, in order. */
+export const WORLDS: World[] = [
+  { number: 0, name: 'Foundations', levels: WORLD0, plan: WORLD0_PLAN },
+  { number: 1, name: 'Logic', levels: WORLD1, plan: WORLD1_PLAN },
+];
+
+export const ALL_LEVELS: LevelDef[] = WORLDS.flatMap((w) => w.levels);
+
+export const levelById = (id: string) => ALL_LEVELS.find((l) => l.id === id);
 
 /** The board the player starts with: the level's board with its faults applied. */
 export const startingBoard = (l: LevelDef) => applyFaults(l.board, l.faults);

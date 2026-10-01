@@ -8,7 +8,7 @@ import { contributions, LED_VF, solve, type Circuit, type Component, type Contri
 import { hole, type HoleId } from './layout';
 
 export type BoardPartKind = 'resistor' | 'led' | 'wire' | 'button' | 'battery' | 'capacitor' | 'generator'
-  | 'diode' | 'pot' | 'npn' | 'nmos' | 'regulator';
+  | 'diode' | 'pot' | 'npn' | 'nmos' | 'regulator' | 'toggle';
 
 /** Parts with three legs in a row: h1, h2, h3 (the datasheet's pin order). */
 export const THREE_LEGGED: readonly BoardPartKind[] = ['pot', 'npn', 'nmos', 'regulator'];
@@ -29,7 +29,7 @@ export interface BoardPart {
   wave?: Waveform;
   /** Wire colour for display. */
   wireColor?: string;
-  /** Push buttons: currently pressed. */
+  /** Push buttons: held down right now. Toggle switches: switched on (it stays where you leave it). */
   pressed?: boolean;
   /** LEDs that have been overloaded stay dead until replaced, like real ones. */
   burnt?: boolean;
@@ -122,7 +122,7 @@ export function boardToCircuit(board: BoardState): BoardCircuit {
           components.push({ kind: 'diode', id: p.id, a, b, vf: LED_VF[color], led: { color }, maxAmps: LED_MAX_AMPS, maxReverseVolts: 5 });
         }
         break;
-      case 'button':
+      case 'button': case 'toggle':
         components.push({ kind: 'switch', id: p.id, a, b, closed: !!p.pressed });
         break;
       case 'wire':

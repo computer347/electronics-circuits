@@ -63,7 +63,15 @@ function StepSpread({ spread }: { spread: Extract<Spread, { kind: 'step' }> }) {
             <div className="nb-lab"><Lab spec={step.lab} /></div>
             {step.tryThis && <p className="nb-try">{step.tryThis}</p>}
           </>
-        ) : step.tryThis ? <p className="nb-try">{step.tryThis}</p> : null}
+        ) : (
+          <>
+            {/* No live lab on this step: what the class is for, and what comes next. */}
+            <p className="nb-kicker">In this class</p>
+            <ul className="nb-goals">{cls.goals.map((g) => <li key={g}>{g}</li>)}</ul>
+            {step.tryThis && <p className="nb-try">{step.tryThis}</p>}
+            <p className="nb-next">Next: {cls.steps[index + 1]?.title ?? 'a three-question check'} →</p>
+          </>
+        )}
       </div>
     </>
   );

@@ -3,7 +3,8 @@
  * MNA solver the bench uses, and returns the drawing plus the readings to show, so a class
  * can never teach a number the game itself would disagree with.
  */
-import { LED_VF, Simulator, solve } from '../sim';
+import { LED_VF, parseNetlist, Simulator, solve } from '../sim';
+import type { Gate } from './types';
 import { toCircuit, type Pt, type Schematic, type SchPart } from '../schematic/model';
 
 /** The parts bin used in World 0 (E12-ish values the levels offer). */
@@ -200,3 +201,31 @@ export function rcLab(volts: number, ohms: number, farads: number, bleedOhms?: n
   }
   return { schematic, tau, vFinal, t63, curve, span };
 }
+
+// ── World 1: gates built from switches and transistors ─────────────────────────────
+
+/** How many inputs each gate has. */
+export const GATE_INPUTS: Record<Gate, number> = { AND: 2, OR: 2, NOT: 1, NAND: 2 };
+
+/**
+ * The gate as the circuit the level builds, solved: AND is two switches in series, OR two in
+ * parallel, NOT a transistor with a 1 kΩ pull-up, NAND two transistors in series under it.
+ * The lamp is a red LED; it counts as lit above 1 mA.
+ */
+export function logicLab(gate: Gate, inputs: boolean[]): { lit: boolean; amps: number } {
+  const sw = (i: number) => (inputs[i] ? 'closed' : 'open');
+  const net = {
+    AND: ['V1 vcc 0 9', `SA vcc m ${sw(0)}`, `SB m a ${sw(1)}`, 'R1 a b 470', 'LED1 b 0 red'],
+    OR: ['V1 vcc 0 9', `SA vcc a ${sw(0)}`, `SB vcc a ${sw(1)}`, 'R1 a b 470', 'LED1 b 0 red'],
+    NOT: ['V1 vcc 0 9', `SA vcc s ${sw(0)}`, 'RB s b 10000', 'Q1 o b 0 beta=200', 'RP vcc o 1000', 'LED1 o 0 red'],
+    NAND: ['V1 vcc 0 9', `SA vcc s1 ${sw(0)}`, 'R1 s1 b1 10000', `SB vcc s2 ${sw(1)}`, 'R2 s2 b2 10000', 'Q1 o b1 m beta=200', 'Q2 m b2 0 beta=200', 'RP vcc o 1000', 'LED1 o 0 red'],
+  }[gate].join('\n');
+  const r = solve(parseNetlist(net));
+  const amps = Math.abs(r.currents.LED1 ?? 0);
+  return { lit: amps > 1e-3, amps };
+}
+
+/** The gate's truth, as logic: what the circuit is meant to do. */
+export const GATE_TRUTH: Record<Gate, (x: boolean[]) => boolean> = {
+  AND: (x) => !!x[0] && !!x[1], OR: (x) => !!x[0] || !!x[1], NOT: (x) => !x[0], NAND: (x) => !(x[0] && x[1]),
+};

@@ -1,7 +1,7 @@
 /** The desk top, the floor, the back wall with the corkboard (the level map) and the riso poster. */
 import { RoundedBox } from '@react-three/drei';
-import { WORLD0_PLAN } from '../../levels';
-import { corkTexture, freeBenchCardTexture, levelCardTexture, posterTexture, wallTexture, woodTexture } from './textures';
+import { WORLDS } from '../../levels';
+import { corkTexture, freeBenchCardTexture, levelCardTexture, worldTabTexture, posterTexture, wallTexture, woodTexture } from './textures';
 
 export const DESK = { width: 1.7, depth: 0.86, thickness: 0.04, frontZ: 0.4, wallZ: -0.46 } as const;
 
@@ -36,20 +36,24 @@ export function Wall() {
 }
 
 
-/** The corkboard holds the levels and the free bench card in two even rows. */
-const PER_ROW = Math.ceil((WORLD0_PLAN.length + 1) / 2);
+/** The corkboard holds a world's levels and the free bench card in two even rows (sized for the biggest world, so cards don't jump about). */
+const PER_ROW = Math.ceil((Math.max(...WORLDS.map((w) => w.plan.length)) + 1) / 2);
 const PITCH = 0.6 / PER_ROW;
 const CARD_W = Math.min(0.1, PITCH * 0.9);
-const slot = (i: number): [number, number] => [-0.3 + PITCH / 2 + (i % PER_ROW) * PITCH, i < PER_ROW ? 0.062 : -0.062];
+const slot = (i: number): [number, number] => [-0.3 + PITCH / 2 + (i % PER_ROW) * PITCH, i < PER_ROW ? 0.05 : -0.068];
 
-/** The level map: a corkboard with one card per World 0 level, the current one ringed. */
-export function Corkboard({ current, passed, unlocked, onPick, onFreeBench }: {
-  current: number; passed: Set<number>; unlocked: Set<number>;
+/** The level map: a corkboard with a tab per world, and a card per level of the world on show. */
+export function Corkboard({ world, current, passed, unlocked, onPick, onFreeBench, onWorld }: {
+  /** The world on show, and the current level's number in it (0 if it's in another world). */
+  world: number; current: number; passed: Set<number>; unlocked: Set<number>;
+  /** Set while the map is in focus: a click on a tab shows that world. */
+  onWorld?: (n: number) => void;
   /** Set while the map is in focus: a click on an open card plays it. */
   onPick?: (n: number) => void;
   /** The last card: the free bench, always open. */
   onFreeBench?: () => void;
 }) {
+  const plan = WORLDS.find((w) => w.number === world)?.plan ?? [];
   return (
     <group>
       <RoundedBox args={[0.66, 0.3, 0.02]} radius={0.006} castShadow receiveShadow>
@@ -59,7 +63,15 @@ export function Corkboard({ current, passed, unlocked, onPick, onFreeBench }: {
         <planeGeometry args={[0.62, 0.26]} />
         <meshStandardMaterial map={corkTexture()} roughness={1} />
       </mesh>
-      {WORLD0_PLAN.map((l, i) => {
+      {WORLDS.map((w, i) => (
+        <group key={w.number} position={[-0.24 + i * 0.13, 0.118, 0.012]}
+          onClick={onWorld ? (e) => { e.stopPropagation(); onWorld(w.number); } : undefined}
+          onPointerOver={onWorld ? () => { document.body.style.cursor = 'pointer'; } : undefined}
+          onPointerOut={onWorld ? () => { document.body.style.cursor = ''; } : undefined}>
+          <mesh><planeGeometry args={[0.12, 0.034]} /><meshStandardMaterial map={worldTabTexture(w.number, w.name, w.number === world)} roughness={0.9} /></mesh>
+        </group>
+      ))}
+      {plan.map((l, i) => {
         const state = l.number === current ? 'here' : passed.has(l.number) ? 'done' : unlocked.has(l.number) ? 'open' : 'later';
         // Two rows: levels in order, the free bench last.
         const [x, y0] = slot(i);
@@ -72,7 +84,7 @@ export function Corkboard({ current, passed, unlocked, onPick, onFreeBench }: {
             onPointerOut={canPick ? () => { document.body.style.cursor = ''; } : undefined}>
             <mesh castShadow>
               <planeGeometry args={[CARD_W, CARD_W * 0.78]} />
-              <meshStandardMaterial map={levelCardTexture(l.number, l.title, state)} roughness={0.9} />
+              <meshStandardMaterial map={levelCardTexture(l.number, l.title, state, world)} roughness={0.9} />
             </mesh>
             <mesh position={[0, CARD_W * 0.3, 0.006]}>
               <sphereGeometry args={[0.006, 12, 8]} />
@@ -82,7 +94,7 @@ export function Corkboard({ current, passed, unlocked, onPick, onFreeBench }: {
         );
       })}
       {/* the free bench: a blue card at the end, always open */}
-      <group position={[...slot(WORLD0_PLAN.length), 0.012]} rotation={[0, 0, 0.06]}
+      <group position={[...slot(plan.length), 0.012]} rotation={[0, 0, 0.06]}
         onClick={onFreeBench ? (e) => { e.stopPropagation(); onFreeBench(); } : undefined}
         onPointerOver={onFreeBench ? () => { document.body.style.cursor = 'pointer'; } : undefined}
         onPointerOut={onFreeBench ? () => { document.body.style.cursor = ''; } : undefined}>

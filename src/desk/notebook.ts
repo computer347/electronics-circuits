@@ -154,6 +154,26 @@ export const FORMULAS: Record<string, Formula> = {
     terms: [['I_B', 'base current, set by the base resistor R_B'], ['0.7 V', 'the base-emitter drop'], ['β', 'the gain, about 200 for a BC547'], ['I_C', 'collector current: what the load needs']],
     when: 'Fully on (saturated) when β × I_B is comfortably more than the load needs; then the load sets I_C, not the transistor.',
   },
+  binary: {
+    name: 'Binary place values', expr: '1101 = 8 + 4 + 0 + 1 = 13',
+    terms: [['bit', 'one digit, 0 or 1: one switch, one LED'], ['place values', '…, 8, 4, 2, 1: each twice the one to its right'], ['4 bits', 'count 0 to 15; 8 bits (a byte) count 0 to 255']],
+    when: 'Add the place values of the bits that are 1.',
+  },
+  logic: {
+    name: 'AND and OR', expr: 'AND: series · OR: parallel',
+    terms: [['A AND B', '1 only when both are 1'], ['A OR B', '1 when either (or both) is 1'], ['truth table', 'the output for every combination of inputs']],
+    when: 'Switches in series need all of them closed; side by side, any one will do.',
+  },
+  inverter: {
+    name: 'Inverter (NOT)', expr: 'out = NOT A · I_LED = (V − V_LED) ÷ R_pull-up',
+    terms: [['pull-up', 'resistor from + to the output: holds it high'], ['transistor', 'pulls the output low when its input is on']],
+    when: 'Output high unless the transistor pulls it down; size the pull-up for the load’s current.',
+  },
+  nand: {
+    name: 'NAND', expr: 'out = NOT (A AND B)',
+    terms: [['series pull-down', 'two transistors: both must be on to pull the output low'], ['universal', 'NOT, AND, OR, anything, can be built from NANDs']],
+    when: 'The opposite of AND: low only when every input is high.',
+  },
   rc: {
     name: 'RC time constant', expr: 'τ = R × C',
     terms: [['τ', 'the time to reach 63 % of the final voltage (seconds)'], ['R', 'ohms'], ['C', 'farads (100 µF = 0.0001 F)'], ['V(t)', 'V × (1 − e^(−t/τ))']],
@@ -172,6 +192,11 @@ const LEVEL: Record<string, { parts: PartId[]; formulas: string[]; generators: s
   'w0-08-stack-them-up': { parts: ['battery', 'multimeter'], formulas: ['kvl', 'led'], generators: ['series-voltage'] },
   'w0-09-balance-the-bridge': { parts: ['resistor', 'multimeter'], formulas: ['bridge', 'divider'], generators: ['bridge', 'divider'] },
   'w0-10-switch-it': { parts: ['transistor', 'resistor'], formulas: ['npn', 'ohm', 'led'], generators: ['ohm', 'led-resistor'] },
+  'w1-01-count-in-lights': { parts: ['led', 'multimeter'], formulas: ['binary', 'led'], generators: ['led-resistor'] },
+  'w1-02-both': { parts: ['button', 'led'], formulas: ['logic', 'series'], generators: ['led-resistor'] },
+  'w1-03-either': { parts: ['button', 'led'], formulas: ['logic', 'series'], generators: ['led-resistor', 'parallel-total'] },
+  'w1-04-not': { parts: ['transistor', 'resistor'], formulas: ['inverter', 'npn', 'led'], generators: ['led-resistor', 'ohm'] },
+  'w1-05-not-both': { parts: ['transistor'], formulas: ['nand', 'inverter', 'npn'], generators: ['led-resistor'] },
 };
 
 /** A stable seed per level so the worked example is the same each time you open it. */

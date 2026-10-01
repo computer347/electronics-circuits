@@ -108,16 +108,24 @@ export const posterTexture = () => once('poster', () => canvas(600, 840, (g) => 
 }));
 
 /** A level card pinned on the corkboard. */
-export const levelCardTexture = (n: number, title: string, state: 'done' | 'here' | 'open' | 'later') => once(`card${n}${state}`, () => canvas(256, 200, (g) => {
-  paperGrain(g, 256, 200, 20 + n, state === 'here' ? '#fff7c2' : INK.paper);
+export const levelCardTexture = (n: number, title: string, state: 'done' | 'here' | 'open' | 'later', world = 0) => once(`card${world}-${n}${state}`, () => canvas(256, 200, (g) => {
+  paperGrain(g, 256, 200, 20 + n + world * 31, state === 'here' ? '#fff7c2' : INK.paper);
   g.globalCompositeOperation = 'multiply';
   g.font = `72px ${FONT_DISPLAY}`; g.textBaseline = 'top';
-  g.fillStyle = state === 'later' ? '#b9b0a2' : INK.blue; g.fillText(`0–${n}`, 18, 14);
+  g.fillStyle = state === 'later' ? '#b9b0a2' : INK.blue; g.fillText(`${world}–${n}`, 18, 14);
   g.globalCompositeOperation = 'source-over';
   g.fillStyle = INK.ink; g.font = `bold 20px ${FONT_MONO}`;
   g.fillText(title, 18, 110);
   if (state === 'done') { g.fillStyle = INK.pink; g.font = `36px ${FONT_DISPLAY}`; g.fillText('✓', 206, 20); }
   if (state === 'later') { g.fillStyle = '#9a9186'; g.font = `bold 18px ${FONT_MONO}`; g.fillText('locked', 18, 150); }
+}));
+
+/** A world's tab along the top of the corkboard. */
+export const worldTabTexture = (n: number, name: string, on: boolean) => once(`tab${n}${on}`, () => canvas(256, 72, (g) => {
+  g.fillStyle = on ? INK.pink : INK.paper; g.fillRect(0, 0, 256, 72);
+  g.fillStyle = on ? INK.paper : INK.ink; g.font = `34px ${FONT_DISPLAY}`; g.textBaseline = 'middle';
+  g.fillText(`WORLD ${n}`, 14, 38);
+  g.font = `bold 15px ${FONT_MONO}`; g.fillText(name.toLowerCase(), 142, 40);
 }));
 
 /** The corkboard's last card: the free bench. */
@@ -364,6 +372,71 @@ function drawPicture(g: CanvasRenderingContext2D, pic: TaskPicture) {
     g.fillText('I_B', 380, 286); g.fillText('I_C = 200 × I_B', cx - 300, 236);
     g.fillStyle = INK.ink; g.font = `bold 26px ${FONT_MONO}`; g.fillText('Q1', 552, 300); g.fillText('R_B', 262, 362);
     g.restore();
+  }
+  if (pic === 'binary') {
+    // Four lamps with their place values, showing 1101.
+    const bits = [1, 1, 0, 1], worth = [8, 4, 2, 1];
+    bits.forEach((b, i) => {
+      const x = 110 + i * 150;
+      g.save();
+      g.beginPath(); g.arc(x, 150, 52, 0, Math.PI * 2);
+      g.fillStyle = b ? '#ff3b30' : '#e8e2d6'; g.fill(); g.stroke();
+      if (b) { g.globalAlpha = 0.25; g.beginPath(); g.arc(x, 150, 78, 0, Math.PI * 2); g.fillStyle = '#ff3b30'; g.fill(); }
+      g.restore();
+      g.fillStyle = INK.ink; g.font = `60px ${FONT_DISPLAY}`; g.textAlign = 'center'; g.fillText(String(b), x, 230);
+      g.fillStyle = INK.blue; g.font = `bold 30px ${FONT_MONO}`; g.fillText(String(worth[i]), x, 310);
+      g.textAlign = 'left';
+    });
+    g.fillStyle = INK.pink; g.font = `bold 32px ${FONT_MONO}`; g.fillText('8 + 4 + 1 = 13', 200, 370);
+  }
+  if (pic === 'and' || pic === 'or') {
+    battery(g, left, 190, '9 V');
+    const sw = (x: number, y: number, label: string) => {
+      line(g, [[x, y], [x + 20, y]]); line(g, [[x + 20, y], [x + 80, y - 30]]); line(g, [[x + 90, y], [x + 110, y]]);
+      g.save(); g.fillStyle = INK.pink; g.font = `bold 28px ${FONT_MONO}`; g.fillText(label, x + 40, y - 70); g.restore();
+    };
+    if (pic === 'and') {
+      line(g, [[left, 190], [left, top], [150, top]]);
+      sw(150, top, 'A'); sw(260, top, 'B');
+      line(g, [[370, top], [right, top], [right, 150]]);
+    } else {
+      line(g, [[left, 190], [left, top], [180, top]]);
+      line(g, [[180, top], [180, top + 0]]);
+      sw(180, top + 60, 'A'); sw(180, top + 170, 'B');
+      line(g, [[180, top], [180, top + 170]]);
+      line(g, [[290, top + 60], [380, top + 60]]); line(g, [[290, top + 170], [380, top + 170]]);
+      line(g, [[380, top + 60], [380, top + 170]]);
+      line(g, [[380, top + 60], [380, top], [right, top], [right, 150]]);
+    }
+    led(g, right, 150);
+    line(g, [[right, 214], [right, bot], [left, bot], [left, 220]]);
+    g.fillStyle = INK.ink; g.font = `bold 30px ${FONT_MONO}`; g.fillText(pic === 'and' ? 'A AND B' : 'A OR B', 380, 300);
+  }
+  if (pic === 'not' || pic === 'nand') {
+    // Pull-up from + to the output, LED from the output to ground, transistor(s) below.
+    const ox = 470;
+    battery(g, left, 190, '9 V');
+    line(g, [[left, 190], [left, top], [ox, top], [ox, 50]]);
+    resistor(g, ox, 50, true);
+    line(g, [[ox, 180], [ox, 210], [right, 210], [right, 230]]);
+    led(g, right, 230);
+    line(g, [[right, 294], [right, bot]]);
+    const npn = (y: number) => {
+      g.beginPath(); g.arc(ox - 20, y, 34, 0, Math.PI * 2); g.stroke();
+      g.lineWidth = 9; line(g, [[ox - 36, y - 20], [ox - 36, y + 20]]); g.lineWidth = 7;
+      line(g, [[ox - 34, y - 8], [ox, y - 26]]); line(g, [[ox - 34, y + 8], [ox, y + 26]]);
+      line(g, [[ox - 110, y], [ox - 36, y]]);
+    };
+    if (pic === 'not') {
+      line(g, [[ox, 210], [ox, 264]]); npn(290); line(g, [[ox, 316], [ox, bot]]);
+      g.save(); g.fillStyle = INK.pink; g.font = `bold 28px ${FONT_MONO}`; g.fillText('A', ox - 150, 300); g.restore();
+    } else {
+      line(g, [[ox, 210], [ox, 240]]); npn(266); line(g, [[ox, 292], [ox, 318]]); npn(344); line(g, [[ox, 370], [ox, bot]]);
+      g.save(); g.fillStyle = INK.pink; g.font = `bold 28px ${FONT_MONO}`; g.fillText('A', ox - 150, 276); g.fillText('B', ox - 150, 354); g.restore();
+    }
+    line(g, [[right, bot], [left, bot], [left, 220]]);
+    g.fillStyle = INK.ink; g.font = `bold 26px ${FONT_MONO}`; g.fillText('pull-up', ox + 14, 120);
+    g.fillText(pic === 'not' ? 'out = NOT A' : 'out = NOT (A AND B)', 150, 380);
   }
   if (pic === 'rc') {
     battery(g, left, 190, '9 V');

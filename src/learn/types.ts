@@ -5,7 +5,13 @@ export type LabSpec =
   | { kind: 'led'; volts?: number; ohms?: number; reversed?: boolean; flip?: boolean; meter?: boolean }
   | { kind: 'pair'; ohms?: number; mode?: 'series' | 'parallel'; budget?: number }
   | { kind: 'divider'; rTop?: number; rBottom?: number; target?: [number, number]; maxAmps?: number }
-  | { kind: 'rc'; ohms?: number; farads?: number; bleed?: boolean; window?: [number, number] };
+  | { kind: 'rc'; ohms?: number; farads?: number; bleed?: boolean; window?: [number, number] }
+  /** Flip the inputs of a gate built from real parts, and watch its lamp and truth table. */
+  | { kind: 'logic'; gate: Gate }
+  /** Four bits, worth 8 4 2 1: flip them and read the number. */
+  | { kind: 'binary' };
+
+export type Gate = 'AND' | 'OR' | 'NOT' | 'NAND';
 
 export interface Step {
   title: string;

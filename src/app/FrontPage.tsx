@@ -5,6 +5,7 @@
  */
 import { useEffect } from 'react';
 import '../desk/desk.css';
+import { WORLDS } from '../levels';
 import { useProgress, worldStars } from '../levels/progress';
 
 export type FrontChoice = 'continue' | 'play' | 'learn' | 'practice' | 'workshop';
@@ -17,7 +18,7 @@ const CHOICES: { id: Exclude<FrontChoice, 'continue'>; label: string; key: strin
 ];
 
 export function FrontPage({ onChoose }: { onChoose: (c: FrontChoice) => void }) {
-  const stars = worldStars(useProgress((s) => s.levels));
+  const records = useProgress((s) => s.levels);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -49,7 +50,7 @@ export function FrontPage({ onChoose }: { onChoose: (c: FrontChoice) => void }) 
           ))}
         </nav>
       </div>
-      <p className="riso-foot">World 0 · Foundations · ★ {stars.got}/{stars.max}</p>
+      <p className="riso-foot">{WORLDS.map((w) => { const st = worldStars(records, w.number); return `World ${w.number} · ${w.name} · ★ ${st.got}/${st.max}`; }).join('   ')}</p>
     </main>
   );
 }

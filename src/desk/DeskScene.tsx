@@ -368,6 +368,9 @@ export interface DeskSceneProps {
   glow: DeskObject | null;
   page: TaskPage;
   levelNumber: number;
+  /** The world the corkboard shows. */
+  mapWorld: number;
+  onMapWorld: (n: number) => void;
   passed: Set<number>;
   unlocked: Set<number>;
   onPickLevel: (n: number) => void;
@@ -423,7 +426,7 @@ export function DeskScene(p: DeskSceneProps) {
       <group position={LAYOUT.corkboard.pos}>
         <Interactive id="corkboard" lift={0}>
           <Glow w={0.3} d={0.15} on={p.glow === 'corkboard'} />
-          <Corkboard current={p.levelNumber} passed={p.passed} unlocked={p.unlocked} onPick={focus === 'corkboard' ? p.onPickLevel : undefined} onFreeBench={focus === 'corkboard' ? p.onFreeBench : undefined} />
+          <Corkboard world={p.mapWorld} current={p.levelNumber} passed={p.passed} unlocked={p.unlocked} onPick={focus === 'corkboard' ? p.onPickLevel : undefined} onFreeBench={focus === 'corkboard' ? p.onFreeBench : undefined} onWorld={focus === 'corkboard' ? p.onMapWorld : undefined} />
         </Interactive>
       </group>
       <group position={LAYOUT.poster.pos} rotation={[0, 0, -0.03]}><Poster /></group>

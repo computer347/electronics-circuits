@@ -41,7 +41,7 @@ function scanText(l: Link): string {
   if (l.kind === 'door') return r?.fault === 'reversed' ? `${l.id} · blocking · ${Math.abs(drop).toFixed(1)} V across it, nothing flows`
     : !r?.lit ? `${l.id} · dark: only ${Math.max(0, drop).toFixed(1)} V across it, not enough to open`
       : `${l.id} · drops ${drop.toFixed(1)} V · ${formatSI(amps, 'A')} · lit`;
-  if (l.kind === 'bridge') return `${l.id} · ${r?.part?.pressed ? 'closed' : 'open: hold it down'}`;
+  if (l.kind === 'bridge') return `${l.id} · ${r?.part?.pressed ? 'closed' : r?.part?.kind === 'toggle' ? 'open: flip it on' : 'open: hold it down'}`;
   if (l.kind === 'reservoir') return `${l.id} · charged to ${Math.abs(drop).toFixed(1)} V · no path through`;
   return `${l.id} · ${formatSI(r?.part?.ohms ?? 0, 'Ω')} · drops ${drop.toFixed(1)} V · ${formatSI(amps, 'A')}`;
 }
@@ -321,6 +321,9 @@ export function CircuitWorld({ onCleared, onGiveUp, rail }: {
   };
   const hold = (t: Target | null, down: boolean) => {
     if (t?.kind !== 'bridge') return;
+    // A toggle flips once per press and stays; a push button is held.
+    const part = useBench.getState().parts.find((p) => p.id === t.id);
+    if (part?.kind === 'toggle') { if (down) useBench.getState().togglePress(t.id, !part.pressed); return; }
     useBench.getState().togglePress(t.id, down);
     setPressed((p) => { const n = new Set(p); if (down) n.add(t.id); else n.delete(t.id); return n; });
   };

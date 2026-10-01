@@ -93,6 +93,9 @@ function wirePath(board: BoardState, from: string, to: string): string[] {
  * (the test point wired straight to the supply, both resistors side by side, one missing,
  * or the right shape with the resistors the wrong way round).
  */
+/** An LED counts as lit above this current (a dim glow under 1 mA reads as off, as it would by eye). */
+const LIT_AMPS = 1e-3;
+
 export function explainDivider(board: BoardState, a: BoardAnalysis, tp: HoleId, label: string, fixed: ReadonlySet<string> = new Set()): Diagnosis | null {
   if (!a.result.ok) return null;
   const netOf = nets(board);
@@ -267,6 +270,38 @@ function checkOne(c: SpecCheck, board: BoardState, analysis: BoardAnalysis, fixe
               : on < c.min ? { part: c.part, message: `With the button held, ${c.part} only gets ${mA(on)}. ${on < 1e-4 ? 'The button isn’t closing the loop: check it sits across the gap.' : 'More current needs less resistance.'}` }
                 : { part: c.part, message: `With the button held, ${c.part} takes ${mA(on)}, over its limit.` };
       return { line: { ok, label: `${c.part} lit only while the button is held`, measured: `${mA(on)} held · ${mA(off)} let go` }, why };
+    }
+    case 'led-pattern': {
+      const a = analyzeBoard(board);
+      const lit = (id: string) => a.result.ok && Math.abs(a.result.currents[id] ?? 0) > LIT_AMPS;
+      const wrong = Object.entries(c.leds).filter(([id, on]) => lit(id) !== on);
+      const show = (on: boolean) => (on ? '1' : '0');
+      return {
+        line: { ok: wrong.length === 0, label: c.label ?? 'The LEDs show the pattern', measured: Object.keys(c.leds).map((id) => show(lit(id))).join(' ') },
+        why: wrong.length ? { part: wrong[0]![0], message: `${wrong.map(([id, on]) => `${id} should be ${on ? 'lit' : 'dark'}`).join(', ')}.` } : undefined,
+      };
+    }
+    case 'truth-table': {
+      // "?" is whichever toggle the player added (the one the spec doesn't name).
+      const named = new Set(c.inputs.filter((x) => x !== '?'));
+      const extra = board.parts.filter((p) => p.kind === 'toggle' && !named.has(p.id)).map((p) => p.id);
+      const inputs = c.inputs.map((x) => (x === '?' ? extra.shift() ?? '' : x));
+      if (inputs.includes('')) {
+        return { line: { ok: false, label: c.label ?? `${c.output} follows the truth table`, measured: 'a switch is missing' }, why: { message: 'There’s no second switch on the board yet: take a toggle from the bar.' } };
+      }
+      const n = inputs.length;
+      const rows = Array.from({ length: 1 << n }, (_, i) => {
+        const b: BoardState = { ...board, parts: board.parts.map((p) => { const k = inputs.indexOf(p.id); return k < 0 ? p : { ...p, pressed: !!(i & (1 << k)) }; }) };
+        const a = analyzeBoard(b);
+        const got: 0 | 1 = a.result.ok && Math.abs(a.result.currents[c.output] ?? 0) > LIT_AMPS ? 1 : 0;
+        return { i, got, want: c.table[i]! };
+      });
+      const bad = rows.filter((r) => r.got !== r.want);
+      const combo = (i: number) => inputs.map((id, k) => `${id} ${i & (1 << k) ? 'on' : 'off'}`).join(', ');
+      return {
+        line: { ok: bad.length === 0, label: c.label ?? `${c.output} follows the truth table`, measured: rows.map((r) => r.got).join('') },
+        why: bad.length ? { part: c.output, message: `With ${combo(bad[0]!.i)}, ${c.output} should be ${bad[0]!.want ? 'lit' : 'dark'} but it's ${bad[0]!.got ? 'lit' : 'dark'}.` } : undefined,
+      };
     }
     case 'part-current': {
       const held: BoardState = { ...board, parts: board.parts.map((p) => (p.kind === 'button' ? { ...p, pressed: true } : p)) };

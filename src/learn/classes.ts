@@ -499,5 +499,214 @@ const c10: LearnClass = {
 
 export const WORLD0_CLASSES: LearnClass[] = [c1, c2, c3, c4, c5, c6, c7, c8, c9, c10];
 
-export const classById = (id: string) => WORLD0_CLASSES.find((c) => c.id === id);
-export const classForLevel = (levelId: string) => WORLD0_CLASSES.find((c) => c.levelId === levelId);
+// ---------------------------------------------------------------- World 1: logic
+
+const w1c1: LearnClass = {
+  id: 'c1-01-binary',
+  world: 1, number: 1,
+  title: 'Counting in binary',
+  levelId: 'w1-01-count-in-lights',
+  minutes: 5,
+  goals: ['Read a binary number from its bits', 'Write a number in binary', 'Know what 4 and 8 bits can count to'],
+  steps: [
+    {
+      title: 'Two digits are enough',
+      body: [
+        'A switch is on or off, an LED lit or dark: two states. Binary counts with just those two digits, **1** and **0**.',
+        'Each place is worth twice the one to its right. With four bits the places are worth **8, 4, 2, 1**.',
+      ],
+    },
+    {
+      title: 'Reading a number',
+      body: [
+        'Add up the places that hold a 1. `1101` is `8 + 4 + 0 + 1 = 13`; `0110` is `4 + 2 = 6`.',
+        'Four bits count from `0000` (0) to `1111` (`8 + 4 + 2 + 1 = 15`): sixteen numbers in all.',
+      ],
+      lab: { kind: 'binary' },
+      tryThis: 'Make 6, then 11, then the biggest number four bits can hold.',
+    },
+    {
+      title: 'Writing one',
+      body: [
+        'Take away the biggest place that fits, and write a 1 there; carry on with what\'s left. 11: 8 fits (3 left), 4 doesn\'t, 2 fits (1 left), 1 fits: `1011`.',
+        'Eight bits make a **byte**: 0 to 255. That\'s why a colour channel, an I²C address or a sensor reading so often tops out at 255 (or 127, with 7 bits).',
+      ],
+    },
+  ],
+  check: [
+    { kind: 'choice', prompt: 'What number is 1010 in binary?', options: ['5', '10', '12', '1010'], correct: 1,
+      explain: '8 + 0 + 2 + 0 = 10.' },
+    { kind: 'choice', prompt: 'How do you write 6 in four bits?', options: ['0011', '0110', '1100', '0101'], correct: 1,
+      explain: '6 = 4 + 2: the 4 and 2 places are 1, so 0110.' },
+    { kind: 'choice', prompt: 'What is the biggest number 8 bits can hold?', options: ['8', '128', '255', '256'], correct: 2,
+      explain: '128 + 64 + 32 + 16 + 8 + 4 + 2 + 1 = 255 (256 numbers counting 0).' },
+  ],
+};
+
+const w1c2: LearnClass = {
+  id: 'c1-02-and',
+  world: 1, number: 2,
+  title: 'AND',
+  levelId: 'w1-02-both',
+  minutes: 4,
+  goals: ['Read a truth table', 'Build AND from switches in series'],
+  steps: [
+    {
+      title: 'A truth table lists every case',
+      body: [
+        'With two inputs there are four cases: `00`, `01`, `10`, `11`. A **truth table** gives the output for each one. That\'s the whole definition of a logic gate.',
+        'For AND the output is 1 in one row only: when A **and** B are both 1.',
+      ],
+    },
+    {
+      title: 'AND is series',
+      lab: { kind: 'logic', gate: 'AND' },
+      tryThis: 'Flip A and B through all four rows: the lamp only lights on one.',
+      body: [
+        'Put two switches one after the other in the LED\'s loop. The current has to get through both, so the LED lights only when both are closed.',
+        'Any number of switches in series is still AND: one open switch anywhere breaks the whole loop.',
+      ],
+    },
+    {
+      title: 'Where you meet it',
+      body: [
+        'A machine runs only if the guard is shut **and** start is pressed. A car starts only with the key **and** the brake. Microcontrollers do the same with `if (a && b)`.',
+      ],
+    },
+  ],
+  check: [
+    { kind: 'choice', prompt: 'A AND B, with A = 1 and B = 0. What\'s the output?', options: ['0', '1'], correct: 0,
+      explain: 'AND needs both: one 0 makes it 0.' },
+    { kind: 'choice', prompt: 'How many rows does a truth table for three inputs have?', options: ['3', '6', '8', '9'], correct: 2,
+      explain: 'Each input doubles the cases: 2 × 2 × 2 = 8.' },
+    { kind: 'choice', prompt: 'Two switches in series with an LED. When does it light?', options: ['Either switch on', 'Both switches on', 'Neither on', 'Always'], correct: 1,
+      explain: 'Series: one path through both switches, so both must be closed.' },
+  ],
+};
+
+const w1c3: LearnClass = {
+  id: 'c1-03-or',
+  world: 1, number: 3,
+  title: 'OR',
+  levelId: 'w1-03-either',
+  minutes: 4,
+  goals: ['Build OR from switches in parallel', 'Tell OR from AND in a truth table'],
+  steps: [
+    {
+      title: 'OR is parallel',
+      lab: { kind: 'logic', gate: 'OR' },
+      tryThis: 'Find the only row where the lamp is dark.',
+      body: [
+        'Put two switches side by side, each able to connect the LED to the supply on its own. Either one closed is a complete path, so the LED lights.',
+        'OR is 1 in three rows of its truth table: `01`, `10` and `11`. Only `00` gives 0.',
+      ],
+    },
+    {
+      title: 'Inclusive, not either-or',
+      body: [
+        'In logic, OR includes both: A OR B is 1 when both are 1. “One or the other but not both” is a different gate, **XOR**.',
+      ],
+    },
+    {
+      title: 'Where you meet it',
+      body: [
+        'A doorbell with a front and a back button, an alarm that trips on any sensor. In code, `if (a || b)`.',
+      ],
+    },
+  ],
+  check: [
+    { kind: 'choice', prompt: 'A OR B, with A = 1 and B = 1. What\'s the output?', options: ['0', '1'], correct: 1,
+      explain: 'OR is 1 if either input is 1, and that includes both.' },
+    { kind: 'choice', prompt: 'Which truth-table column (outputs for 00, 01, 10, 11) is OR?', options: ['0001', '0111', '0110', '1110'], correct: 1,
+      explain: 'Only 00 gives 0: 0111. (0001 is AND, 0110 XOR, 1110 NAND.)' },
+    { kind: 'choice', prompt: 'Two switches in parallel feed an LED. When is it dark?', options: ['When either is off', 'Only when both are off', 'When both are on', 'Never'], correct: 1,
+      explain: 'Either path alone is enough, so it\'s only dark with both open.' },
+  ],
+};
+
+const w1c4: LearnClass = {
+  id: 'c1-04-not',
+  world: 1, number: 4,
+  title: 'NOT, and the pull-up',
+  levelId: 'w1-04-not',
+  minutes: 5,
+  goals: ['Explain how a transistor and a pull-up make NOT', 'Size a pull-up resistor'],
+  steps: [
+    {
+      title: 'High unless pulled low',
+      lab: { kind: 'logic', gate: 'NOT' },
+      tryThis: 'Switch A on: the transistor pulls the output down and the LED current drops to nothing.',
+      body: [
+        'Join the output to + through a resistor: the **pull-up**. Nothing else connected, the output sits high.',
+        'Put a transistor from the output to ground. When its input turns it on, it drags the output down to about 0.2 V. Input 1, output 0; input 0, output 1: **NOT**.',
+      ],
+    },
+    {
+      title: 'Sizing the pull-up',
+      body: [
+        'When the output is high, the LED\'s current comes through the pull-up: `(9 V − 2 V) / 1 kΩ = 7 mA`. 100 Ω would push 70 mA and burn the LED; 10 kΩ gives 0.7 mA, barely a glow.',
+        'When the transistor is on, the pull-up\'s current goes through the transistor instead: `9 V / 1 kΩ = 9 mA`, well within a BC547.',
+      ],
+    },
+    {
+      title: 'Pull-ups everywhere',
+      body: [
+        'Microcontroller buttons, I²C lines and reset pins all use pull-ups: a line that idles high, and something that pulls it low to say “now”.',
+      ],
+    },
+  ],
+  check: [
+    { kind: 'number', prompt: 'A 1 kΩ pull-up from 9 V feeds a red LED (2 V) when the output is high. What current flows?', answer: 0.007, unit: 'A', tolerancePct: 3,
+      explain: '(9 V − 2 V) / 1 kΩ = 7 mA.' },
+    { kind: 'choice', prompt: 'NOT with input 1. What\'s the output?', options: ['0', '1'], correct: 0,
+      explain: 'NOT flips it: 1 becomes 0.' },
+    { kind: 'choice', prompt: 'What does the pull-up resistor do?', options: ['Pulls the output to ground', 'Holds the output high when nothing pulls it down', 'Amplifies the input', 'Protects the transistor\'s base'], correct: 1,
+      explain: 'It\'s a weak link to +: the output idles high, and the transistor can still pull it low.' },
+  ],
+};
+
+const w1c5: LearnClass = {
+  id: 'c1-05-nand',
+  world: 1, number: 5,
+  title: 'NAND, the universal gate',
+  levelId: 'w1-05-not-both',
+  minutes: 5,
+  goals: ['Build NAND from two transistors', 'Make NOT and AND out of NAND'],
+  steps: [
+    {
+      title: 'Two pull-downs in series',
+      lab: { kind: 'logic', gate: 'NAND' },
+      tryThis: 'Compare with AND: every output is flipped.',
+      body: [
+        'Stack two transistors between the output and ground. The output only goes low if current can get through **both**: both inputs on.',
+        'So the output is low only for `11`: NOT (A AND B), or **NAND**. Its truth table is AND\'s turned upside down: `1110`.',
+      ],
+    },
+    {
+      title: 'Everything from NAND',
+      body: [
+        'Tie a NAND\'s two inputs together and it\'s a NOT. Put a NOT after a NAND and you have AND. With a few more, OR. So any logic, adders, memory, whole CPUs, can be built from NAND alone.',
+      ],
+    },
+    {
+      title: 'Where you meet it',
+      body: [
+        'Chip makers build from NAND because in silicon it\'s the smallest, fastest gate. The flash in a USB stick or an SD card is **NAND flash**, named after it.',
+      ],
+    },
+  ],
+  check: [
+    { kind: 'choice', prompt: 'NAND with inputs 1 and 1. What\'s the output?', options: ['0', '1'], correct: 0,
+      explain: 'AND would give 1; NAND flips it to 0.' },
+    { kind: 'choice', prompt: 'You tie a NAND\'s two inputs together. What gate is it now?', options: ['AND', 'OR', 'NOT', 'Still NAND, no change'], correct: 2,
+      explain: 'Inputs 00 give 1, 11 give 0: it\'s an inverter.' },
+    { kind: 'choice', prompt: 'Which column (outputs for 00, 01, 10, 11) is NAND?', options: ['0001', '1110', '0111', '1000'], correct: 1,
+      explain: 'Low only when both are high: 1110.' },
+  ],
+};
+
+export const WORLD1_CLASSES: LearnClass[] = [w1c1, w1c2, w1c3, w1c4, w1c5];
+export const ALL_CLASSES: LearnClass[] = [...WORLD0_CLASSES, ...WORLD1_CLASSES];
+
+export const classById = (id: string) => ALL_CLASSES.find((c) => c.id === id);
+export const classForLevel = (levelId: string) => ALL_CLASSES.find((c) => c.levelId === levelId);

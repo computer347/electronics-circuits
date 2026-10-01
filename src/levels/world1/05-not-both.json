@@ -1,0 +1,50 @@
+{
+  "id": "w1-05-not-both",
+  "world": 1,
+  "number": 5,
+  "title": "Not both",
+  "format": "build",
+  "skills": ["logic.nand", "transistor.switch", "series"],
+  "brief": {
+    "story": "A fault lamp on the club's 3D printer should stay on unless both safety checks pass: door shut (SA) and filament in (SB). Two transistors, Q1 and Q2, each switched by one input. The output's pull-up and LED are in. Q1 and Q2 aren't joined yet.",
+    "goal": "Join Q1 and Q2 so LED1 goes dark only when SA and SB are both on: a NAND gate.",
+    "datasheet": {
+      "title": "NAND (NOT AND)",
+      "rows": [
+        ["A · B", "out"],
+        ["0 · 0", "1"],
+        ["0 · 1  /  1 · 0", "1"],
+        ["1 · 1", "0"]
+      ]
+    }
+  },
+  "hints": [
+    "The output only goes low if current can get from it down to ground through Q1 and Q2: both switched on, one after the other. Series again.",
+    "Q1's emitter is in column 8, and Q2's collector in column 18. Join them with a wire.",
+    "A wire from a free hole in column 8 to one in column 18."
+  ],
+  "board": {
+    "supply": { "volts": 9, "on": true },
+    "parts": [
+      { "id": "Q1", "kind": "npn", "h1": "e8", "h2": "e9", "h3": "e10", "marking": "BC547" },
+      { "id": "Q2", "kind": "npn", "h1": "e16", "h2": "e17", "h3": "e18", "marking": "BC547" },
+      { "id": "W1", "kind": "wire", "h1": "a16", "h2": "T-:13", "wireColor": "#2f6fe0" },
+      { "id": "SA", "kind": "toggle", "h1": "T+:3", "h2": "a4", "pressed": false },
+      { "id": "R1", "kind": "resistor", "h1": "b4", "h2": "b9", "ohms": 10000 },
+      { "id": "SB", "kind": "toggle", "h1": "T+:11", "h2": "a13", "pressed": false },
+      { "id": "R2", "kind": "resistor", "h1": "b13", "h2": "b17", "ohms": 10000 },
+      { "id": "R3", "kind": "resistor", "h1": "T+:9", "h2": "a10", "ohms": 1000 },
+      { "id": "LED1", "kind": "led", "h1": "c10", "h2": "c12", "color": "red" },
+      { "id": "W2", "kind": "wire", "h1": "a12", "h2": "T-:10", "wireColor": "#2f6fe0" }
+    ]
+  },
+  "locked": ["Q1", "Q2", "W1", "SA", "R1", "SB", "R2", "R3", "LED1", "W2"],
+  "tools": ["wire", "probe"],
+  "spec": [
+    { "kind": "truth-table", "inputs": ["SA", "SB"], "output": "LED1", "table": [1, 1, 1, 0], "label": "LED1 = NOT (SA AND SB)",
+      "explain": "Two transistors in series pull the output down only when both are on." },
+    { "kind": "no-burnt" }
+  ],
+  "par": { "checks": 1, "partsAdded": 1 },
+  "debrief": "Two transistors in series under a pull-up make NAND. It's the gate chips are made of: any logic at all, adders, memory, a whole CPU, can be built from NAND gates alone."
+}

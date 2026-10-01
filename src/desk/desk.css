@@ -533,3 +533,21 @@
 .lab-legs-note { flex-basis: 100%; order: 3; text-align: center; color: var(--r-paper); font-size: 11px; }
 .lab-meter .desk-reading, .lab-meter .meter-modes { order: 4; }
 .lab-probe .dot.black { margin-left: 0; border: 2px solid #777; }
+
+/* ------------------------------------------------------------ logic labs (World 1 theory) */
+.logic-lab { display: grid; gap: 12px; }
+.logic-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.logic-in { display: grid; justify-items: center; min-width: 56px; padding: 8px 10px; border: 0; border-radius: 0; background: #e8e2d6; color: var(--r-ink); font-family: var(--r-mono); font-weight: 700; box-shadow: 3px 3px 0 var(--r-blue); cursor: pointer; }
+.logic-in b { font-family: var(--r-display); font-weight: 400; font-size: 26px; }
+.logic-in small { font-size: 11px; color: #5b5068; }
+.logic-in.on { background: var(--r-yellow); }
+.logic-arrow { font-family: var(--r-mono); font-weight: 700; color: #5b5068; }
+.logic-lamp { display: inline-grid; place-items: center; width: 54px; height: 54px; border-radius: 50%; background: #e8e2d6; color: #5b5068; font-family: var(--r-display); font-size: 26px; border: 3px solid var(--r-ink); }
+.logic-lamp.on { background: #ff3b30; color: #fff; box-shadow: 0 0 18px 4px rgba(255, 59, 48, 0.55); }
+.logic-lamp.wide { width: auto; min-width: 54px; padding: 0 12px; border-radius: 28px; background: var(--r-blue); box-shadow: none; }
+.logic-table { border-collapse: collapse; font-family: var(--r-mono); font-size: 14px; }
+.logic-table th, .logic-table td { padding: 3px 14px; border-bottom: 1px solid rgba(28, 10, 58, 0.15); text-align: center; }
+.logic-table tr.here td { background: var(--r-yellow); }
+.logic-note { margin: 0; font-family: var(--r-mono); font-size: 12px; color: #5b5068; }
+.nb-goals { margin: 4px 0 12px; padding-left: 1.2em; line-height: 1.6; }
+.nb-next { margin-top: 18px; font-weight: 700; color: var(--r-blue); }

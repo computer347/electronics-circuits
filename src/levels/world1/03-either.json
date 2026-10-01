@@ -1,0 +1,44 @@
+{
+  "id": "w1-03-either",
+  "world": 1,
+  "number": 3,
+  "title": "Either will do",
+  "format": "build",
+  "skills": ["logic.or", "parallel"],
+  "brief": {
+    "story": "A stairwell light should come on from the switch at the bottom OR the one at the top. SA, the bottom switch, is in. The top one still needs fitting.",
+    "goal": "Fit a second switch so LED1 lights when SA or your switch (or both) is on: an OR gate.",
+    "datasheet": {
+      "title": "OR",
+      "rows": [
+        ["A · B", "out"],
+        ["0 · 0", "0"],
+        ["0 · 1  /  1 · 0", "1"],
+        ["1 · 1", "1"]
+      ]
+    }
+  },
+  "hints": [
+    "In OR, either switch alone has to be enough: two separate paths side by side, in parallel.",
+    "SA joins the + rail to column 2. Your switch has to do the same: one leg on the + rail, one in column 2.",
+    "Take a toggle and click a + rail hole near the start (T+), then a free hole in column 2."
+  ],
+  "board": {
+    "supply": { "volts": 9, "on": true },
+    "parts": [
+      { "id": "SA", "kind": "toggle", "h1": "T+:1", "h2": "a2", "pressed": false },
+      { "id": "R1", "kind": "resistor", "h1": "c2", "h2": "c6", "ohms": 470 },
+      { "id": "LED1", "kind": "led", "h1": "d6", "h2": "d8", "color": "yellow" },
+      { "id": "W1", "kind": "wire", "h1": "e8", "h2": "T-:7", "wireColor": "#2f6fe0" }
+    ]
+  },
+  "locked": ["SA", "R1", "LED1", "W1"],
+  "tools": ["toggle", "wire", "probe"],
+  "spec": [
+    { "kind": "truth-table", "inputs": ["SA", "?"], "output": "LED1", "table": [0, 1, 1, 1], "label": "LED1 = SA OR your switch",
+      "explain": "Parallel switches: two paths, so either one closed is enough." },
+    { "kind": "no-burnt" }
+  ],
+  "par": { "checks": 1, "partsAdded": 1 },
+  "debrief": "Two switches side by side make OR: either path is enough. (A real stairwell uses two changeover switches so each one can also turn it off: that's XOR, and it's coming.)"
+}

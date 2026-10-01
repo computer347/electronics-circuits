@@ -47,6 +47,14 @@ export type SpecCheck = (
    * most `max` amperes.
    */
   | { kind: 'part-current'; part: string; max: number; label?: string }
+  /** These LEDs lit (true) or dark (false), with the switches as the player has set them. */
+  | { kind: 'led-pattern'; leds: Record<string, boolean>; label?: string }
+  /**
+   * Logic: for every combination of the toggle switches `inputs`, LED `output` is lit exactly
+   * when `table[i]` is 1. Combination i has input k on when bit k of i is set. An input of "?"
+   * is the switch the player adds: any toggle on the board that isn't named.
+   */
+  | { kind: 'truth-table'; inputs: string[]; output: string; table: (0 | 1)[]; label?: string }
 ) & { explain?: string };
 
 export interface DatasheetCard {

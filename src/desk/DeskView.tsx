@@ -8,8 +8,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { analyzeBoard } from '../breadboard/model';
 import { useBench } from '../breadboard/store';
 import { CircuitWorld } from '../circuitworld/CircuitWorld';
-import { WORLD0_CLASSES } from '../learn/classes';
-import { levelById, startingBoard, WORLD0 } from '../levels';
+import { classForLevel } from '../learn/classes';
+import { levelById, startingBoard, WORLD0, WORLDS } from '../levels';
 import { useProgress } from '../levels/progress';
 import { useSession, type Attempt } from '../levels/session';
 import type { LevelDef } from '../levels/types';
@@ -218,9 +218,13 @@ export function DeskView({ onMenu }: { onMenu: () => void }) {
   const stop = desk.tour !== null ? TOUR[desk.tour] : undefined;
 
   const page = useMemo(() => taskPage(level), [level]);
-  const cls = WORLD0_CLASSES.find((c) => c.levelId === level.id);
-  const passed = useMemo(() => new Set(Object.keys(records).map((id) => levelById(id)?.number ?? 0)), [records]);
-  const unlocked = useMemo(() => new Set(WORLD0.filter((l) => isUnlocked(l.number, records)).map((l) => l.number)), [records]);
+  const cls = classForLevel(level.id);
+  // The corkboard shows one world at a time: the current level's, unless you pick another tab.
+  const [mapWorldPick, setMapWorld] = useState<number | null>(null);
+  const mapWorld = mapWorldPick ?? level.world;
+  const mapLevels = WORLDS.find((w) => w.number === mapWorld)?.levels ?? WORLD0;
+  const passed = useMemo(() => new Set(mapLevels.filter((l) => records[l.id]).map((l) => l.number)), [records, mapLevels]);
+  const unlocked = useMemo(() => new Set(mapLevels.filter((l) => isUnlocked(l.number, records, mapWorld)).map((l) => l.number)), [records, mapLevels, mapWorld]);
   const spares = useBench((s) => s.spares);
   // The box holds the level's parts, plus one LED per spare.
   const boxItems: BoxItem[] = [...BOX.filter((k) => level.tools.includes(k)), ...Array.from({ length: spares ?? 0 }, () => 'led' as const)];
@@ -280,10 +284,12 @@ export function DeskView({ onMenu }: { onMenu: () => void }) {
             dynamic={dynamic}
             onFreeBench={() => desk.enterSandbox()}
             page={page}
-            levelNumber={level.number}
+            levelNumber={level.world === mapWorld ? level.number : 0}
+            mapWorld={mapWorld}
+            onMapWorld={setMapWorld}
             passed={passed}
             unlocked={unlocked}
-            onPickLevel={(n) => { const l = WORLD0.find((x) => x.number === n); if (l && unlocked.has(n)) playLevel(l.id); }}
+            onPickLevel={(n) => { const l = mapLevels.find((x) => x.number === n); if (l && unlocked.has(n)) { setMapWorld(null); playLevel(l.id); } }}
             boxItems={boxItems}
             diveHole={diveHole}
           />

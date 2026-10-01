@@ -4,7 +4,7 @@
  * and the game still works, it just won't remember.
  */
 import { create } from 'zustand';
-import { WORLD0 } from '.';
+import { WORLDS } from '.';
 
 const KEY = 'signal-path.progress.v1';
 
@@ -53,7 +53,8 @@ export const useProgress = create<Progress>((set, get) => ({
   reset: () => { save({}); set({ levels: {} }); },
 }));
 
-/** World 0 stars so far, out of three per level. */
-export function worldStars(records: Record<string, LevelRecord>): { got: number; max: number } {
-  return { got: WORLD0.reduce((n, l) => n + (records[l.id]?.stars ?? 0), 0), max: WORLD0.length * 3 };
+/** A world's stars so far, out of three per level (World 0 by default). */
+export function worldStars(records: Record<string, LevelRecord>, world = 0): { got: number; max: number } {
+  const levels = WORLDS.find((w) => w.number === world)?.levels ?? [];
+  return { got: levels.reduce((n, l) => n + (records[l.id]?.stars ?? 0), 0), max: levels.length * 3 };
 }

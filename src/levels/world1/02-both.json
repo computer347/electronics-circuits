@@ -1,0 +1,44 @@
+{
+  "id": "w1-02-both",
+  "world": 1,
+  "number": 2,
+  "title": "Both",
+  "format": "build",
+  "skills": ["logic.and", "series"],
+  "brief": {
+    "story": "A machine guard: the motor may only run while the lid is shut AND the start switch is on. SA is the lid switch, wired in. The LED stands in for the motor. The start switch still needs fitting.",
+    "goal": "Fit a second switch so LED1 lights only when SA and your switch are both on: an AND gate.",
+    "datasheet": {
+      "title": "AND",
+      "rows": [
+        ["A · B", "out"],
+        ["0 · 0", "0"],
+        ["0 · 1  /  1 · 0", "0"],
+        ["1 · 1", "1"]
+      ]
+    }
+  },
+  "hints": [
+    "In AND, the current has to get through both switches, one after the other: in series.",
+    "SA ends in column 2, and the resistor R1 starts in column 5. Your switch goes across that gap.",
+    "Take a toggle from the bar and click a hole in column 2, then one in column 5."
+  ],
+  "board": {
+    "supply": { "volts": 9, "on": true },
+    "parts": [
+      { "id": "SA", "kind": "toggle", "h1": "T+:1", "h2": "a2", "pressed": false },
+      { "id": "R1", "kind": "resistor", "h1": "c5", "h2": "c9", "ohms": 470 },
+      { "id": "LED1", "kind": "led", "h1": "d9", "h2": "d11", "color": "green" },
+      { "id": "W1", "kind": "wire", "h1": "e11", "h2": "T-:9", "wireColor": "#2f6fe0" }
+    ]
+  },
+  "locked": ["SA", "R1", "LED1", "W1"],
+  "tools": ["toggle", "wire", "probe"],
+  "spec": [
+    { "kind": "truth-table", "inputs": ["SA", "?"], "output": "LED1", "table": [0, 0, 0, 1], "label": "LED1 = SA AND your switch",
+      "explain": "Series switches: one path, so every switch on it has to be closed." },
+    { "kind": "no-burnt" }
+  ],
+  "par": { "checks": 1, "partsAdded": 1 },
+  "debrief": "Two switches in series make AND: the current needs both switches closed. That's literally how machine guards and two-hand controls on presses work, and inside a chip the same idea is two transistors in series."
+}

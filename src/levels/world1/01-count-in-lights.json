@@ -1,0 +1,57 @@
+{
+  "id": "w1-01-count-in-lights",
+  "world": 1,
+  "number": 1,
+  "title": "Count in lights",
+  "format": "find-fault",
+  "skills": ["binary.place-value", "resistor.value"],
+  "brief": {
+    "story": "The club's scoreboard shows numbers in binary: four LEDs worth 8, 4, 2 and 1, each with its own switch. Tonight's score is 13. Someone says the 4 hasn't lit since a resistor got swapped.",
+    "goal": "Make the four LEDs show 13 in binary (8 + 4 + 1: on, on, off, on), with nothing burnt.",
+    "datasheet": {
+      "title": "Binary place values",
+      "rows": [
+        ["LED8 · LED4 · LED2 · LED1", "worth 8, 4, 2, 1"],
+        ["On", "1: count it"],
+        ["Off", "0: skip it"],
+        ["13", "8 + 4 + 1 = 1101"]
+      ]
+    }
+  },
+  "hints": [
+    "Each switch lights one LED. 13 is 8 + 4 + 1: switch on S8, S4 and S1, and leave S2 off.",
+    "If an LED stays dark with its switch on, measure across its resistor. A 470 Ω resistor should take about 7 V; if it takes almost all 9 V and the LED gets nothing, the resistor is far too big.",
+    "R4 is 47 kΩ (yellow violet orange), not 470 Ω. Select it and set it to 470 Ω."
+  ],
+  "board": {
+    "supply": { "volts": 9, "on": true },
+    "parts": [
+      { "id": "S8", "kind": "toggle", "h1": "T+:1", "h2": "a2", "pressed": false },
+      { "id": "R8", "kind": "resistor", "h1": "c2", "h2": "c5", "ohms": 470 },
+      { "id": "LED8", "kind": "led", "h1": "d5", "h2": "d7", "color": "red" },
+      { "id": "W8", "kind": "wire", "h1": "e7", "h2": "T-:5", "wireColor": "#2f6fe0" },
+      { "id": "S4", "kind": "toggle", "h1": "T+:7", "h2": "a9", "pressed": false },
+      { "id": "R4", "kind": "resistor", "h1": "c9", "h2": "c12", "ohms": 470 },
+      { "id": "LED4", "kind": "led", "h1": "d12", "h2": "d14", "color": "red" },
+      { "id": "W4", "kind": "wire", "h1": "e14", "h2": "T-:11", "wireColor": "#2f6fe0" },
+      { "id": "S2", "kind": "toggle", "h1": "T+:13", "h2": "a16", "pressed": false },
+      { "id": "R2", "kind": "resistor", "h1": "c16", "h2": "c19", "ohms": 470 },
+      { "id": "LED2", "kind": "led", "h1": "d19", "h2": "d21", "color": "red" },
+      { "id": "W2", "kind": "wire", "h1": "e21", "h2": "T-:17", "wireColor": "#2f6fe0" },
+      { "id": "S1", "kind": "toggle", "h1": "T+:19", "h2": "a23", "pressed": false },
+      { "id": "R1", "kind": "resistor", "h1": "c23", "h2": "c26", "ohms": 470 },
+      { "id": "LED1", "kind": "led", "h1": "d26", "h2": "d28", "color": "red" },
+      { "id": "W1", "kind": "wire", "h1": "e28", "h2": "T-:23", "wireColor": "#2f6fe0" }
+    ]
+  },
+  "faults": [{ "kind": "value", "part": "R4", "ohms": 47000 }],
+  "locked": ["S8", "R8", "LED8", "W8", "S4", "LED4", "W4", "S2", "R2", "LED2", "W2", "S1", "R1", "LED1", "W1"],
+  "tools": ["probe"],
+  "resistorValues": [470, 4700, 47000],
+  "spec": [
+    { "kind": "led-pattern", "leds": { "LED8": true, "LED4": true, "LED2": false, "LED1": true }, "label": "The LEDs read 1101 (13)" },
+    { "kind": "no-burnt" }
+  ],
+  "par": { "checks": 1, "measurements": 1 },
+  "debrief": "1101 is 8 + 4 + 0 + 1 = 13. Every number a computer holds is just this: a row of switches, each worth twice the one to its right. Four of them count to 15; eight (a byte) count to 255."
+}

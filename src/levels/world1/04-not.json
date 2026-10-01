@@ -1,0 +1,48 @@
+{
+  "id": "w1-04-not",
+  "world": 1,
+  "number": 4,
+  "title": "Not",
+  "format": "build",
+  "skills": ["logic.not", "transistor.switch", "pull-up"],
+  "brief": {
+    "story": "A night light should be on when the light sensor says it's NOT bright. SA stands in for the sensor: on means bright. Q1 is the transistor switch from 0–10, with its base resistor fitted. The output still needs its pull-up resistor, from + to Q1's collector.",
+    "goal": "Add the pull-up resistor so LED1 is lit when SA is off and dark when SA is on: a NOT gate (an inverter).",
+    "datasheet": {
+      "title": "NOT",
+      "rows": [
+        ["A", "out"],
+        ["0", "1"],
+        ["1", "0"],
+        ["Pull-up", "1 kΩ is typical here"]
+      ]
+    }
+  },
+  "hints": [
+    "With Q1 off, the pull-up resistor lifts the output (column 12) to + and current flows through it into LED1. With Q1 on, Q1 pulls the output down to about 0.2 V and LED1 goes dark.",
+    "The pull-up goes from the + rail to column 12, Q1's collector.",
+    "Try 1 kΩ: (9 V − 2 V) ÷ 1 kΩ = 7 mA into the LED when Q1 is off. 100 Ω would burn it; 10 kΩ is too dim."
+  ],
+  "board": {
+    "supply": { "volts": 9, "on": true },
+    "parts": [
+      { "id": "Q1", "kind": "npn", "h1": "e10", "h2": "e11", "h3": "e12", "marking": "BC547" },
+      { "id": "W1", "kind": "wire", "h1": "a10", "h2": "T-:9", "wireColor": "#2f6fe0" },
+      { "id": "SA", "kind": "toggle", "h1": "T+:3", "h2": "a4", "pressed": false },
+      { "id": "R1", "kind": "resistor", "h1": "b4", "h2": "b11", "ohms": 10000 },
+      { "id": "LED1", "kind": "led", "h1": "c12", "h2": "c15", "color": "red" },
+      { "id": "W2", "kind": "wire", "h1": "a15", "h2": "T-:13", "wireColor": "#2f6fe0" }
+    ]
+  },
+  "locked": ["Q1", "W1", "SA", "R1", "LED1", "W2"],
+  "tools": ["resistor", "wire", "probe"],
+  "resistorValues": [100, 470, 1000, 4700, 10000],
+  "spec": [
+    { "kind": "truth-table", "inputs": ["SA"], "output": "LED1", "table": [1, 0], "label": "LED1 = NOT SA",
+      "explain": "The output is pulled up to + through the resistor, and Q1 pulls it down when SA turns it on." },
+    { "kind": "no-burnt" }
+  ],
+  "spares": { "led": 2 },
+  "par": { "checks": 1, "partsAdded": 1 },
+  "debrief": "One transistor and a pull-up resistor make NOT: the output is high unless the transistor pulls it low. Every logic chip is built from inverters like this, only with MOSFETs and billions of them."
+}

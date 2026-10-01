@@ -86,7 +86,7 @@ export interface BenchExtras {
 
 const PREFIX: Record<BoardPartKind, string> = {
   resistor: 'R', led: 'LED', wire: 'W', button: 'SW', battery: 'B', capacitor: 'C', generator: 'FG',
-  diode: 'D', pot: 'RV', npn: 'Q', nmos: 'Q', regulator: 'U',
+  diode: 'D', pot: 'RV', npn: 'Q', nmos: 'Q', regulator: 'U', toggle: 'S',
 };
 /** What a new three-legged part is when it's placed. */
 const THREE_DEFAULTS: Partial<Record<BoardPartKind, Partial<BoardPart>>> = {

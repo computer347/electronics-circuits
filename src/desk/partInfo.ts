@@ -19,7 +19,7 @@ export interface PartInfo {
 
 const KIND_NAME: Record<BoardPart['kind'], string> = {
   resistor: 'Resistor', led: 'LED', wire: 'Jumper wire', button: 'Push button', battery: 'Battery', capacitor: 'Capacitor', generator: 'Function generator',
-  diode: 'Diode', pot: 'Potentiometer', npn: 'NPN transistor', nmos: 'MOSFET', regulator: 'Voltage regulator',
+  diode: 'Diode', pot: 'Potentiometer', npn: 'NPN transistor', nmos: 'MOSFET', regulator: 'Voltage regulator', toggle: 'Toggle switch',
 };
 /** What each leg of a three-legged part is, in hole order. */
 export const LEG_NAMES: Partial<Record<BoardPart['kind'], [string, string, string]>> = {
@@ -37,6 +37,7 @@ export function valueOf(p: BoardPart): string {
     case 'capacitor': return fmtF(p.farads ?? 100e-9);
     case 'battery': return `${p.volts ?? 9} V`;
     case 'button': return p.pressed ? 'pressed' : 'open';
+    case 'toggle': return p.pressed ? 'on (1)' : 'off (0)';
     case 'pot': return `${formatSI(p.ohms ?? 10000, 'Ω')} · ${Math.round((p.position ?? 0.5) * 100)} %`;
     case 'diode': case 'npn': case 'nmos': return p.marking ?? '';
     case 'regulator': return `${p.marking ?? 'LM7805'} · ${p.vout ?? 5} V`;
@@ -56,8 +57,10 @@ export function partInfo(p: BoardPart, a: BoardAnalysis): PartInfo {
   if (p.kind === 'resistor') rows.push(['Colour code', colorBands(p.ohms ?? 1000).names.slice(0, 3).join(' · ')]);
   if (ok) {
     rows.push(['Current through', formatSI(amps, 'A')]);
-    if (across !== undefined && p.kind !== 'wire') rows.push(['Voltage across', formatSI(Math.abs(across), 'V')]);
-    if (across !== undefined && p.kind !== 'wire' && amps > 0) rows.push(['Power', formatSI(Math.abs(across) * amps, 'W')]);
+    // Switches are (nearly) wires when closed: say 0 V, and skip a power figure that's just rounding.
+    const isSwitch = p.kind === 'button' || p.kind === 'toggle';
+    if (across !== undefined && p.kind !== 'wire') rows.push(['Voltage across', formatSI(legVolts(Math.abs(across)), 'V')]);
+    if (across !== undefined && p.kind !== 'wire' && !isSwitch && amps > 0) rows.push(['Power', formatSI(Math.abs(across) * amps, 'W')]);
   }
   let state: string | undefined, tone: PartInfo['tone'];
   if (p.kind === 'led') {

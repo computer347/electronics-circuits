@@ -404,6 +404,46 @@ function Button({ part, mark }: { part: BoardPart; mark?: string }) {
   );
 }
 
+/** A small slide switch: click it to flip; it stays put. ON is towards its second leg. */
+function Toggle({ part, mark }: { part: BoardPart; mark?: string }) {
+  const handlers = usePartHandlers(part);
+  const tool = useBench((s) => s.tool);
+  const a = at(part.h1), b = at(part.h2);
+  const mid: V3 = [(a[0] + b[0]) / 2, 0, (a[2] + b[2]) / 2];
+  const dx = b[0] - a[0], dz = b[2] - a[2];
+  const len = Math.hypot(dx, dz) || 1;
+  const yaw = Math.atan2(-dz, dx);
+  const on = !!part.pressed;
+  const flip = (e: ThreeEvent<PointerEvent>) => {
+    if (tool !== 'select' || e.nativeEvent.button !== 0 || useBench.getState().moving) return;
+    e.stopPropagation();
+    useBench.getState().select(part.id);
+    useBench.getState().togglePress(part.id, !on);
+  };
+  // A real slide switch is about 2.5 holes long whatever holes it's in: legs bend out to them.
+  const body = 2.2;
+  const u: V3 = [dx / len, 0, dz / len];
+  const end = (k: number): V3 => [mid[0] + u[0] * k * body * 0.4, 0.45, mid[2] + u[2] * k * body * 0.4];
+  return (
+    <group onPointerDown={flip} onContextMenu={handlers.onContextMenu}>
+      <Segment from={a} to={[a[0], 0.3, a[2]]} />
+      <Segment from={[a[0], 0.3, a[2]]} to={end(-1)} />
+      <Segment from={b} to={[b[0], 0.3, b[2]]} />
+      <Segment from={[b[0], 0.3, b[2]]} to={end(1)} />
+      <group position={[mid[0], 0, mid[2]]} rotation={[0, yaw, 0]}>
+        <mesh position={[0, 0.62, 0]}>
+          <boxGeometry args={[body, 0.36, 0.8]} />
+          <meshStandardMaterial color="#b9bdc2" metalness={0.6} roughness={0.35} emissive={mark ?? '#000'} emissiveIntensity={mark ? 0.35 : 0} />
+        </mesh>
+        <mesh position={[on ? body * 0.22 : -body * 0.22, 0.92, 0]}>
+          <boxGeometry args={[0.45, 0.3, 0.42]} />
+          <meshStandardMaterial color={on ? '#ffe800' : '#1c1c1e'} emissive={on ? '#ffe800' : '#000'} emissiveIntensity={on ? 0.6 : 0} toneMapped={false} />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
 function Battery({ part, mark, color }: { part: BoardPart; mark?: string; color: string }) {
   const handlers = usePartHandlers(part);
   const a = at(part.h1), b = at(part.h2);
@@ -592,6 +632,7 @@ export function BreadboardContents({ analysis, dynamic }: { analysis: BoardAnaly
           case 'capacitor': el = <Capacitor part={p} mark={mark} />; break;
           case 'generator': el = <Generator part={p} mark={mark} color="#ffd21f" />; break;
           case 'diode': el = <Diode part={p} mark={mark} />; break;
+          case 'toggle': el = <Toggle part={p} mark={mark} />; break;
           case 'pot': case 'npn': case 'nmos': case 'regulator': el = <ThreeLegged part={p} mark={mark} />; break;
         }
         // Parts being dragged follow the pointer as they are; everything else animates its moves.

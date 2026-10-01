@@ -5,7 +5,8 @@
  */
 import type { LevelDef } from '../levels/types';
 
-export type TaskPicture = 'led' | 'two-leds' | 'divider' | 'rc' | 'fork' | 'button' | 'cells' | 'bridge' | 'transistor';
+export type TaskPicture = 'led' | 'two-leds' | 'divider' | 'rc' | 'fork' | 'button' | 'cells' | 'bridge' | 'transistor'
+  | 'binary' | 'and' | 'or' | 'not' | 'nand';
 
 export interface TaskPage {
   label: string;
@@ -94,6 +95,41 @@ const EXTRA: Record<string, { headline: string; tip: string; picture: TaskPictur
     picture: 'transistor',
     skill: 'Switch a big load from a small current with an NPN transistor and a base resistor.',
     realLife: 'Every Arduino project with a relay, a motor or an LED strip has this: the pin drives a base through a resistor, and the transistor carries the load.',
+  },
+  'w1-01-count-in-lights': {
+    headline: 'Show 13 in binary.',
+    tip: 'Each LED is worth twice the one to its right: 8, 4, 2, 1. Add up the lit ones. And if one won’t light, measure across its resistor.',
+    picture: 'binary',
+    skill: 'Read and write numbers in binary, and find a dead bit with the meter.',
+    realLife: 'Address pins on I²C modules, DIP switches on boards and every register in a microcontroller are binary numbers you set or read like this.',
+  },
+  'w1-02-both': {
+    headline: 'Light it only when both are on.',
+    tip: 'AND means every switch on one path: in series. One open switch anywhere breaks it.',
+    picture: 'and',
+    skill: 'Build AND from switches in series and check it against its truth table.',
+    realLife: 'Safety interlocks are ANDs: a machine runs only with the guard shut and the start pressed, and two-hand controls need both hands.',
+  },
+  'w1-03-either': {
+    headline: 'Light it from either switch.',
+    tip: 'OR means two separate paths side by side: in parallel. Either one closed is enough.',
+    picture: 'or',
+    skill: 'Build OR from switches in parallel and check it against its truth table.',
+    realLife: 'Door chimes with two buttons, alarms with several sensors, any “this or that turns it on” is an OR.',
+  },
+  'w1-04-not': {
+    headline: 'Make the light do the opposite.',
+    tip: 'A pull-up resistor holds the output high. The transistor, when on, drags it low. Size the pull-up for the LED’s current.',
+    picture: 'not',
+    skill: 'Build an inverter from a transistor and a pull-up resistor, and size the pull-up.',
+    realLife: 'Pull-ups are everywhere: on I²C lines, reset pins and buttons into a microcontroller. A night light that turns on in the dark is NOT logic.',
+  },
+  'w1-05-not-both': {
+    headline: 'Dark only when both are on.',
+    tip: 'Two transistors in series pull the output down only if both conduct. The pull-up does the rest.',
+    picture: 'nand',
+    skill: 'Build a NAND gate from two transistors and a pull-up, and test all four input cases.',
+    realLife: 'NAND is the building block of chips: flash memory is literally NAND flash, and any logic can be made from NAND gates alone.',
   },
 };
 

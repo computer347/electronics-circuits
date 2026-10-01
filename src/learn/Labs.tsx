@@ -5,7 +5,8 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { formatSI } from '../lib/units';
 import { SchematicView } from '../schematic/SchematicView';
-import { BIN_OHMS, dividerLab, ledLab, ledState, ohmLab, pairLab, rcLab, type LedState } from './physics';
+import { BIN_OHMS, dividerLab, GATE_INPUTS, ledLab, ledState, logicLab, ohmLab, pairLab, rcLab, type LedState } from './physics';
+import type { Gate } from './types';
 import type { LabSpec } from './types';
 
 const nearestIndex = (values: number[], v: number) =>
@@ -255,8 +256,63 @@ function RcPlot({ reading: x, window }: { reading: ReturnType<typeof rcLab>; win
   );
 }
 
+/** A gate from real parts: flip its inputs, the lamp is what the solver says, the row lights up. */
+function LogicLab({ gate }: { gate: Gate }) {
+  const n = GATE_INPUTS[gate];
+  const [ins, setIns] = useState<boolean[]>(Array(n).fill(false));
+  const out = logicLab(gate, ins);
+  const rows = Array.from({ length: 1 << n }, (_, i) => Array.from({ length: n }, (_, k) => !!(i & (1 << (n - 1 - k)))));
+  const names = ['A', 'B'];
+  return (
+    <div className="logic-lab">
+      <div className="logic-row">
+        {ins.map((v, k) => (
+          <button key={k} className={`logic-in ${v ? 'on' : ''}`} aria-pressed={v} onClick={() => setIns(ins.map((x, j) => (j === k ? !x : x)))}>
+            {names[k]} <b>{v ? 1 : 0}</b>
+          </button>
+        ))}
+        <span className="logic-arrow">→ {gate} →</span>
+        <span className={`logic-lamp ${out.lit ? 'on' : ''}`} aria-label={out.lit ? 'lamp lit' : 'lamp dark'}>{out.lit ? 1 : 0}</span>
+      </div>
+      <table className="logic-table">
+        <thead><tr>{names.slice(0, n).map((x) => <th key={x}>{x}</th>)}<th>out</th></tr></thead>
+        <tbody>
+          {rows.map((r, i) => {
+            const here = r.every((v, k) => v === ins[k]);
+            return <tr key={i} className={here ? 'here' : ''}>{r.map((v, k) => <td key={k}>{v ? 1 : 0}</td>)}<td><b>{logicLab(gate, r).lit ? 1 : 0}</b></td></tr>;
+          })}
+        </tbody>
+      </table>
+      <p className="logic-note">LED current now: {formatSI(out.amps, 'A')}</p>
+    </div>
+  );
+}
+
+/** Four bits worth 8 4 2 1: flip them and read the number. */
+function BinaryLab() {
+  const [bits, setBits] = useState([true, true, false, true]);
+  const worth = [8, 4, 2, 1];
+  const total = bits.reduce((sum, b, i) => sum + (b ? worth[i]! : 0), 0);
+  return (
+    <div className="logic-lab">
+      <div className="logic-row">
+        {bits.map((b, i) => (
+          <button key={i} className={`logic-in bit ${b ? 'on' : ''}`} aria-pressed={b} onClick={() => setBits(bits.map((x, j) => (j === i ? !x : x)))}>
+            <b>{b ? 1 : 0}</b><small>{worth[i]}</small>
+          </button>
+        ))}
+        <span className="logic-arrow">=</span>
+        <span className="logic-lamp on wide">{total}</span>
+      </div>
+      <p className="logic-note">{bits.map((b, i) => (b ? worth[i] : null)).filter((x) => x !== null).join(' + ') || '0'} = {total}</p>
+    </div>
+  );
+}
+
 export function Lab({ spec }: { spec: LabSpec }) {
   switch (spec.kind) {
+    case 'logic': return <LogicLab gate={spec.gate} />;
+    case 'binary': return <BinaryLab />;
     case 'ohm': return <OhmLab spec={spec} />;
     case 'led': return <LedLab spec={spec} />;
     case 'pair': return <PairLab spec={spec} />;

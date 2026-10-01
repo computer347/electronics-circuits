@@ -1,21 +1,27 @@
 /**
- * Which level the desk opens, and which cards on the corkboard can be played. A level opens
- * once the one before it is passed, the same rule as the old level map.
+ * Which level the desk opens, and which cards on the corkboard can be played. Within a world a
+ * level opens once the one before it is passed. The first level of every world is always open:
+ * nothing is mandatory, so you can start World 1 without finishing World 0.
  */
-import { WORLD0 } from '../levels';
+import { ALL_LEVELS, WORLDS } from '../levels';
 import type { LevelRecord } from '../levels/progress';
 
-export const isUnlocked = (number: number, records: Record<string, LevelRecord>) =>
-  number === 1 || !!WORLD0.find((l) => l.number === number - 1 && records[l.id]);
+const worldOf = (n: number) => WORLDS.find((w) => w.number === n);
 
-/** The first level not passed yet, or null when World 0 is all done. */
+export const isUnlocked = (number: number, records: Record<string, LevelRecord>, world = 0) =>
+  number === 1 || !!worldOf(world)?.levels.find((l) => l.number === number - 1 && records[l.id]);
+
+/** The first level not passed yet, in world order, or null when everything is done. */
 export function nextLevel(records: Record<string, LevelRecord>): string | null {
-  return [...WORLD0].sort((a, b) => a.number - b.number).find((l) => !records[l.id])?.id ?? null;
+  return ALL_LEVELS.find((l) => !records[l.id])?.id ?? null;
 }
 
-/** The level after this one, if it's open. */
+/** The level after this one if it's open; after a world's last level, the next world's first. */
 export function followingLevel(id: string, records: Record<string, LevelRecord>): string | null {
-  const l = WORLD0.find((x) => x.id === id);
-  const n = l ? WORLD0.find((x) => x.number === l.number + 1) : undefined;
-  return n && isUnlocked(n.number, records) ? n.id : null;
+  const l = ALL_LEVELS.find((x) => x.id === id);
+  if (!l) return null;
+  const w = worldOf(l.world);
+  const n = w?.levels.find((x) => x.number === l.number + 1);
+  if (n) return isUnlocked(n.number, records, l.world) ? n.id : null;
+  return worldOf(l.world + 1)?.levels[0]?.id ?? null;
 }
