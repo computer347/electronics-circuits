@@ -13,6 +13,7 @@ import { useWallet } from '../jobs/wallet';
 import { ARDUINO_UNO, Board, type BoardDef } from '../parts3d/boards';
 import { BLINK, checkCoding, codingJobById, type CodingJob } from './jobs';
 import { codeOf, compile, levelAt, newNode, NODE_INFO, run, sketch, type CompileResult, type NodeKind, type Program, type ProgramNode } from './program';
+import { StudioEnvironment } from '../parts3d/common';
 
 type Lane = 'setup' | 'loop';
 const KINDS: NodeKind[] = ['pinMode', 'write', 'toggle', 'wait'];
@@ -209,6 +210,7 @@ export function CodingBench({ jobId, onExit }: { jobId: string; onExit: () => vo
           <Canvas shadows camera={{ position: [-2, 78, 52], fov: 38, near: 0.5, far: 1000 }} dpr={[1, 2]}>
             <color attach="background" args={['#4a5553']} />
             <ambientLight intensity={0.55} /><hemisphereLight args={['#ffffff', '#40505a', 0.45]} />
+        <StudioEnvironment />
             <directionalLight position={[60, 140, 80]} intensity={1.4} castShadow />
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]} receiveShadow><planeGeometry args={[400, 400]} /><meshStandardMaterial color="#5d6a66" roughness={0.95} /></mesh>
             <RunningBoard program={uploaded} since={since} />

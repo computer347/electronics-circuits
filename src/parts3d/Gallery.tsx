@@ -12,6 +12,7 @@ import { formatSI } from '../lib/units';
 import { CATALOGUE, type CatalogueEntry, type Family } from '../parts/catalogue';
 import { BOARDS, Board, tooltip, type Placed } from './boards';
 import { MODELS } from './registry';
+import { StudioEnvironment } from './common';
 
 const FAMILIES: { id: Family; name: string }[] = [
   { id: 'passive', name: 'Passives' }, { id: 'semiconductor', name: 'Semiconductors' }, { id: 'power', name: 'Power' },
@@ -53,6 +54,7 @@ export function Gallery() {
       <Canvas shadows camera={{ position: [-60, 820, 520], fov: 40, near: 1, far: 4000 }} dpr={[1, 2]} onPointerMissed={() => setPicked(null)}>
         <color attach="background" args={['#5a6570']} />
         <ambientLight intensity={0.6} />
+        <StudioEnvironment />
         <hemisphereLight args={['#ffffff', '#40505a', 0.5]} />
         <directionalLight position={[200, 500, 300]} intensity={1.6} castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-600} shadow-camera-right={600} shadow-camera-top={600} shadow-camera-bottom={-600} />
         {/* the grey cutting mat */}

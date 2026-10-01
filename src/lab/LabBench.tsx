@@ -16,6 +16,7 @@ import { BOARDS, Board, tooltip, type Placed } from '../parts3d/boards';
 import { MODELS } from '../parts3d/registry';
 import { dialVolts, LABS, labByPart, labReading, type LabSpec } from './labs';
 import { LOOKS } from './looks';
+import { StudioEnvironment } from '../parts3d/common';
 
 /**
  * Magnify a part so it fills about 60 mm of the view (an 0402 is a millimetre long), and no
@@ -112,6 +113,7 @@ export function LabBench({ part, onExit, onNext }: { part: string; onExit: () =>
       <Canvas shadows camera={{ position: [0, 90, 110], fov: 36, near: 0.5, far: 2000 }} dpr={[1, 2]}>
         <color attach="background" args={['#4a5553']} />
         <ambientLight intensity={0.6} /><hemisphereLight args={['#ffffff', '#40505a', 0.45]} />
+        <StudioEnvironment />
         <directionalLight position={[60, 140, 80]} intensity={1.4} castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-120} shadow-camera-right={120} shadow-camera-top={120} shadow-camera-bottom={-120} />
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]} receiveShadow><planeGeometry args={[500, 500]} /><meshStandardMaterial color="#5d6a66" roughness={0.95} /></mesh>
         {spec.kind === 'identify'

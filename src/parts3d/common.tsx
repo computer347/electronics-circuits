@@ -3,8 +3,10 @@
  * (markings and silkscreen) and PCB blanks. Everything is in millimetres; a model's origin is
  * the centre of its footprint on the surface it sits on (y = 0), +y up.
  */
-import { useMemo, type ReactNode } from 'react';
+import { useThree } from '@react-three/fiber';
+import { useEffect, useMemo, type ReactNode } from 'react';
 import * as THREE from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 
 export const TIN = { color: '#c9ccd2', metalness: 0.85, roughness: 0.3 } as const;
 export const GOLD = { color: '#d4af37', metalness: 0.9, roughness: 0.25 } as const;
@@ -137,4 +139,23 @@ export function silkTexture(key: string, w: number, d: number, draw: (g: CanvasR
   t.anisotropy = 8;
   texCache.set(`silk:${key}`, t);
   return t;
+}
+
+/**
+ * A soft studio for metal to reflect: three's RoomEnvironment, prefiltered once. Without an
+ * environment, metallic parts (tin legs, crystal cans, USB shields) render nearly black.
+ * Built in code, so nothing is downloaded.
+ */
+export function StudioEnvironment({ intensity = 0.3 }: { intensity?: number }) {
+  const gl = useThree((s) => s.gl);
+  const scene = useThree((s) => s.scene);
+  useEffect(() => {
+    const pmrem = new THREE.PMREMGenerator(gl);
+    const tex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    const before = scene.environment, beforeIntensity = scene.environmentIntensity;
+    scene.environment = tex;
+    scene.environmentIntensity = intensity;
+    return () => { scene.environment = before; scene.environmentIntensity = beforeIntensity; tex.dispose(); pmrem.dispose(); };
+  }, [gl, scene, intensity]);
+  return null;
 }
