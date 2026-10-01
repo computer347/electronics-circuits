@@ -97,9 +97,12 @@ World 1 builds logic from switches and transistors before it uses logic chips, s
 4. Not: a transistor inverter, with the pull-up sized by the player.
 5. Not both: NAND from two transistors.
 6. Stairwell: XOR from two changeover switches with crossed travellers.
+7. Power the chip: a 74HC00 that's dead until pins 14 and 7 are wired.
+8. Half adder: 74HC86 sum, 74HC08 carry.
+9. Remember: an SR latch from two cross-coupled NANDs (the bench now remembers gate states).
 
 Next in World 1:
 
-- Chips: a 74HC00 NAND on the breadboard. This needs DIP parts with more than three legs straddling the centre gap.
-- Half adder (XOR + AND), latches and flip-flops.
+- A clocked D flip-flop (74HC74) and a counter. These need a clock source (the signal generator) and edge-triggered state.
+- A full adder (carry in), and 2-bit addition.
 - The traffic-light FSM from SPEC.md.
