@@ -16,6 +16,7 @@ import { MODELS } from './registry';
 // Boards with a real circuit (the Uno, the DHT11) draw their copper from it.
 import '../repair/netlists';
 import { StudioEnvironment } from './common';
+import { DPR, SHADOW_MAP } from '../lib/gfx';
 
 const FAMILIES: { id: Family; name: string }[] = [
   { id: 'passive', name: 'Passives' }, { id: 'semiconductor', name: 'Semiconductors' }, { id: 'power', name: 'Power' },
@@ -54,12 +55,12 @@ export function Gallery() {
   const width = Math.max(...rows.map((r) => r.length)) * CELL;
   return (
     <div className="gallery">
-      <Canvas shadows camera={{ position: [-60, 820, 520], fov: 40, near: 1, far: 4000 }} dpr={[1, 2]} onPointerMissed={() => setPicked(null)}>
+      <Canvas frameloop="demand" shadows camera={{ position: [-60, 820, 520], fov: 40, near: 1, far: 4000 }} dpr={DPR} onPointerMissed={() => setPicked(null)}>
         <color attach="background" args={['#5a6570']} />
         <ambientLight intensity={0.6} />
         <StudioEnvironment />
         <hemisphereLight args={['#ffffff', '#40505a', 0.5]} />
-        <directionalLight position={[200, 500, 300]} intensity={1.6} castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-600} shadow-camera-right={600} shadow-camera-top={600} shadow-camera-bottom={-600} />
+        <directionalLight position={[200, 500, 300]} intensity={1.6} castShadow shadow-mapSize={SHADOW_MAP} shadow-camera-left={-600} shadow-camera-right={600} shadow-camera-top={600} shadow-camera-bottom={-600} />
         {/* the grey cutting mat */}
         <mesh position={[0, -0.2, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow><planeGeometry args={[width + 200, FAMILIES.length * CELL + 200]} /><meshStandardMaterial color="#6d747a" roughness={0.95} /></mesh>
         {rows.map((r, j) => r.map((e, i) => (
@@ -82,7 +83,7 @@ export function Gallery() {
           {picked.pins.length > 0 && <p className="gallery-pins">Pins: {picked.pins.join(' · ')}</p>}
           {board && (
             <div className="gallery-board">
-              <Canvas camera={{ position: [0, 70, 55], fov: 40 }} dpr={[1, 2]}>
+              <Canvas frameloop="demand" camera={{ position: [0, 70, 55], fov: 40 }} dpr={DPR}>
                 <color attach="background" args={['#6d747a']} />
                 <ambientLight intensity={0.7} /><directionalLight position={[30, 80, 40]} intensity={1.4} />
                 <group scale={Math.min(1.2, 70 / board.w)}><Board def={board} onHover={setHover} /></group>
@@ -108,7 +109,7 @@ function GeneratedBoard() {
     <div className="gallery-gen">
       <p className="nb-kicker">Procedural PCB · seed {seed}</p>
       <div className="gallery-board">
-        <Canvas camera={{ position: [0, 70, 50], fov: 40 }} dpr={[1, 2]}>
+        <Canvas frameloop="demand" camera={{ position: [0, 70, 50], fov: 40 }} dpr={DPR}>
           <color attach="background" args={['#6d747a']} />
           <ambientLight intensity={0.6} /><directionalLight position={[30, 80, 40]} intensity={1.3} />
           <StudioEnvironment />

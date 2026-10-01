@@ -21,6 +21,7 @@ import { NETLISTS, type PadSpot } from './netlists';
 import { repairReading, spotsOf, solveRepair, type Fitted, type RepairJob, type RepairState } from './repair';
 import { useRepair, type RepairTool } from './store';
 import { StudioEnvironment } from '../parts3d/common';
+import { DPR, SHADOW_MAP } from '../lib/gfx';
 
 const TOP = 1.6; // the PCB's top face
 const HOLD_MS = 900;
@@ -152,7 +153,7 @@ function Scene({ job, state, onHover, onHoverSpot }: {
       <ambientLight intensity={0.55} />
       <hemisphereLight args={['#ffffff', '#40505a', 0.45]} />
         <StudioEnvironment />
-      <directionalLight position={[60, 140, 80]} intensity={1.5} castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-120} shadow-camera-right={120} shadow-camera-top={120} shadow-camera-bottom={-120} />
+      <directionalLight position={[60, 140, 80]} intensity={1.5} castShadow shadow-mapSize={SHADOW_MAP} shadow-camera-left={-120} shadow-camera-right={120} shadow-camera-top={120} shadow-camera-bottom={-120} />
       <Mat />
       <group onPointerLeave={() => onPart(null)}>
         <Board def={shown} onHover={tool === 'hand' || tool === 'iron' ? onPart : undefined} />
@@ -287,7 +288,7 @@ export function RepairBench({ jobId, onExit }: { jobId: string; onExit: () => vo
 
   return (
     <div className="repair" onPointerMove={(e) => setMouse([e.clientX, e.clientY])}>
-      <Canvas shadows camera={{ position: [0, 125, 82], fov: 38, near: 0.5, far: 2000 }} dpr={[1, 2]} onPointerMissed={() => r.tool === 'hand' && r.lookAt(null)}>
+      <Canvas shadows camera={{ position: [0, 125, 82], fov: 38, near: 0.5, far: 2000 }} dpr={DPR} onPointerMissed={() => r.tool === 'hand' && r.lookAt(null)}>
         <color attach="background" args={['#4a5553']} />
         <Scene job={job} state={state} onHover={setHover} onHoverSpot={setSpot} />
         <HandPicker />

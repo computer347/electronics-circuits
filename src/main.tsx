@@ -1,16 +1,23 @@
-import { StrictMode } from 'react';
+import { lazy, StrictMode, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './app/App';
-import { Gallery } from './parts3d/Gallery';
-import { PartViewer } from './parts3d/PartViewer';
 import './app/base.css';
+
+const Gallery = lazy(() => import('./parts3d/Gallery').then((m) => ({ default: m.Gallery })));
+const PartViewer = lazy(() => import('./parts3d/PartViewer').then((m) => ({ default: m.PartViewer })));
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     {/* ?gallery opens the parts gallery, a testing page for every 3D model; ?parts the one-at-a-time viewer. */}
-    {new URLSearchParams(location.search).has('gallery') ? <Gallery /> : new URLSearchParams(location.search).has('parts') ? <PartViewer /> : <App />}
+    {new URLSearchParams(location.search).has('gallery') ? <Suspense fallback={null}><Gallery /></Suspense>
+      : new URLSearchParams(location.search).has('parts') ? <Suspense fallback={null}><PartViewer /></Suspense> : <App />}
   </StrictMode>,
 );
+
+// The service worker (production only): installable, and offline once opened.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  addEventListener('load', () => { void navigator.serviceWorker.register(`/sw.js?v=${__BUILD_ID__}`); });
+}
 
 // Dev only: expose the stores for debugging and browser tests.
 if (import.meta.env.DEV) {

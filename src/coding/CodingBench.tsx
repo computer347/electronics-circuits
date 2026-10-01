@@ -21,6 +21,7 @@ import {
   codeOf, compile, framePixels, GROUP_NAME, newNode, NODE_INFO, Runner, sketch, WAITS,
   type CompileResult, type NodeKind, type ParamSpec, type Program, type ProgramNode,
 } from './program';
+import { DPR } from '../lib/gfx';
 
 type Lane = 'setup' | 'loop';
 const KINDS = Object.keys(NODE_INFO) as NodeKind[];
@@ -290,7 +291,7 @@ export function CodingBench({ jobId, onExit }: { jobId: string; onExit: () => vo
       </div>
       <div className="coding-right">
         <div className="coding-board">
-          <Canvas shadows camera={job.module ? { position: [24, 92, 74], fov: 40, near: 0.5, far: 1000 } : { position: [-2, 78, 52], fov: 38, near: 0.5, far: 1000 }} dpr={[1, 2]}>
+          <Canvas shadows camera={job.module ? { position: [24, 92, 74], fov: 40, near: 0.5, far: 1000 } : { position: [-2, 78, 52], fov: 38, near: 0.5, far: 1000 }} dpr={DPR}>
             <color attach="background" args={['#4a5553']} />
             <ambientLight intensity={0.55} /><hemisphereLight args={['#ffffff', '#40505a', 0.45]} />
             <StudioEnvironment />

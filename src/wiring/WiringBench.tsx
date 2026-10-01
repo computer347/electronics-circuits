@@ -15,6 +15,7 @@ import { NETLISTS, type PadSpot } from '../repair/netlists';
 import { powerUp, wireColor, wiringJobById, wiringSpots, DHT11_JOB, type Wire, type WiringJob, type WiringResult } from './wiring';
 import { StudioEnvironment } from '../parts3d/common';
 import { BOARD_PIN_Y, Jumper, MODULE_PIN_Y } from './Jumper';
+import { DPR, SHADOW_MAP } from '../lib/gfx';
 
 function PinTarget({ s, y, picked, onPick, onHover }: { s: PadSpot; y: number; picked: boolean; onPick: () => void; onHover: (s: PadSpot | null) => void }) {
   const [hot, setHot] = useState(false);
@@ -98,11 +99,11 @@ export function WiringBench({ jobId, onExit }: { jobId: string; onExit: () => vo
 
   return (
     <div className="repair wiring" onPointerMove={(e) => setMouse([e.clientX, e.clientY])}>
-      <Canvas shadows camera={{ position: [4, 122, 98], fov: 38, near: 0.5, far: 2000 }} dpr={[1, 2]} onPointerMissed={() => setPicked(null)}>
+      <Canvas frameloop="demand" shadows camera={{ position: [4, 122, 98], fov: 38, near: 0.5, far: 2000 }} dpr={DPR} onPointerMissed={() => setPicked(null)}>
         <color attach="background" args={['#4a5553']} />
         <ambientLight intensity={0.55} /><hemisphereLight args={['#ffffff', '#40505a', 0.45]} />
         <StudioEnvironment />
-        <directionalLight position={[60, 140, 80]} intensity={1.4} castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-150} shadow-camera-right={150} shadow-camera-top={150} shadow-camera-bottom={-150} />
+        <directionalLight position={[60, 140, 80]} intensity={1.4} castShadow shadow-mapSize={SHADOW_MAP} shadow-camera-left={-150} shadow-camera-right={150} shadow-camera-top={150} shadow-camera-bottom={-150} />
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]} receiveShadow><planeGeometry args={[500, 500]} /><meshStandardMaterial color="#5d6a66" roughness={0.95} /></mesh>
         <Board def={boardDef} />
         <group position={[job.moduleAt[0], 0, job.moduleAt[1]]}><Board def={modDef} /></group>

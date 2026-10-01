@@ -12,6 +12,7 @@ import { reducedMotion } from './anim';
 import { TO92 } from '../parts3d/tht';
 import { Multimeter } from './assets/Multimeter';
 import type { PartId } from './notebook';
+import { DPR } from '../lib/gfx';
 
 const METAL = { color: '#c9ccd2', metalness: 0.85, roughness: 0.3 } as const;
 
@@ -182,7 +183,7 @@ export function PartModel({ part, labels }: { part: PartId; labels: string[] }) 
   const layer = useRef<HTMLDivElement>(null);
   return (
     <div className="part-model">
-      <Canvas camera={{ position: [0, -0.2, 11], fov: 38 }} dpr={[1, 2]} gl={{ alpha: true }}>
+      <Canvas camera={{ position: [0, -0.2, 11], fov: 38 }} dpr={DPR} gl={{ alpha: true }}>
         <ambientLight intensity={0.9} color="#fff4e6" />
         <directionalLight position={[3, 5, 6]} intensity={1.6} />
         <directionalLight position={[-4, 2, -3]} intensity={0.5} color="#bcd8ff" />

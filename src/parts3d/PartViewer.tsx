@@ -16,6 +16,7 @@ import { generateBoard } from './pcbgen';
 import { MODELS } from './registry';
 // Boards with a real circuit (the Uno, the DHT11) draw their copper from it.
 import '../repair/netlists';
+import { DPR, SHADOW_MAP } from '../lib/gfx';
 
 interface Item { id: string; group: string; name: string; note?: string; board?: BoardDef; render?: () => ReactNode }
 
@@ -65,12 +66,12 @@ export function PartViewer() {
 
   return (
     <div className="gallery">
-      <Canvas shadows camera={{ position: [0, 60, 60], fov: 35, near: 0.1, far: 2000 }} dpr={[1, 2]}>
+      <Canvas frameloop="demand" shadows camera={{ position: [0, 60, 60], fov: 35, near: 0.1, far: 2000 }} dpr={DPR}>
         <color attach="background" args={['#5a6570']} />
         <ambientLight intensity={0.6} />
         <StudioEnvironment />
         <hemisphereLight args={['#ffffff', '#40505a', 0.5]} />
-        <directionalLight position={[60, 120, 80]} intensity={1.6} castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-80} shadow-camera-right={80} shadow-camera-top={80} shadow-camera-bottom={-80} />
+        <directionalLight position={[60, 120, 80]} intensity={1.6} castShadow shadow-mapSize={SHADOW_MAP} shadow-camera-left={-80} shadow-camera-right={80} shadow-camera-top={80} shadow-camera-bottom={-80} />
         <mesh position={[0, -0.05, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow><planeGeometry args={[600, 600]} /><meshStandardMaterial color="#6d747a" roughness={0.95} /></mesh>
         <gridHelper args={[200, 20, '#808890', '#737a80']} position={[0, 0, 0]} />
         <Bounds key={id} fit clip margin={1.3}>

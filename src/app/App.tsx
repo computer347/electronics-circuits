@@ -1,26 +1,62 @@
-import { DeskView } from '../desk/DeskView';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { clientJobById } from '../jobs/client';
-import { ClientIntro, ClientOverlay } from '../jobs/ClientScene';
 import { useClient } from '../jobs/store';
 import { useDesk } from '../desk/store';
-import { CodingBench } from '../coding/CodingBench';
-import { LabBench } from '../lab/LabBench';
-import { RepairBench } from '../repair/RepairBench';
-import { WiringBench } from '../wiring/WiringBench';
 import { FrontPage, type FrontChoice } from './FrontPage';
 import { useNav } from './nav';
-import { Workshop } from './Workshop';
+
+// Every screen but the front page loads when it's first opened (three.js and the 3D models
+// with it), so the front page comes up fast. The desk is fetched in the background as soon as
+// the front page is idle, so Continue is instant.
+const loadDesk = () => import('../desk/DeskView');
+const DeskView = lazy(() => loadDesk().then((m) => ({ default: m.DeskView })));
+const Workshop = lazy(() => import('./Workshop').then((m) => ({ default: m.Workshop })));
+const LabBench = lazy(() => import('../lab/LabBench').then((m) => ({ default: m.LabBench })));
+const RepairBench = lazy(() => import('../repair/RepairBench').then((m) => ({ default: m.RepairBench })));
+const CodingBench = lazy(() => import('../coding/CodingBench').then((m) => ({ default: m.CodingBench })));
+const WiringBench = lazy(() => import('../wiring/WiringBench').then((m) => ({ default: m.WiringBench })));
+const ClientIntro = lazy(() => import('../jobs/ClientScene').then((m) => ({ default: m.ClientIntro })));
+const ClientOverlay = lazy(() => import('../jobs/ClientScene').then((m) => ({ default: m.ClientOverlay })));
+
+/** What shows for the moment a screen's code is still loading. */
+function Loading() {
+  return <div className="screen-loading" role="status"><span>Loading…</span></div>;
+}
+
+export function App() {
+  const screen = useNav((s) => s.screen);
+  return (
+    <>
+      <Suspense fallback={<Loading />}><Screens /></Suspense>
+      {screen !== 'home' && screen !== 'workshop' && <RotateTip />}
+    </>
+  );
+}
+
+const TIP_KEY = 'signal-path.rotate-tip.v1';
+/** On a phone held upright (CSS decides), a one-line tip to turn it sideways for the 3D benches. */
+function RotateTip() {
+  const [gone, setGone] = useState(() => { try { return localStorage.getItem(TIP_KEY) === '1'; } catch { return false; } });
+  if (gone) return null;
+  const close = () => { setGone(true); try { localStorage.setItem(TIP_KEY, '1'); } catch { /* private mode */ } };
+  return <div className="rotate-tip" role="note">↻ Turn your phone sideways for the bench <button onClick={close}>OK</button></div>;
+}
 
 /**
  * The riso front page, the lab bench where the campaign is played, and the workshop with its
  * own benches. Continue, Play, Learn and Practice open the desk somewhere (the next level, the
  * level map, the notebook's Theory, its practice page); Workshop opens the activity jobs.
  */
-export function App() {
+function Screens() {
   const screen = useNav((s) => s.screen);
   const job = useNav((s) => s.job);
   const go = useNav((s) => s.go);
   const clientOn = useClient((s) => !!s.job);
+  useEffect(() => {
+    if (screen !== 'home') return;
+    const idle = (window as { requestIdleCallback?: (f: () => void) => number }).requestIdleCallback ?? ((f: () => void) => window.setTimeout(f, 1200));
+    idle(() => { void loadDesk(); });
+  }, [screen]);
   const choose = (c: FrontChoice) => {
     if (c === 'workshop') { go('workshop'); return; }
     const startOn = c === 'play' ? 'map' : c === 'learn' ? 'theory' : c === 'practice' ? 'practice' : null;

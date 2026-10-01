@@ -4,6 +4,7 @@
  */
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
+import { SHADOW_MAP } from '../../lib/gfx';
 
 const METAL = { color: '#2d2a27', roughness: 0.38, metalness: 0.55 } as const;
 
@@ -68,7 +69,7 @@ export function Lamp({ base, head, aim, intensity }: { base: THREE.Vector3; head
         distance={3}
         decay={1.2}
         castShadow
-        shadow-mapSize={[2048, 2048]}
+        shadow-mapSize={SHADOW_MAP}
         shadow-bias={-0.0004}
         shadow-radius={6}
         shadow-camera-near={0.05}

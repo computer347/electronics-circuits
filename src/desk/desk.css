@@ -317,6 +317,8 @@
 .cw-map-place:hover circle { fill: var(--r-yellow); }
 
 /* ------------------------------------------------------------ parts gallery (?gallery) */
+.screen-loading { position: fixed; inset: 0; display: grid; place-items: center; background: var(--r-paper); color: var(--r-ink); font: 700 14px var(--r-mono); }
+.screen-loading span { padding: 8px 14px; box-shadow: 3px 3px 0 var(--r-blue); background: #fffdf6; }
 .gallery { position: fixed; inset: 0; background: #5a6570; font-family: var(--r-mono); }
 .gallery-head { position: fixed; left: 16px; top: 12px; margin: 0; padding: 6px 10px; background: var(--r-paper); color: var(--r-ink); font-size: 13px; font-weight: 700; box-shadow: 3px 3px 0 var(--r-blue); }
 .gallery .part-tag { font-size: 10px; padding: 1px 4px; max-width: 70px; overflow: hidden; text-overflow: ellipsis; }
@@ -355,10 +357,10 @@
 }
 
 /* ------------------------------------------------------------ workshop */
-.riso.workshop { grid-template-rows: auto auto auto 1fr; align-content: start; overflow: auto; }
+.riso.workshop { grid-template-rows: auto auto auto 1fr; grid-template-columns: minmax(0, 1fr); align-content: start; overflow: auto; }
 .workshop .desk-back { position: relative; top: 0; left: 0; justify-self: start; background: var(--r-ink); color: var(--r-paper); }
 .workshop-title { margin: 8px 0 0; font-family: var(--r-display); font-weight: 400; font-size: clamp(56px, 11vw, 140px); line-height: 0.9; color: var(--r-pink); text-shadow: 0.03em 0.03em 0 var(--r-blue); }
-.workshop-cards { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 18px; max-width: 1040px; align-content: start; }
+.workshop-cards { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(230px, 100%), 1fr)); gap: 18px; max-width: 1040px; align-content: start; }
 .workshop-cards button { position: relative; display: grid; gap: 6px; align-content: start; width: 100%; height: 100%; padding: 18px 16px 16px; border: 0; border-radius: 0; text-align: left; background: #fffdf6; color: var(--r-ink); font-family: var(--r-mono); font-size: 13px; line-height: 1.45; box-shadow: 5px 5px 0 var(--r-blue); cursor: pointer; }
 .workshop-cards button:hover:not(:disabled) { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 var(--r-pink); }
 .workshop-cards b { font-family: var(--r-display); font-weight: 400; font-size: 28px; line-height: 1; }
@@ -520,7 +522,7 @@
 .lab-index h2 { margin: 0 0 6px; font-family: var(--r-display); font-weight: 400; font-size: 44px; color: var(--r-blue); }
 .lab-index h2 small { display: block; font-family: var(--r-mono); font-size: 13px; color: var(--r-ink); }
 .lab-family h3 { margin: 14px 0 6px; font-family: var(--r-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--r-pink); }
-.lab-family ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+.lab-family ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr)); gap: 8px; }
 .lab-family button { display: grid; gap: 2px; width: 100%; padding: 8px 10px; border: 0; border-radius: 0; text-align: left; background: #fffdf6; color: var(--r-ink); font-family: var(--r-mono); font-size: 11px; box-shadow: 3px 3px 0 rgba(28, 10, 58, 0.25); cursor: pointer; }
 .lab-family button b { font-size: 13px; }
 .lab-family button span { color: #5b5068; }
@@ -576,3 +578,15 @@
 .gallery-gen { position: fixed; right: 16px; top: 16px; z-index: 20; width: 360px; padding: 12px; background: var(--r-paper); box-shadow: 5px 5px 0 var(--r-pink); font-family: var(--r-mono); }
 .gallery-gen .gallery-board { height: 240px; }
 .gallery-gen .desk-chip { font-size: 16px; padding: 6px 12px; margin-top: 6px; }
+
+/* Phones: the part / job card stays small and scrolls, so the tray at the bottom never covers it. */
+@media (max-width: 700px) {
+  .lab .repair-card, .wiring .repair-card { max-height: 34vh; }
+  .lab-ask { font-size: 18px; }
+}
+/* Phones held upright: the 3D benches are wide; suggest turning sideways (once, dismissible). */
+.rotate-tip { display: none; }
+@media (pointer: coarse) and (orientation: portrait) and (max-width: 600px) {
+  .rotate-tip { position: fixed; z-index: 60; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; gap: 10px; align-items: center; padding: 8px 12px; background: var(--r-ink); color: var(--r-paper); font: 700 12px var(--r-mono); box-shadow: 3px 3px 0 var(--r-pink); white-space: nowrap; }
+  .rotate-tip button { border: 0; border-radius: 0; padding: 2px 8px; background: var(--r-paper); color: var(--r-ink); font: 700 12px var(--r-mono); }
+}

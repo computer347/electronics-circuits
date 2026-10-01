@@ -17,6 +17,7 @@ import { MODELS } from '../parts3d/registry';
 import { dialVolts, LABS, labByPart, labReading, type LabSpec } from './labs';
 import { LOOKS } from './looks';
 import { StudioEnvironment } from '../parts3d/common';
+import { DPR, SHADOW_MAP } from '../lib/gfx';
 
 /**
  * Magnify a part so it fills about 60 mm of the view (an 0402 is a millimetre long), and no
@@ -110,11 +111,11 @@ export function LabBench({ part, onExit, onNext }: { part: string; onExit: () =>
 
   return (
     <div className="repair lab" onPointerMove={(e) => setMouse([e.clientX, e.clientY])}>
-      <Canvas shadows camera={{ position: [-16, 104, 132], fov: 36, near: 0.5, far: 2000 }} dpr={[1, 2]}>
+      <Canvas frameloop="demand" shadows camera={{ position: [-16, 104, 132], fov: 36, near: 0.5, far: 2000 }} dpr={DPR}>
         <color attach="background" args={['#4a5553']} />
         <ambientLight intensity={0.6} /><hemisphereLight args={['#ffffff', '#40505a', 0.45]} />
         <StudioEnvironment />
-        <directionalLight position={[60, 140, 80]} intensity={1.4} castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-120} shadow-camera-right={120} shadow-camera-top={120} shadow-camera-bottom={-120} />
+        <directionalLight position={[60, 140, 80]} intensity={1.4} castShadow shadow-mapSize={SHADOW_MAP} shadow-camera-left={-120} shadow-camera-right={120} shadow-camera-top={120} shadow-camera-bottom={-120} />
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]} receiveShadow><planeGeometry args={[500, 500]} /><meshStandardMaterial color="#5d6a66" roughness={0.95} /></mesh>
         {spec.kind === 'identify'
           ? <PickBoard board={spec.board} picked={picked} onHover={setHover} onPick={(p) => {

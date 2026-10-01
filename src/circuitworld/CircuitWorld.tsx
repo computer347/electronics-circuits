@@ -20,6 +20,7 @@ import { CROUCH_EYE, EYE, spawnWalker, standable, step, type Walker } from './wa
 import { routeTo, targets, type Target } from './interact';
 import { WorldView } from './WorldView';
 import { buildWorld, floorsAt, linkPoint, linkYaw, type Link, type World } from './world';
+import { DPR, SHADOW_MAP } from '../lib/gfx';
 
 const CONTROLS_KEY = 'signal-path.world.controls.v1';
 const seen = () => { try { return localStorage.getItem(CONTROLS_KEY) === '1'; } catch { return true; } };
@@ -359,11 +360,11 @@ export function CircuitWorld({ onCleared, onGiveUp, rail }: {
 
   return (
     <div className={`cw ${landed ? 'cw-in' : ''}`}>
-      <Canvas className="cw-canvas" shadows camera={{ fov: 78, near: 0.05, far: 300 }} dpr={[1, 2]}>
+      <Canvas className="cw-canvas" shadows camera={{ fov: 78, near: 0.05, far: 300 }} dpr={DPR}>
         <Fog clear={flowing} />
         <ambientLight intensity={0.6} color="#fff6ea" />
         <hemisphereLight args={['#ffffff', '#6a8fb0', 0.55]} />
-        <directionalLight position={[20, 40, 12]} intensity={1} castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-60} shadow-camera-right={60} shadow-camera-top={60} shadow-camera-bottom={-60} />
+        <directionalLight position={[20, 40, 12]} intensity={1} castShadow shadow-mapSize={SHADOW_MAP} shadow-camera-left={-60} shadow-camera-right={60} shadow-camera-top={60} shadow-camera-bottom={-60} />
         <WorldView world={world} turning={turning} flowing={flowing} pressed={pressed} />
         <PanelProp world={world} armed={clear && !flowing} />
         <Player world={world} shared={shared} />

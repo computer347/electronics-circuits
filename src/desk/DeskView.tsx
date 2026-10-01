@@ -35,6 +35,7 @@ import { TAGS, useHover } from './hover';
 import { currentStep, mainAction, railStates, STEP_OBJECT, STEPS, glowing, type StepId } from './steps';
 import { useDesk, useLoop } from './store';
 import './desk.css';
+import { DPR } from '../lib/gfx';
 
 /** What the 3D parts box can hold. */
 const BOX: BoxItem[] = ['resistor', 'led', 'capacitor', 'wire'];
@@ -275,7 +276,7 @@ export function DeskView({ onMenu }: { onMenu: () => void }) {
   return (
     <div className={`desk ${desk.focus || desk.phase !== 'desk' ? 'dimmed' : ''}`}>
       {fonts && (
-        <Canvas className="desk-canvas" shadows camera={{ fov: 42, near: 0.005, far: 20, position: [0, 0.7, 0.4] }} dpr={[1, 2]}
+        <Canvas className="desk-canvas" shadows camera={{ fov: 42, near: 0.005, far: 20, position: [0, 0.7, 0.4] }} dpr={DPR}
           onPointerMissed={() => useHover.getState().set(null)}>
           <LabelLayer.Provider value={labelLayer}>
           <DeskScene

@@ -31,6 +31,12 @@ npm run build    # typecheck + production build
 - `src/drills/` exam drill generators with worked solutions (the notebook's Math pages).
 - `src/schematic/` 2D schematics (used by labs and drills).
 - Animate with `clip-path`, never `transform`, on anything that contains an R3F canvas: canvases measure their real size.
+- Performance:
+  - Every screen except the front page is `React.lazy` (`App.tsx`), and the desk is prefetched when the front page is idle.
+  - Vendor chunks are set in `vite.config.ts` (`advancedChunks`: react+zustand / three / r3f / gsap). Keep zustand out of the 3D chunks, or the front page pulls in three.js.
+  - Canvases take `DPR` and `SHADOW_MAP` from `src/lib/gfx.ts`, which are lower on touch devices.
+  - Scenes that never animate use `frameloop="demand"`.
+- PWA: `public/manifest.webmanifest` and `public/sw.js`. The build writes `precache.json`, and the service worker is registered as `/sw.js?v=<build id>` (production only). It caches everything for offline play.
 - Dev only: `window.__signalPath` exposes the stores (`useBench`, `useDesk`, `useSession`, `useScope`, `bench`, `useLive`).
 
 ## Working rules (Mike's)
