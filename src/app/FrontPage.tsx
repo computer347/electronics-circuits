@@ -2,7 +2,7 @@
  * The front page: a landing page that looks like the game. The first screen is the lab bench
  * itself (a capture of the desk under the lamp) with the title and one obvious button (Start
  * playing, or Continue with the level you're on). Below it, sections laid on the game's own
- * surfaces: the four steps of a level on the green cutting mat, the two worlds on the cork
+ * surfaces: the four steps of a job (read, build, test, sell) on the green cutting mat, the two worlds on the cork
  * board, the lab book on notebook paper, the workshop and career on the dark bench, then the
  * button again. Keys: Enter starts or continues, 1–5 open the menu.
  */
@@ -28,7 +28,7 @@ const STEPS = [
   { img: 'notebook', title: 'Read the task', text: 'Open the lab book: the client’s story, a datasheet and a goal with real numbers, plus the theory in technical and plain words.' },
   { img: 'board', title: 'Build it', text: 'Place resistors, LEDs, switches, transistors and chips on a breadboard that behaves like the real one, legs, strips and all.' },
   { img: 'meter', title: 'Test it', text: 'Probe with the multimeter and the scope. A real circuit simulator works out every volt and milliamp.' },
-  { img: 'walk', title: 'Walk it', text: 'Shrink down and travel the loop you built as an electron. Voltage is height: climb at the battery, roll down through the parts.' },
+  { img: 'sell', title: 'Sell it', text: 'Hand it back to the customer and get paid for the parts and your time. Spend it on better tools that open bigger jobs.' },
 ] as const;
 
 /** A readout like the multimeter's LCD. */
@@ -70,7 +70,7 @@ export function FrontPage({ onChoose }: { onChoose: (c: FrontChoice) => void }) 
         <div className="lp-hero-text">
           <p className="lp-kicker">A lab-bench game about electronics</p>
           <h1 className="lp-title"><span>SIGNAL</span><span>PATH</span></h1>
-          <p className="lp-tag">Build real circuits on a real-looking bench, measure them like an engineer, then shrink down and walk the path as an electron.</p>
+          <p className="lp-tag">Fix and build circuits for real customers on a real-looking bench. Measure like an engineer, get paid, and grow from hobbyist to Master Engineer.</p>
           <Cta />
           <nav className="lp-menu" aria-label="Main menu">
             {CHOICES.map((c) => <button key={c.id} onClick={() => onChoose(c.id)}><kbd>{c.key}</kbd> {c.label}</button>)}
@@ -173,7 +173,7 @@ export function FrontPage({ onChoose }: { onChoose: (c: FrontChoice) => void }) 
 
       {/* ---------------------------------------------------------------- under the lamp */}
       <footer className="lp-end">
-        <p className="lp-end-line">You are an electron.<br />Build the path, then walk it.</p>
+        <p className="lp-end-line">Build it right. Get paid.<br />Grow your own lab.</p>
         <Cta end />
         <p className="lp-small">Enter to {started ? 'continue' : 'start'} · 1–5 for the menu · Install it from your browser to play offline</p>
       </footer>
