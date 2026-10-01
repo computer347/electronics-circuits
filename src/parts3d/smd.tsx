@@ -56,11 +56,12 @@ export function SOT23({ marking = 'J6' }: { marking?: string }) {
   );
 }
 
-export function SOT223({ marking = 'AMS1117' }: { marking?: string }) {
+/** SOT-223 regulator: the wide tab on one side, three legs on the other; `volts` is printed under the part number. */
+export function SOT223({ marking = 'AMS1117', volts = '3.3' }: { marking?: string; volts?: string }) {
   return (
     <group>
       <mesh position={[0, 0.9, 0]} castShadow><boxGeometry args={[6.5, 1.6, 3.5]} /><meshStandardMaterial {...EPOXY} /></mesh>
-      <mesh position={[0, 1.71, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[5.5, 2.4]} /><meshBasicMaterial map={printTexture([marking, '3.3'], { size: 40, w: 256, h: 112 })} transparent /></mesh>
+      <mesh position={[0, 1.71, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[5.5, 2.4]} /><meshBasicMaterial map={printTexture([marking, volts], { size: 40, w: 256, h: 112 })} transparent /></mesh>
       {/* the wide tab on one side, three legs on the other */}
       <GullWing at={[0, -1.75]} dir={[0, -1]} w={3} len={1.8} h={0.8} />
       {[-2.3, 0, 2.3].map((x) => <GullWing key={x} at={[x, 1.75]} dir={[0, 1]} w={0.7} len={1.8} h={0.8} />)}

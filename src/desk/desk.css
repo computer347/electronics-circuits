@@ -73,7 +73,7 @@
 .desk-link:hover { color: var(--r-yellow); }
 .desk-hint { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 12; display: flex; gap: 14px; align-items: center; }
 .desk-pict { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--r-paper); color: var(--r-ink); font-size: 13px; font-weight: 700; box-shadow: 3px 3px 0 var(--r-blue); }
-.desk-pict .dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; }
+.desk-pict .dot, .lab-probe .dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; }
 .dot.pink { background: var(--r-pink); } .dot.red { background: #d8322c; } .dot.black { background: #111; margin-left: 8px; }
 .desk-reading { padding: 6px 14px; background: #b9c7a3; color: #1d2418; font-family: var(--r-mono); font-weight: 700; font-size: 26px; box-shadow: 3px 3px 0 var(--r-pink); }
 .desk-chip { border: 0; border-radius: 0; padding: 10px 16px; background: var(--r-yellow); color: var(--r-ink); font-family: var(--r-display); font-size: 20px; letter-spacing: 0.03em; box-shadow: 3px 3px 0 var(--r-pink); }
@@ -492,3 +492,44 @@
 .client-slip td + td { text-align: right; font-weight: 700; }
 .client-slip tr.total td { border-top: 3px solid var(--r-ink); border-bottom: 0; font-family: var(--r-display); font-size: 22px; }
 @media (max-width: 720px) { .client-banner { top: 70px; font-size: 11px; gap: 6px; } }
+
+/* ------------------------------------------------------------ parts lab */
+.lab-index { position: relative; z-index: 6; max-width: 1040px; margin-top: 18px; }
+.lab-index h2 { margin: 0 0 6px; font-family: var(--r-display); font-weight: 400; font-size: 44px; color: var(--r-blue); }
+.lab-index h2 small { display: block; font-family: var(--r-mono); font-size: 13px; color: var(--r-ink); }
+.lab-family h3 { margin: 14px 0 6px; font-family: var(--r-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--r-pink); }
+.lab-family ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+.lab-family button { display: grid; gap: 2px; width: 100%; padding: 8px 10px; border: 0; border-radius: 0; text-align: left; background: #fffdf6; color: var(--r-ink); font-family: var(--r-mono); font-size: 11px; box-shadow: 3px 3px 0 rgba(28, 10, 58, 0.25); cursor: pointer; }
+.lab-family button b { font-size: 13px; }
+.lab-family button span { color: #5b5068; }
+.lab-family button.done { box-shadow: 3px 3px 0 var(--r-blue); }
+.lab-family button.done span { color: var(--r-blue); font-weight: 700; }
+.lab-family button:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--r-pink); }
+.lab .repair-card { max-height: calc(100vh - 100px); }
+.lab-facts { margin: 0 0 8px; padding-left: 1.1em; }
+.lab-facts li { margin-bottom: 3px; }
+.lab-label { padding: 5px 8px; background: #fff27a; font-weight: 700; }
+.lab-legs { padding: 3px 8px; background: rgba(241, 236, 225, 0.92); color: var(--r-ink); font-family: var(--r-mono); font-size: 12px; font-weight: 700; white-space: nowrap; box-shadow: 2px 2px 0 var(--r-blue); }
+.lab-legs small { font-weight: 400; color: #5b5068; }
+.lab-tray { max-width: min(760px, calc(100vw - 32px)); }
+.lab-ask { margin: 0; padding: 8px 12px; background: var(--r-paper); color: var(--r-ink); font-family: var(--r-display); font-size: 22px; letter-spacing: 0.02em; text-align: center; box-shadow: 4px 4px 0 var(--r-pink); }
+.lab-probe { display: inline-flex; align-items: center; gap: 4px; padding: 4px 6px; background: var(--r-paper); box-shadow: 2px 2px 0 var(--r-blue); }
+.lab-probe button { border: 0; border-radius: 0; padding: 3px 7px; background: rgba(28, 10, 58, 0.07); color: var(--r-ink); font-family: var(--r-mono); font-size: 12px; font-weight: 700; }
+.lab-probe button.on { background: var(--r-yellow); }
+.lab-answers { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.lab-answers .desk-chip { font-size: 18px; padding: 8px 14px; }
+.lab-answers .desk-chip:disabled { opacity: 0.5; transform: none; }
+.lab-dial { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--r-paper); color: var(--r-ink); font-weight: 700; box-shadow: 3px 3px 0 var(--r-blue); }
+.lab-dial input { width: 220px; accent-color: var(--r-pink); }
+.lab-verdict { margin: 0; padding: 8px 12px; color: var(--r-ink); font-size: 13px; line-height: 1.45; box-shadow: 3px 3px 0 var(--r-blue); }
+.lab-verdict.right { background: #c9f2d6; }
+.lab-verdict.wrong { background: #ffd9e9; }
+.lab-verdict b { display: block; font-family: var(--r-display); font-weight: 400; font-size: 20px; }
+.lab-row { justify-content: center; }
+.lab-row .nb-link { color: var(--r-paper); }
+.lab-next.desk-main { position: static; }
+.lab-facts-later { font-style: italic; color: #5b5068; }
+.lab-meter { position: relative; }
+.lab-legs-note { flex-basis: 100%; order: 3; text-align: center; color: var(--r-paper); font-size: 11px; }
+.lab-meter .desk-reading, .lab-meter .meter-modes { order: 4; }
+.lab-probe .dot.black { margin-left: 0; border: 2px solid #777; }

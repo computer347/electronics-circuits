@@ -48,7 +48,7 @@ function PlacedModel({ p, onHover }: { p: Placed; onHover?: (p: Placed | null) =
     case 'chipC': m = <ChipCap size={(q.size ?? '0603') as ChipSize} />; break;
     case 'chipLed': m = <ChipLed size={(q.size ?? '0603') as ChipSize} color={q.color ?? '#39d86a'} lit={!!q.lit} />; break;
     case 'sot23': m = <SOT23 marking={q.marking} />; break;
-    case 'sot223': m = <SOT223 marking={q.marking} />; break;
+    case 'sot223': m = <SOT223 marking={q.marking} volts={q.volts} />; break;
     case 'soic8': m = <SOIC8 marking={q.marking} />; break;
     case 'qfp': m = <QFP n={q.n} size={q.size} marking={q.marking} />; break;
     case 'crystal': m = <Crystal mhz={q.mhz} />; break;
@@ -196,7 +196,7 @@ export const ARDUINO_UNO: BoardDef = {
     { id: 'U_MCU', kind: 'qfp', at: [4, 2], rot: 45, name: 'ATmega328P microcontroller', props: { n: 32, size: 7, marking: ['ATMEGA', '328P'] } },
     { id: 'U_USB', kind: 'qfp', at: [-14.5, -13], name: 'ATmega16U2 (USB to serial)', props: { n: 32, size: 5, marking: ['16U2'] } },
     { id: 'Y1', kind: 'crystal', at: [-7, 8], name: 'Crystal 16 MHz', value: { amount: 16e6, unit: 'Hz' }, props: { mhz: '16.000' } },
-    { id: 'U_REG', kind: 'sot223', at: [-17, 16], name: '5 V regulator', props: { marking: 'NCP1117' } },
+    { id: 'U_REG', kind: 'sot223', at: [-17, 16], name: '5 V regulator', props: { marking: 'NCP1117', volts: '5.0' } },
     { id: 'C_IN', kind: 'elec', at: [-19.5, 7], name: 'Electrolytic 47 µF', value: { amount: 47e-6, unit: 'F', tol: 0.2 }, props: { uF: 47, volts: 25, scale: 0.55 } },
     { id: 'C_OUT', kind: 'elec', at: [-14.5, 7], name: 'Electrolytic 47 µF', value: { amount: 47e-6, unit: 'F', tol: 0.2 }, props: { uF: 47, volts: 25, scale: 0.55 } },
     { id: 'SW_RST', kind: 'button', at: [-27, -23], name: 'Reset button' },

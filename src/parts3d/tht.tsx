@@ -37,12 +37,13 @@ export function ResistorTHT({ ohms = 330 }: { ohms?: number }) {
   );
 }
 
-export function DiodeTHT({ kind = '1N4148' }: { kind?: '1N4148' | '1N4007' }) {
+/** Axial diode, cathode (the band) at +x. `band={false}` for one whose band has worn off. */
+export function DiodeTHT({ kind = '1N4148', band = true }: { kind?: '1N4148' | '1N4007'; band?: boolean }) {
   const glass = kind === '1N4148';
   return (
     <Axial len={glass ? 3.8 : 5.2} r={glass ? 0.9 : 1.35} body={glass ? '#e0703a' : '#1c1c1e'} span={glass ? 7.62 : 10.16}>
       {/* the cathode band */}
-      <mesh position={[glass ? 1.2 : 1.8, 0, 0]} rotation={[0, 0, Math.PI / 2]}><cylinderGeometry args={[glass ? 0.93 : 1.38, glass ? 0.93 : 1.38, 0.5, 20]} /><meshStandardMaterial color={glass ? '#111' : '#c9ccd2'} roughness={0.5} /></mesh>
+      {band && <mesh position={[glass ? 1.2 : 1.8, 0, 0]} rotation={[0, 0, Math.PI / 2]}><cylinderGeometry args={[glass ? 0.93 : 1.38, glass ? 0.93 : 1.38, 0.5, 20]} /><meshStandardMaterial color={glass ? '#111' : '#c9ccd2'} roughness={0.5} /></mesh>}
     </Axial>
   );
 }
@@ -61,7 +62,8 @@ export function CeramicCap({ code = '104' }: { code?: string }) {
   );
 }
 
-export function Electrolytic({ uF = 100, volts = 16 }: { uF?: number; volts?: number }) {
+/** Radial electrolytic: + leg at −x, − leg at +x under the stripe. `loose` gives it its full legs (− shorter). */
+export function Electrolytic({ uF = 100, volts = 16, loose = false }: { uF?: number; volts?: number; loose?: boolean }) {
   return (
     <group>
       <mesh position={[0, 6.5, 0]} castShadow><cylinderGeometry args={[2.5, 2.5, 11, 32]} /><meshStandardMaterial color="#2f6fc0" roughness={0.45} /></mesh>
@@ -69,21 +71,25 @@ export function Electrolytic({ uF = 100, volts = 16 }: { uF?: number; volts?: nu
       <mesh position={[0, 6.5, 0]}><cylinderGeometry args={[2.52, 2.52, 10.9, 32, 1, true, Math.PI * 0.35, Math.PI * 0.45]} /><meshStandardMaterial color="#d6dde6" roughness={0.5} side={2} /></mesh>
       <mesh position={[0, 12.02, 0]}><cylinderGeometry args={[2.4, 2.4, 0.05, 32]} /><meshStandardMaterial {...TIN} /></mesh>
       <mesh position={[2.53, 6.5, 0]} rotation={[0, Math.PI / 2, 0]}><planeGeometry args={[3, 5]} /><meshBasicMaterial map={printTexture([`${uF}µF`, `${volts}V`], { size: 44, w: 128, h: 200, fg: '#e8eef6' })} transparent /></mesh>
-      <Leg x={-1} y0={1} y1={0} r={0.25} />
-      <Leg x={1} y0={1} y1={0} r={0.25} />
+      <Leg x={-1} y0={1} y1={loose ? -14 : 0} r={0.25} />
+      <Leg x={1} y0={1} y1={loose ? -12 : 0} r={0.25} />
     </group>
   );
 }
 
-export function LedTHT({ color = 'red', lit = false }: { color?: string; lit?: boolean }) {
+/**
+ * 5 mm LED: anode (the long leg) at −x, cathode at +x with the flat on the rim beside it.
+ * `trimmed` cuts both legs to the same length, as they are once a part has been used.
+ */
+export function LedTHT({ color = 'red', lit = false, trimmed = false }: { color?: string; lit?: boolean; trimmed?: boolean }) {
   const c = LED_HEX[color] ?? color;
   return (
     <group>
       <mesh position={[0, 5.2, 0]}><cylinderGeometry args={[2.5, 2.5, 5.4, 28]} /><meshPhysicalMaterial color={c} transparent opacity={0.82} roughness={0.15} emissive={c} emissiveIntensity={lit ? 1.5 : 0} /></mesh>
       <mesh position={[0, 7.9, 0]}><sphereGeometry args={[2.5, 28, 14, 0, Math.PI * 2, 0, Math.PI / 2]} /><meshPhysicalMaterial color={c} transparent opacity={0.82} roughness={0.15} emissive={c} emissiveIntensity={lit ? 1.5 : 0} /></mesh>
-      {/* rim with the flat on the cathode side */}
-      <mesh position={[0, 2.7, 0]}><cylinderGeometry args={[2.9, 2.9, 1, 28, 1, false, 0.5, Math.PI * 2 - 1]} /><meshPhysicalMaterial color={c} transparent opacity={0.85} roughness={0.2} /></mesh>
-      <Leg x={-1.27} y0={2.2} y1={-4} r={0.25} />
+      {/* rim, with the flat on the cathode (+x) side */}
+      <mesh position={[0, 2.7, 0]}><cylinderGeometry args={[2.9, 2.9, 1, 28, 1, false, Math.PI / 2 + 0.5, Math.PI * 2 - 1]} /><meshPhysicalMaterial color={c} transparent opacity={0.85} roughness={0.2} /></mesh>
+      <Leg x={-1.27} y0={2.2} y1={trimmed ? -2 : -4} r={0.25} />
       <Leg x={1.27} y0={2.2} y1={-2} r={0.25} />
     </group>
   );
@@ -158,13 +164,18 @@ export function Buzzer() {
   );
 }
 
-/** TO-92: a small transistor, a half-cylinder with its flat face printed. Legs E B C left to right. */
+/**
+ * TO-92: a small transistor, a D-shaped body: the flat face (printed) looks along −z and the
+ * rounded back along +z. Legs at −x, 0, +x are E, B, C for a BC547, so with the flat face
+ * towards you they read C B E, left to right, as on the datasheet. `marking=""` is a part
+ * whose print has worn off.
+ */
 export function TO92({ marking = 'BC547' }: { marking?: string }) {
   return (
     <group>
-      <mesh position={[0, 5.5, 0]} castShadow><cylinderGeometry args={[2.3, 2.3, 4.5, 28, 1, false, 0, Math.PI]} /><meshStandardMaterial {...EPOXY} /></mesh>
+      <mesh position={[0, 5.5, 0]} castShadow><cylinderGeometry args={[2.3, 2.3, 4.5, 28, 1, false, -Math.PI / 2, Math.PI]} /><meshStandardMaterial {...EPOXY} /></mesh>
       <mesh position={[0, 5.5, 0]}><boxGeometry args={[4.6, 4.5, 0.02]} /><meshStandardMaterial {...EPOXY} /></mesh>
-      <mesh position={[0, 5.5, -0.02]} rotation={[0, Math.PI, 0]}><planeGeometry args={[4.2, 3]} /><meshBasicMaterial map={printTexture([marking, 'B331'], { size: 34, fg: '#d8d8d8' })} transparent /></mesh>
+      {marking && <mesh position={[0, 5.5, -0.02]} rotation={[0, Math.PI, 0]}><planeGeometry args={[4.2, 3]} /><meshBasicMaterial map={printTexture([marking, 'B331'], { size: 34, fg: '#d8d8d8' })} transparent /></mesh>}
       {[-1.27, 0, 1.27].map((x) => <Leg key={x} x={x} y0={3.3} y1={-2} r={0.22} />)}
     </group>
   );

@@ -4,6 +4,7 @@ import { ClientIntro, ClientOverlay } from '../jobs/ClientScene';
 import { useClient } from '../jobs/store';
 import { useDesk } from '../desk/store';
 import { CodingBench } from '../coding/CodingBench';
+import { LabBench } from '../lab/LabBench';
 import { RepairBench } from '../repair/RepairBench';
 import { WiringBench } from '../wiring/WiringBench';
 import { FrontPage, type FrontChoice } from './FrontPage';
@@ -26,7 +27,8 @@ export function App() {
     useDesk.setState({ startOn });
     go('desk');
   };
-  if (screen === 'workshop') return <Workshop onBack={() => go('home')} onOpen={(c) => c.open && go(c.open.screen, c.open.job)} />;
+  if (screen === 'workshop') return <Workshop onBack={() => go('home')} onOpen={(c) => c.open && go(c.open.screen, c.open.job)} onLab={(p) => go('lab', p)} />;
+  if (screen === 'lab' && job) return <LabBench key={job} part={job} onExit={() => go('workshop')} onNext={(p) => go('lab', p)} />;
   if (screen === 'repair' && job) return <RepairBench jobId={job} onExit={() => go('workshop')} />;
   if (screen === 'coding' && job) return <CodingBench jobId={job} onExit={() => go('workshop')} />;
   if (screen === 'wiring' && job) return <WiringBench jobId={job} onExit={() => go('workshop')} />;

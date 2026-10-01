@@ -6,6 +6,9 @@
 import { useEffect } from 'react';
 import '../desk/desk.css';
 import { CODING_JOBS } from '../coding/jobs';
+import { KIND_WORD, LAB_FAMILIES } from '../lab/LabBench';
+import { LABS, labByPart } from '../lab/labs';
+import { CATALOGUE } from '../parts/catalogue';
 import { CLIENT_JOBS } from '../jobs/client';
 import { useWallet } from '../jobs/wallet';
 import { REPAIR_JOBS } from '../repair/jobs';
@@ -28,7 +31,7 @@ export const WORKSHOP: WorkshopCard[] = [
   ...CLIENT_JOBS.map((j): WorkshopCard => ({ id: j.id, activity: 'Client job', title: j.title, what: `${j.client.name}’s head torch won’t light. Hear them out, fix it, get paid.`, open: { screen: 'client', job: j.id } })),
 ];
 
-export function Workshop({ onOpen, onBack }: { onOpen: (c: WorkshopCard) => void; onBack: () => void }) {
+export function Workshop({ onOpen, onBack, onLab }: { onOpen: (c: WorkshopCard) => void; onBack: () => void; onLab: (part: string) => void }) {
   const credits = useWallet((s) => s.credits);
   const done = useWallet((s) => s.done);
   useEffect(() => {
@@ -60,6 +63,31 @@ export function Workshop({ onOpen, onBack }: { onOpen: (c: WorkshopCard) => void
           </li>
         ))}
       </ol>
+      <section className="lab-index" aria-label="Parts Lab">
+        <h2>PARTS LAB <small>one short level for every part · {LABS.filter((l) => done[`lab:${l.part}`]).length}/{LABS.length} done</small></h2>
+        {LAB_FAMILIES.map((f) => {
+          const parts = CATALOGUE.filter((c) => c.family === f.id);
+          return (
+            <div key={f.id} className="lab-family">
+              <h3>{f.name}</h3>
+              <ul>
+                {parts.map((c) => {
+                  const l = labByPart(c.id);
+                  const st = done[`lab:${c.id}`]?.stars;
+                  return (
+                    <li key={c.id}>
+                      <button className={st ? 'done' : ''} onClick={() => onLab(c.id)}>
+                        <b>{c.name}</b>
+                        <span>{l ? KIND_WORD[l.kind] : ''}{st ? ` · ${'★'.repeat(st)}` : ''}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          );
+        })}
+      </section>
     </main>
   );
 }
