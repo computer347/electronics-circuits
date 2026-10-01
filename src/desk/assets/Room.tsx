@@ -36,11 +36,18 @@ export function Wall() {
 }
 
 
-/** The corkboard holds a world's levels and the free bench card in two even rows (sized for the biggest world, so cards don't jump about). */
-const PER_ROW = Math.ceil((Math.max(...WORLDS.map((w) => w.plan.length)) + 1) / 2);
+/**
+ * The corkboard holds a world's levels and the free bench card in even rows: two for small
+ * worlds, three once a world has more than 17 levels (sized for the biggest world, so cards
+ * don't jump about when you switch tabs).
+ */
+const MOST = Math.max(...WORLDS.map((w) => w.plan.length)) + 1;
+const ROWS = MOST > 18 ? 3 : 2;
+const PER_ROW = Math.ceil(MOST / ROWS);
 const PITCH = 0.6 / PER_ROW;
 const CARD_W = Math.min(0.1, PITCH * 0.9);
-const slot = (i: number): [number, number] => [-0.3 + PITCH / 2 + (i % PER_ROW) * PITCH, i < PER_ROW ? 0.05 : -0.068];
+const ROW_Y = ROWS === 3 ? [0.064, -0.002, -0.068] : [0.05, -0.068];
+const slot = (i: number): [number, number] => [-0.3 + PITCH / 2 + (i % PER_ROW) * PITCH, ROW_Y[Math.floor(i / PER_ROW)] ?? -0.068];
 
 /** The level map: a corkboard with a tab per world, and a card per level of the world on show. */
 export function Corkboard({ world, current, passed, unlocked, onPick, onFreeBench, onWorld }: {

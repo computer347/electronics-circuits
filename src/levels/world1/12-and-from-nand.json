@@ -1,0 +1,193 @@
+{
+  "id": "w1-12-and-from-nand",
+  "world": 1,
+  "number": 12,
+  "title": "AND from NANDs",
+  "format": "build",
+  "skills": [
+    "logic.universal",
+    "logic.and"
+  ],
+  "brief": {
+    "story": "The parts drawer only has 74HC00 NAND chips, and the safety interlock needs AND: the press runs only with both guards closed. A NAND followed by an inverter is AND, and a NAND with its inputs tied together is an inverter.",
+    "goal": "Wire gate 1’s output (pin 3) into gate 2 (pins 4 and 5, already tied together) so LED1 = SA AND SB.",
+    "datasheet": {
+      "title": "74HC00 · quad NAND",
+      "rows": [
+        [
+          "Gate 1",
+          "pins 1, 2 → 3"
+        ],
+        [
+          "Gate 2",
+          "pins 4, 5 → 6 (4 and 5 tied)"
+        ],
+        [
+          "SA, SB",
+          "pins 1, 2"
+        ],
+        [
+          "LED1",
+          "from pin 6"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "Gate 1 already gives NAND(SA, SB) on pin 3 (column 12). Gate 2 has its inputs tied, so it inverts.",
+    "Feed pin 3 into gate 2: NOT(NAND) = AND.",
+    "One wire from column 12 (pin 3) to column 13 (pin 4)."
+  ],
+  "board": {
+    "supply": {
+      "volts": 5,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "IC1",
+        "kind": "dip",
+        "h1": "e10",
+        "h2": "f16",
+        "pins": [
+          "e10",
+          "e11",
+          "e12",
+          "e13",
+          "e14",
+          "e15",
+          "e16",
+          "f16",
+          "f15",
+          "f14",
+          "f13",
+          "f12",
+          "f11",
+          "f10"
+        ],
+        "marking": "74HC00"
+      },
+      {
+        "id": "WP",
+        "kind": "wire",
+        "h1": "T+:25",
+        "h2": "B+:25",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WN",
+        "kind": "wire",
+        "h1": "T-:24",
+        "h2": "B-:24",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "WV1",
+        "kind": "wire",
+        "h1": "g10",
+        "h2": "B+:8",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WG1",
+        "kind": "wire",
+        "h1": "a16",
+        "h2": "T-:16",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "SA",
+        "kind": "toggle",
+        "h1": "T+:3",
+        "h2": "a10",
+        "pressed": false
+      },
+      {
+        "id": "RSA",
+        "kind": "resistor",
+        "h1": "b10",
+        "h2": "T-:3",
+        "ohms": 10000
+      },
+      {
+        "id": "SB",
+        "kind": "toggle",
+        "h1": "T+:9",
+        "h2": "a11",
+        "pressed": false
+      },
+      {
+        "id": "RSB",
+        "kind": "resistor",
+        "h1": "b11",
+        "h2": "T-:10",
+        "ohms": 10000
+      },
+      {
+        "id": "WT",
+        "kind": "wire",
+        "h1": "c13",
+        "h2": "c14",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "R1",
+        "kind": "resistor",
+        "h1": "a15",
+        "h2": "a20",
+        "ohms": 330
+      },
+      {
+        "id": "LED1",
+        "kind": "led",
+        "h1": "b20",
+        "h2": "T-:19",
+        "color": "red"
+      }
+    ]
+  },
+  "locked": [
+    "IC1",
+    "WP",
+    "WN",
+    "WV1",
+    "WG1",
+    "SA",
+    "RSA",
+    "SB",
+    "RSB",
+    "WT",
+    "R1",
+    "LED1"
+  ],
+  "tools": [
+    "wire",
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "truth-table",
+      "inputs": [
+        "SA",
+        "SB"
+      ],
+      "output": "LED1",
+      "table": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "label": "LED1 = SA AND SB",
+      "explain": "NAND with its inputs tied is NOT; NOT after NAND is AND."
+    },
+    {
+      "kind": "no-burnt"
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 1
+  },
+  "debrief": "NAND is universal: every other gate can be built from it. NAND then NOT gives AND, using two of the chip’s four gates. Chip designers once built whole computers from NANDs alone (the Apollo Guidance Computer was made of thousands of them)."
+}

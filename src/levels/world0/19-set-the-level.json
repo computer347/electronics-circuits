@@ -1,0 +1,98 @@
+{
+  "id": "w0-19-set-the-level",
+  "world": 0,
+  "number": 19,
+  "title": "Set the level",
+  "format": "build",
+  "skills": [
+    "potentiometer.divider",
+    "meter.voltage"
+  ],
+  "brief": {
+    "story": "The bench thermostat compares the temperature sensor with a set point from a knob. The set point is a potentiometer across 9 V: its wiper can sit at any voltage from 0 to 9 V.",
+    "goal": "Turn RV1’s knob so its wiper (column 6) sits at 5.2–5.6 V.",
+    "datasheet": {
+      "title": "RV1 · 10 kΩ potentiometer",
+      "rows": [
+        [
+          "Leg 1",
+          "9 V"
+        ],
+        [
+          "Leg 3",
+          "0 V (ground)"
+        ],
+        [
+          "Wiper",
+          "V = 9 V × (1 − position)"
+        ],
+        [
+          "Measure",
+          "black on −, red on column 6"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "Across the supply, a potentiometer is a voltage divider you can adjust: the wiper splits the track into a top part and a bottom part.",
+    "The track from leg 1 to the wiper is the top resistor (10 kΩ × position), the rest is the bottom. V_wiper = 9 V × bottom ÷ 10 kΩ.",
+    "For 5.4 V the bottom part needs 5.4 ÷ 9 = 60 % of the track, so the knob goes to 40 %."
+  ],
+  "board": {
+    "supply": {
+      "volts": 9,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "W1",
+        "kind": "wire",
+        "h1": "T+:3",
+        "h2": "a5",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "RV1",
+        "kind": "pot",
+        "h1": "e5",
+        "h2": "e6",
+        "h3": "e7",
+        "ohms": 10000,
+        "position": 0.5
+      },
+      {
+        "id": "W2",
+        "kind": "wire",
+        "h1": "a7",
+        "h2": "T-:6",
+        "wireColor": "#2f6fe0"
+      }
+    ]
+  },
+  "pinned": [
+    "RV1"
+  ],
+  "locked": [
+    "W1",
+    "W2"
+  ],
+  "tools": [
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "voltage",
+      "hole": "c6",
+      "min": 5.2,
+      "max": 5.6,
+      "label": "Wiper voltage",
+      "explain": "The wiper divides the track: V = 9 V × (track below the wiper) ÷ (whole track)."
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 0,
+    "measurements": 1
+  },
+  "debrief": "Across a supply, a potentiometer is an adjustable voltage divider: the wiper picks any voltage between its two ends. Set points, volume controls, joysticks and the trimmers on sensor boards all work this way, and a microcontroller reads the wiper to know where the knob is."
+}

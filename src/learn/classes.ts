@@ -2,6 +2,7 @@
  * World 0 theory: one class per level, teaching exactly what that level needs.
  * Every number in here is checked against the solver in tests/learn.test.ts.
  */
+import { WORLD0_MORE, WORLD1_MORE } from './classes2';
 import type { LearnClass } from './types';
 
 const c1: LearnClass = {
@@ -14,6 +15,7 @@ const c1: LearnClass = {
   steps: [
     {
       title: 'Three numbers describe every circuit',
+      plain: 'Voltage is the push, current is how much flows, resistance is how hard it is to get through. Every circuit is just those three numbers.',
       body: [
         "You're an electron. **Voltage** is how hard you're pushed round the loop, measured in volts (V). A 9 V battery lifts every electron that passes through it by 9 V, and the parts in the loop spend that 9 V on the way back.",
         '**Current** is how many electrons pass a point each second, in amps (A). Circuits on a breadboard run on milliamps: 20 mA is 0.020 A.',
@@ -24,6 +26,7 @@ const c1: LearnClass = {
     },
     {
       title: "Ohm's law",
+      plain: 'Push harder and more flows; make it harder to get through and less flows. Ohm’s law is that sentence as a sum.',
       body: [
         'Those three numbers are tied together by one rule: `V = I × R`. Rearranged, it answers whichever one you are missing: `I = V / R` and `R = V / I`.',
         'Example: 9 V across 330 Ω gives `I = 9 V / 330 Ω = 27.3 mA`.',
@@ -34,6 +37,7 @@ const c1: LearnClass = {
     },
     {
       title: 'What an LED does',
+      plain: 'An LED keeps about 2 V for itself and then lets through as much as it can. Without a resistor to hold it back, it cooks.',
       body: [
         'An LED is a diode that glows. Once it conducts, it keeps a fixed slice of the voltage for itself, its **forward voltage** (Vf). For a red LED that is about **2.0 V**, whatever the current.',
         "Past that point the LED has almost no resistance of its own. Put it straight on 9 V and nothing limits the current: it flashes and burns out. That's why an LED always comes with a resistor in series.",
@@ -44,6 +48,7 @@ const c1: LearnClass = {
     },
     {
       title: 'Sizing the resistor',
+      plain: 'Take away what the LED keeps, then divide what’s left by the current you want. That’s your resistor.',
       body: [
         'The LED takes its 2.0 V, so the resistor gets the rest: `V_R = 9 V − 2.0 V = 7 V`.',
         'The resistor and the LED are in the same loop, so the same current passes through both. Pick the current you want and use Ohm\'s law on the resistor: `R = 7 V / 0.020 A = 350 Ω`.',
@@ -74,6 +79,7 @@ const c2: LearnClass = {
   steps: [
     {
       title: 'A one-way valve',
+      plain: 'An LED only works one way round: long leg to +. Backwards, nothing flows and it stays dark.',
       body: [
         'A diode lets current through in one direction only: from the **anode** (+) to the **cathode** (−). On an LED the anode is the **long leg**. The cathode is the short leg, on the flat side of the rim.',
         'The right way round, it conducts once the anode is about Vf above the cathode. The wrong way round, it blocks completely: no current, no light, and nothing gets hot.',
@@ -83,6 +89,7 @@ const c2: LearnClass = {
     },
     {
       title: 'Measuring voltage',
+      plain: 'The meter compares two points. Black on −, red where you want to know, and it tells you the difference.',
       body: [
         'A multimeter on DC V shows the difference in voltage between its red probe and its black probe.',
         'Put the black probe on **ground** and leave it there. The red probe then reads the voltage at each point you touch, measured from ground. On the bench, ground is the blue top rail.',
@@ -93,6 +100,7 @@ const c2: LearnClass = {
     },
     {
       title: 'Reading a dark LED',
+      plain: 'A dark LED with lots of voltage across it is usually in backwards. One with none across it isn’t getting any power.',
       body: [
         'Now reverse it. No current flows anywhere in the loop. A resistor with no current through it has no voltage across it (`V = I × R = 0`), so the resistor-side leg sits at the **full 5 V**.',
         'The ground-side leg still reads 0 V. The whole supply is across the LED, and it passes nothing. That pattern means the part is **blocking**: it is in backwards, or the circuit is open inside it.',
@@ -103,6 +111,7 @@ const c2: LearnClass = {
     },
     {
       title: 'Measure before you touch',
+      plain: 'Look first, then change one thing. Swapping parts at random is how a five-minute fix takes an hour.',
       body: [
         "In a find-the-fault level the board is someone else's. Resist rebuilding it. Two measurements, one on each leg of the suspect part, usually tell you what is wrong, and level 0–2's par is exactly 2 measurements.",
         'Then fix only that. On the bench you can flip an LED by right-clicking it and choosing Flip polarity.',
@@ -132,6 +141,7 @@ const c3: LearnClass = {
   steps: [
     {
       title: 'Series: one path',
+      plain: 'In a line, everything shares one current and splits the battery’s push between them.',
       body: [
         'In series, parts sit one after another on a single path. Every electron passes through all of them, so they all carry the **same current**.',
         'The voltages add up. Going round the loop, what the supply gives is what the parts spend (Kirchhoff\'s voltage law): `9 V = V_R + 2.0 V + 2.0 V` for a resistor and two red LEDs.',
@@ -141,6 +151,7 @@ const c3: LearnClass = {
     },
     {
       title: 'Parallel: side by side',
+      plain: 'Side by side, each part gets the whole push and takes its own current. The battery feeds them all.',
       body: [
         'In parallel, each part has its own path between the same two rails. Each gets the **full voltage**, and each draws its own current.',
         'At the junction the currents add (Kirchhoff\'s current law): the supply delivers `I_1 + I_2`. Two LEDs at 15 mA each cost the supply 30 mA.',
@@ -151,6 +162,7 @@ const c3: LearnClass = {
     },
     {
       title: 'Fitting a budget',
+      plain: 'Every extra branch takes more from the battery. Add them up before you decide.',
       body: [
         'Level 0–3 gives you 9 V and a 20 mA budget, and both LEDs need at least 12 mA. In parallel that is 24 mA or more: over budget, whatever resistors you pick.',
         'In series one current serves both LEDs, so 15 mA through both costs the supply only 15 mA. The price is voltage: two LEDs take 4.0 V, leaving 5 V for the resistor. `R = 5 V / 0.015 A ≈ 330 Ω`.',
@@ -182,6 +194,7 @@ const c4: LearnClass = {
   steps: [
     {
       title: 'Two resistors share the voltage',
+      plain: 'Two resistors in a line split the voltage between them, the bigger one taking the bigger share.',
       body: [
         'Put two resistors in series from 9 V to ground. The same current flows through both, `I = 9 V / (R_top + R_bottom)`, and each takes `I × R` of the voltage. The bigger resistor takes the bigger share.',
         'The point between them, the **tap**, sits at whatever voltage the bottom resistor holds up. That is your new supply.',
@@ -191,6 +204,7 @@ const c4: LearnClass = {
     },
     {
       title: 'The divider formula',
+      plain: 'The middle point sits at the share the bottom resistor gets. Same ratio, same voltage, whatever their size.',
       body: [
         'Combine the two lines above and you get `V_out = V × R_bottom / (R_top + R_bottom)`.',
         'For 3 V out of 9 V you want a third: `R_bottom / (R_top + R_bottom) = 1/3`, which means the top resistor is **twice** the bottom one.',
@@ -201,6 +215,7 @@ const c4: LearnClass = {
     },
     {
       title: 'What it costs',
+      plain: 'A divider always lets some current through, wasting battery. Bigger resistors waste less.',
       body: [
         'A divider draws current all the time, and all of it turns into heat. `I = 9 V / (R_top + R_bottom)`: 2.2 kΩ + 1 kΩ burns 2.8 mA.',
         'Level 0–4 allows 1 mA, so the total has to be at least 9 kΩ. 6.8 kΩ over 3.3 kΩ gives 2.94 V at 0.89 mA.',
@@ -211,6 +226,7 @@ const c4: LearnClass = {
     },
     {
       title: 'Shapes that fail',
+      plain: 'If the two resistors aren’t one above the other, it isn’t a divider. Check the shape before the values.',
       body: [
         "If your tap reads a voltage you didn't expect, check the shape before the values:",
         '**Tap reads 9 V.** Something joins the tap straight to the supply (a stray jumper), or the tap is above both resistors.',
@@ -242,6 +258,7 @@ const c5: LearnClass = {
   steps: [
     {
       title: 'A capacitor fills up',
+      plain: 'A capacitor is like a bucket filling through a narrow pipe: fast at first, slower as it gets full.',
       body: [
         'A capacitor is two plates with a gap between them. Current flows onto one plate and off the other, but never across. As charge builds, so does the voltage across it.',
         'Charging through a resistor, it starts fast and slows down. At first the capacitor is empty and the resistor gets the whole supply, so the current is big. As the capacitor fills, less voltage is left for the resistor, so less current flows and it fills more slowly.',
@@ -251,6 +268,7 @@ const c5: LearnClass = {
     },
     {
       title: 'The time constant',
+      plain: 'Resistor times capacitor gives the time to get about two-thirds full. Bigger either one, longer the wait.',
       body: [
         'The shape of the curve never changes, only its width. That width is the **time constant**: `τ = R × C`. Ohms times farads gives seconds.',
         'After one τ the capacitor is at **63 %** of the way. After 2τ it is at 86 %, after 3τ at 95 %, and after 5τ it is as good as full.',
@@ -261,6 +279,7 @@ const c5: LearnClass = {
     },
     {
       title: 'The bleed resistor',
+      plain: 'A second resistor slowly empties the bucket, so it starts fresh next time.',
       body: [
         "Level 0–5 has a 100 kΩ **bleed** resistor across C1, so the capacitor empties when you let go of the button. While charging, it quietly takes some current too.",
         "Two effects, both small with 10 kΩ: C1 ends a little below the supply (`9 V × 100k / 110k = 8.2 V`), and it gets there a bit sooner, as if R were 10k ∥ 100k = 9.1 kΩ. τ = 0.91 s: still inside the window. The 63 % the level measures is of that final 8.2 V.",
@@ -270,6 +289,7 @@ const c5: LearnClass = {
     },
     {
       title: 'Watching it on the scope',
+      plain: 'The scope draws the voltage over time, so you can see the curve and measure the delay.',
       body: [
         "In the level, the scope's CH1 is already clipped to C1 at 500 ms per division. Hold SW1 and the trace climbs: one τ is where it crosses 63 % of its final height, about two divisions in for 1 s.",
         'Let go and it falls back through the bleed resistor, much more slowly, with τ = 100k × 100 µF = 10 s.',
@@ -297,6 +317,7 @@ const c6: LearnClass = {
   steps: [
     {
       title: 'What flows in flows out',
+      plain: 'Electricity doesn’t pile up anywhere: what goes into a junction comes out of it.',
       body: [
         'Current can\'t pile up anywhere or vanish, so at every junction **the current in equals the current out** (Kirchhoff\'s current law).',
         'In level 0–6 the supply\'s current splits at column 3: part of it through R1 and LED1, the rest through R2 and LED2. The two join again at the − rail and go back to the supply together.',
@@ -306,6 +327,7 @@ const c6: LearnClass = {
     },
     {
       title: 'Each branch on its own',
+      plain: 'Each branch gets its own current, as if the others weren’t there. They just add up at the battery.',
       body: [
         'Every parallel branch sees the whole 9 V, so you can work each one out as if the other weren\'t there.',
         'LED1 is red (2.0 V): `I_1 = (9 V − 2.0 V) / 330 Ω = 21.2 mA`. LED2 is green (2.2 V): `I_2 = (9 V − 2.2 V) / 330 Ω = 20.6 mA`.',
@@ -314,6 +336,7 @@ const c6: LearnClass = {
     },
     {
       title: 'Current, measured as a voltage',
+      plain: 'Measure the voltage across a known resistor, divide by its value, and you know the current without breaking the circuit.',
       body: [
         'A meter on A has to go **in series**, so you\'d have to break the loop to put it in. For a resistor there\'s a shortcut: measure the voltage across it and use Ohm\'s law.',
         'R2 drops 6.8 V either way. Across 330 Ω that\'s `6.8 V / 330 Ω = 20.6 mA`; across 3.3 kΩ it\'s only `6.8 V / 3300 Ω = 2.06 mA`. Same voltage, a tenth of the current: the value is wrong.',
@@ -341,6 +364,7 @@ const c7: LearnClass = {
   steps: [
     {
       title: 'No loop, no current',
+      plain: 'A switch opens a gap in the loop. With a gap, nothing flows anywhere.',
       body: [
         'Current only flows round a **complete loop**, from the supply\'s + back to its −. A switch is a gap you control: closed, the loop is complete; open, it\'s broken.',
         'A push button is a switch you hold: closed while pressed, open when you let go. Held, the LED in level 0–7 gets `(9 V − 2.0 V) / 330 Ω = 21.2 mA`.',
@@ -350,6 +374,7 @@ const c7: LearnClass = {
     },
     {
       title: 'One gap stops everything',
+      plain: 'It doesn’t matter where the switch is in the loop: open it and everything in that loop stops.',
       body: [
         'A series loop has only one path, so it doesn\'t matter where the switch sits: before the resistor or after the LED, opening it stops the current **everywhere** in the loop.',
         'That\'s why one switch can turn off a whole circuit, and why a single broken wire can too.',
@@ -357,6 +382,7 @@ const c7: LearnClass = {
     },
     {
       title: 'Across the gap, not along it',
+      plain: 'A push button joins its two sides only while pressed. Put it across the gap, not along one strip.',
       body: [
         'On a breadboard, the five holes of a column are one strip. Two legs in the same column are already joined, so a button placed that way joins nothing and pressing it does nothing.',
         'A switch, like any two-legged part, goes **across two different columns**: one leg each side of the gap it controls. And nothing else may bridge that gap, or the LED stays on whatever the button does.',
@@ -383,6 +409,7 @@ const c8: LearnClass = {
   steps: [
     {
       title: 'Voltages stack up',
+      plain: 'Batteries in a row add their pushes: two 1.5 V cells make 3 V.',
       body: [
         'Cells in series, each + to the next one\'s −, add their voltages: three 1.5 V AA cells make `1.5 + 1.5 + 1.5 = 4.5 V`.',
         'That\'s how a torch gets enough push for a blue or white LED, which needs about **3.0 V** just to start conducting. One AA cell (1.5 V) can\'t light it at all.',
@@ -390,6 +417,7 @@ const c8: LearnClass = {
     },
     {
       title: 'One backwards cell subtracts',
+      plain: 'Put one in backwards and it pushes against the others, taking its 1.5 V away twice over.',
       body: [
         'A cell put in the wrong way round pushes against the others: `1.5 − 1.5 + 1.5 = 1.5 V`. Three new cells, and only half what the LED needs.',
         'Going round the loop, the pushes and the drops always balance (Kirchhoff\'s voltage law). With all three cells the right way: `4.5 V = 3.0 V (LED) + 1.5 V (resistor)`.',
@@ -397,6 +425,7 @@ const c8: LearnClass = {
     },
     {
       title: 'Walking the stack with the meter',
+      plain: 'Measure each cell in turn. The odd one out shows up straight away.',
       body: [
         'Black probe on the − rail, red probe on each cell\'s + end in turn. A good stack climbs one cell at a time: **1.5 V, 3.0 V, 4.5 V**. A reading that falls back marks the backwards cell.',
         'Turned round, the resistor gets 1.5 V and sets the current: `(4.5 V − 3.0 V) / 100 Ω = 15 mA`.',
@@ -423,6 +452,7 @@ const c9: LearnClass = {
   steps: [
     {
       title: 'Two dividers side by side',
+      plain: 'A bridge is two dividers next to each other, with a meter comparing their middles.',
       body: [
         'Each side of a Wheatstone bridge is a divider across the same supply. The left tap in level 0–9: `9 V × 2.2 kΩ / (1 kΩ + 2.2 kΩ) = 6.19 V`.',
         'The meter sits **between the two taps**, not from a tap to ground: it reads the difference between the two sides.',
@@ -432,6 +462,7 @@ const c9: LearnClass = {
     },
     {
       title: 'Balanced means equal ratios',
+      plain: 'When both sides split the voltage the same way, the middles match and the meter reads zero.',
       body: [
         'The two taps sit at the same voltage when both sides divide the supply in the same ratio: `R2 / R1 = R4 / R3`.',
         'Here `R2 / R1 = 2.2`, and R3 is 10 kΩ, so `R4 = 2.2 × 10 kΩ = 22 kΩ`. Then both taps are at 6.19 V and the meter reads 0 V.',
@@ -441,6 +472,7 @@ const c9: LearnClass = {
     },
     {
       title: 'Why sensors use bridges',
+      plain: 'A sensor that changes a tiny bit shows up as a tiny reading away from zero, which is easy to spot.',
       body: [
         'Swap one resistor for a sensor whose resistance changes with something real (a strain gauge, a thermistor). At balance the meter reads zero, so the smallest change shows up as a small voltage starting from zero, easy to amplify.',
         'A lone divider would hide the same change as a tiny wobble on top of a 6 V reading.',
@@ -467,6 +499,7 @@ const c10: LearnClass = {
   steps: [
     {
       title: 'A switch you turn on with current',
+      plain: 'A transistor is a switch worked by a small current: a trickle into the base lets a big current through.',
       body: [
         'An NPN transistor has three legs. A small current into the **base** lets a bigger one flow from **collector** to **emitter**: up to about β times as much. For a BC547, β is about 200.',
         'The base sits about 0.7 V above the emitter when it conducts, so a base resistor R_B from 9 V lets in `I_B = (9 V − 0.7 V) / R_B`. With 10 kΩ: `8.3 V / 10 kΩ = 0.83 mA`.',
@@ -474,6 +507,7 @@ const c10: LearnClass = {
     },
     {
       title: 'Fully on: the load decides',
+      plain: 'Give it enough base current and it’s simply on: the lamp, not the transistor, decides how much flows.',
       body: [
         '0.83 mA × 200 = 166 mA is what Q1 *could* pass. The LED and its 470 Ω only ask for about `(9 V − 2.0 V − 0.2 V) / 470 Ω = 14.5 mA`, far less.',
         'So the transistor is **saturated**: fully on, only about 0.2 V left across it, and the LED circuit sets the current. That\'s what you want from a switch.',
@@ -481,6 +515,7 @@ const c10: LearnClass = {
     },
     {
       title: 'Too little, too much',
+      plain: 'Too little base current and the lamp is dim; too much and you waste power or hurt whatever drives it.',
       body: [
         'With 1 MΩ the base gets `8.3 V / 1 MΩ = 8.3 µA`, and 200 × that is only 1.7 mA: the transistor is half on, the LED dim. That\'s the active region: an amplifier, not a switch.',
         'With no resistor at all, the base-emitter junction is a diode straight across the supply: amps flow, and the transistor dies. **Always** a base resistor.',
@@ -497,7 +532,7 @@ const c10: LearnClass = {
   ],
 };
 
-export const WORLD0_CLASSES: LearnClass[] = [c1, c2, c3, c4, c5, c6, c7, c8, c9, c10];
+export const WORLD0_CLASSES: LearnClass[] = [c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, ...WORLD0_MORE];
 
 // ---------------------------------------------------------------- World 1: logic
 
@@ -511,6 +546,7 @@ const w1c1: LearnClass = {
   steps: [
     {
       title: 'Two digits are enough',
+      plain: 'Computers count with only 0 and 1, like lights that are off or on.',
       body: [
         'A switch is on or off, an LED lit or dark: two states. Binary counts with just those two digits, **1** and **0**.',
         'Each place is worth twice the one to its right. With four bits the places are worth **8, 4, 2, 1**.',
@@ -518,6 +554,7 @@ const w1c1: LearnClass = {
     },
     {
       title: 'Reading a number',
+      plain: 'Each light is worth double the one to its right: 1, 2, 4, 8. Add up the lit ones.',
       body: [
         'Add up the places that hold a 1. `1101` is `8 + 4 + 0 + 1 = 13`; `0110` is `4 + 2 = 6`.',
         'Four bits count from `0000` (0) to `1111` (`8 + 4 + 2 + 1 = 15`): sixteen numbers in all.',
@@ -527,6 +564,7 @@ const w1c1: LearnClass = {
     },
     {
       title: 'Writing one',
+      plain: 'To write a number, start with the biggest value that fits, switch it on, and carry on with what’s left.',
       body: [
         'Take away the biggest place that fits, and write a 1 there; carry on with what\'s left. 11: 8 fits (3 left), 4 doesn\'t, 2 fits (1 left), 1 fits: `1011`.',
         'Eight bits make a **byte**: 0 to 255. That\'s why a colour channel, an I²C address or a sensor reading so often tops out at 255 (or 127, with 7 bits).',
@@ -553,6 +591,7 @@ const w1c2: LearnClass = {
   steps: [
     {
       title: 'A truth table lists every case',
+      plain: 'A truth table writes down what happens for every way the switches can be set.',
       body: [
         'With two inputs there are four cases: `00`, `01`, `10`, `11`. A **truth table** gives the output for each one. That\'s the whole definition of a logic gate.',
         'For AND the output is 1 in one row only: when A **and** B are both 1.',
@@ -560,6 +599,7 @@ const w1c2: LearnClass = {
     },
     {
       title: 'AND is series',
+      plain: 'Two switches in a row: the light needs both of them on.',
       lab: { kind: 'logic', gate: 'AND' },
       tryThis: 'Flip A and B through all four rows: the lamp only lights on one.',
       body: [
@@ -569,6 +609,7 @@ const w1c2: LearnClass = {
     },
     {
       title: 'Where you meet it',
+      plain: 'Machines that need two hands on two buttons use AND, so your hands are away from the danger.',
       body: [
         'A machine runs only if the guard is shut **and** start is pressed. A car starts only with the key **and** the brake. Microcontrollers do the same with `if (a && b)`.',
       ],
@@ -594,6 +635,7 @@ const w1c3: LearnClass = {
   steps: [
     {
       title: 'OR is parallel',
+      plain: 'Two switches side by side: either one turns the light on.',
       lab: { kind: 'logic', gate: 'OR' },
       tryThis: 'Find the only row where the lamp is dark.',
       body: [
@@ -603,12 +645,14 @@ const w1c3: LearnClass = {
     },
     {
       title: 'Inclusive, not either-or',
+      plain: 'OR includes both: with both switches on, the light is on too.',
       body: [
         'In logic, OR includes both: A OR B is 1 when both are 1. “One or the other but not both” is a different gate, **XOR**.',
       ],
     },
     {
       title: 'Where you meet it',
+      plain: 'A car’s interior light comes on if any door is open: that’s OR.',
       body: [
         'A doorbell with a front and a back button, an alarm that trips on any sensor. In code, `if (a || b)`.',
       ],
@@ -634,6 +678,7 @@ const w1c4: LearnClass = {
   steps: [
     {
       title: 'High unless pulled low',
+      plain: 'The resistor keeps the output on; the transistor can drag it off. Switch the input on and the output goes off.',
       lab: { kind: 'logic', gate: 'NOT' },
       tryThis: 'Switch A on: the transistor pulls the output down and the LED current drops to nothing.',
       body: [
@@ -643,6 +688,7 @@ const w1c4: LearnClass = {
     },
     {
       title: 'Sizing the pull-up',
+      plain: 'The pull-up resistor sets how much current the light gets when the transistor lets go.',
       body: [
         'When the output is high, the LED\'s current comes through the pull-up: `(9 V − 2 V) / 1 kΩ = 7 mA`. 100 Ω would push 70 mA and burn the LED; 10 kΩ gives 0.7 mA, barely a glow.',
         'When the transistor is on, the pull-up\'s current goes through the transistor instead: `9 V / 1 kΩ = 9 mA`, well within a BC547.',
@@ -650,6 +696,7 @@ const w1c4: LearnClass = {
     },
     {
       title: 'Pull-ups everywhere',
+      plain: 'Lots of chips hold their pins on with a resistor and pull them off to signal. Same idea.',
       body: [
         'Microcontroller buttons, I²C lines and reset pins all use pull-ups: a line that idles high, and something that pulls it low to say “now”.',
       ],
@@ -675,6 +722,7 @@ const w1c5: LearnClass = {
   steps: [
     {
       title: 'Two pull-downs in series',
+      plain: 'Two transistors in a row: only both together can pull the output off. That’s “not both”.',
       lab: { kind: 'logic', gate: 'NAND' },
       tryThis: 'Compare with AND: every output is flipped.',
       body: [
@@ -684,12 +732,14 @@ const w1c5: LearnClass = {
     },
     {
       title: 'Everything from NAND',
+      plain: 'With enough NAND gates you can build any other gate, and from those, a whole computer.',
       body: [
         'Tie a NAND\'s two inputs together and it\'s a NOT. Put a NOT after a NAND and you have AND. With a few more, OR. So any logic, adders, memory, whole CPUs, can be built from NAND alone.',
       ],
     },
     {
       title: 'Where you meet it',
+      plain: 'NAND is the cheapest gate to make in silicon, so chips are full of them.',
       body: [
         'Chip makers build from NAND because in silicon it\'s the smallest, fastest gate. The flash in a USB stick or an SD card is **NAND flash**, named after it.',
       ],
@@ -715,6 +765,7 @@ const w1c6: LearnClass = {
   steps: [
     {
       title: 'One or the other, not both',
+      plain: 'XOR is on when the two switches disagree, and off when they match.',
       lab: { kind: 'logic', gate: 'XOR' },
       tryThis: 'From any row, flip either switch: the lamp always changes.',
       body: [
@@ -724,6 +775,7 @@ const w1c6: LearnClass = {
     },
     {
       title: 'Changeover switches and travellers',
+      plain: 'Two changeover switches and two wires between them let either switch flip the light.',
       body: [
         'A changeover (SPDT) switch has three legs: a **common** in the middle that joins either the left leg (A) or the right leg (B).',
         'Two of them face each other, joined by two **traveller** wires. The light is on only if both commons land on the same traveller. Cross the travellers and that happens when the switches disagree: XOR.',
@@ -731,6 +783,7 @@ const w1c6: LearnClass = {
     },
     {
       title: 'Adding bits',
+      plain: 'Adding two bits gives XOR for the answer digit and AND for the carry: 1 + 1 = 10.',
       body: [
         'Add two single bits: `0+0 = 0`, `0+1 = 1`, `1+0 = 1`, `1+1 = 10` (two). The right-hand digit is `0, 1, 1, 0`: XOR. The carry is AND.',
         'An XOR and an AND together are a **half adder**: the first step from logic gates to a calculator.',
@@ -757,6 +810,7 @@ const w1c7: LearnClass = {
   steps: [
     {
       title: 'Gates in a package',
+      plain: 'A logic chip is four gates in one plastic package, each with its own pins.',
       lab: { kind: 'logic', gate: 'NAND' },
       tryThis: 'Same NAND as level 1–5; a 74HC00 has four of them, each far smaller and quicker.',
       body: [
@@ -766,6 +820,7 @@ const w1c7: LearnClass = {
     },
     {
       title: 'Power comes first',
+      plain: 'A chip does nothing until pin 14 has + and pin 7 has ground.',
       body: [
         'The gates switch their outputs to the chip\'s own supply pins: **VCC on 14**, **GND on 7**. With those unwired the chip is dead, however right the rest is.',
         'A 74HC chip runs on 2–6 V. Its output can source or sink about 20 mA, enough for an LED with a resistor.',
@@ -773,6 +828,7 @@ const w1c7: LearnClass = {
     },
     {
       title: 'Never leave an input floating',
+      plain: 'An unconnected input guesses. Always tie it to + or ground, often through a resistor.',
       body: [
         'A CMOS input draws almost no current, so a wire to nothing picks up any stray charge and reads 1, 0 or both. A **10 kΩ pull-down** to GND holds it at 0 until a switch pulls it to 1.',
         'Unused inputs on a real board are tied to GND or VCC for the same reason.',
@@ -799,6 +855,7 @@ const w1c8: LearnClass = {
   steps: [
     {
       title: 'Adding in binary',
+      plain: 'Binary adds like normal sums, with one difference: 1 + 1 makes 0, carry 1.',
       lab: { kind: 'adder' },
       tryThis: 'Try 1 + 1: the sum digit is 0 and the carry is 1, which is 10, two.',
       body: [
@@ -808,6 +865,7 @@ const w1c8: LearnClass = {
     },
     {
       title: 'Two gates do it',
+      plain: 'XOR gives the answer digit and AND gives the carry. Two gates add two bits.',
       body: [
         'The sum is 1 when exactly one input is 1: **XOR**. The carry is 1 only for 1 + 1: **AND**. Feed the same A and B to both: a **half adder**.',
         'A full adder also takes the carry from the column to its right. Chain eight and you can add two bytes.',
@@ -815,6 +873,7 @@ const w1c8: LearnClass = {
     },
     {
       title: 'Where it lives',
+      plain: 'Every computer’s adder is made of these, one per digit, passing carries along.',
       body: [
         'Every CPU has an arithmetic unit built from adders like this. The `+` in your code ends up here, as XORs and ANDs switching in a few picoseconds.',
       ],
@@ -840,6 +899,7 @@ const w1c9: LearnClass = {
   steps: [
     {
       title: 'Outputs that loop back',
+      plain: 'Feed each gate’s output into the other gate and they hold each other in place: that’s memory.',
       body: [
         'Every gate so far only looked at its inputs now. Feed two NAND gates\' outputs back into each other and the circuit starts to depend on what happened **before**: it remembers.',
         'Gate 1 makes Q from START and Q̄; gate 2 makes Q̄ from STOP and Q. Each holds the other in place.',
@@ -847,6 +907,7 @@ const w1c9: LearnClass = {
     },
     {
       title: 'Set, reset, hold',
+      plain: 'One button sets it, the other resets it, and with neither pressed it remembers.',
       body: [
         'The buttons pull their inputs **low** when pressed (they idle high through pull-ups). START low forces Q to 1: **set**. STOP low forces Q to 0: **reset**.',
         'Both released (both high), each gate\'s output just repeats what the other says: Q **holds**. That\'s one bit of memory.',
@@ -854,6 +915,7 @@ const w1c9: LearnClass = {
     },
     {
       title: 'From latches to computers',
+      plain: 'Every bit of memory in a computer works on this idea of outputs looping back.',
       body: [
         'A workshop machine\'s START/STOP control is this latch, often built with a relay. Add a clock input so the latch only listens at a tick, and it becomes a **flip-flop**: eight make a register, billions make RAM.',
       ],
@@ -869,7 +931,7 @@ const w1c9: LearnClass = {
   ],
 };
 
-export const WORLD1_CLASSES: LearnClass[] = [w1c1, w1c2, w1c3, w1c4, w1c5, w1c6, w1c7, w1c8, w1c9];
+export const WORLD1_CLASSES: LearnClass[] = [w1c1, w1c2, w1c3, w1c4, w1c5, w1c6, w1c7, w1c8, w1c9, ...WORLD1_MORE];
 export const ALL_CLASSES: LearnClass[] = [...WORLD0_CLASSES, ...WORLD1_CLASSES];
 
 export const classById = (id: string) => ALL_CLASSES.find((c) => c.id === id);

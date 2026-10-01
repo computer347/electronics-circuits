@@ -1,0 +1,265 @@
+{
+  "id": "w1-21-drive-it-harder",
+  "world": 1,
+  "number": 21,
+  "title": "Drive it harder",
+  "format": "build",
+  "skills": [
+    "logic.driver",
+    "transistor.saturation"
+  ],
+  "brief": {
+    "story": "Four LEDs (about 36 mA in all) should light from one logic output, but a 74HC pin is only good for about 20 mA. Q1 does the heavy lifting: the gate drives its base through a resistor, and Q1 sinks the LEDs’ current. The base resistor is missing.",
+    "goal": "Fit a base resistor from the AND gate’s output (column 5) to Q1’s base (column 21) so all four LEDs carry 6–12 mA while SW1 is held, with the chip’s output under 20 mA.",
+    "datasheet": {
+      "title": "74HC08 output",
+      "rows": [
+        [
+          "High",
+          "about 5 V"
+        ],
+        [
+          "Safe current",
+          "20 mA per pin"
+        ],
+        [
+          "Q1 BC547",
+          "E 20 · B 21 · C 22"
+        ],
+        [
+          "Load",
+          "4 × 9 mA ≈ 36 mA"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "Q1 needs at least 36 mA ÷ 200 = 0.18 mA into its base; the pin must stay well under 20 mA.",
+    "I_B = (5 V − 0.7 V) ÷ R_B. 1 kΩ gives 4.3 mA, 10 kΩ gives 0.43 mA: both fine. 100 Ω would load the pin with over 20 mA.",
+    "A 10 kΩ from column 5 to column 21."
+  ],
+  "board": {
+    "supply": {
+      "volts": 5,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "IC1",
+        "kind": "dip",
+        "h1": "e3",
+        "h2": "f9",
+        "pins": [
+          "e3",
+          "e4",
+          "e5",
+          "e6",
+          "e7",
+          "e8",
+          "e9",
+          "f9",
+          "f8",
+          "f7",
+          "f6",
+          "f5",
+          "f4",
+          "f3"
+        ],
+        "marking": "74HC08"
+      },
+      {
+        "id": "WP",
+        "kind": "wire",
+        "h1": "T+:25",
+        "h2": "B+:25",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WN",
+        "kind": "wire",
+        "h1": "T-:24",
+        "h2": "B-:24",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "WV1",
+        "kind": "wire",
+        "h1": "g3",
+        "h2": "B+:2",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WG1",
+        "kind": "wire",
+        "h1": "a9",
+        "h2": "T-:7",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "SW1",
+        "kind": "button",
+        "h1": "T+:2",
+        "h2": "a3",
+        "pressed": false
+      },
+      {
+        "id": "RSW",
+        "kind": "resistor",
+        "h1": "b3",
+        "h2": "T-:3",
+        "ohms": 10000
+      },
+      {
+        "id": "WH",
+        "kind": "wire",
+        "h1": "c4",
+        "h2": "T+:4",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "Q1",
+        "kind": "npn",
+        "h1": "e20",
+        "h2": "e21",
+        "h3": "e22",
+        "marking": "BC547"
+      },
+      {
+        "id": "WE",
+        "kind": "wire",
+        "h1": "a20",
+        "h2": "T-:17",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "RL1",
+        "kind": "resistor",
+        "h1": "T+:20",
+        "h2": "a24",
+        "ohms": 330
+      },
+      {
+        "id": "L1",
+        "kind": "led",
+        "h1": "b24",
+        "h2": "a22",
+        "color": "red"
+      },
+      {
+        "id": "RL2",
+        "kind": "resistor",
+        "h1": "T+:21",
+        "h2": "a25",
+        "ohms": 330
+      },
+      {
+        "id": "L2",
+        "kind": "led",
+        "h1": "b25",
+        "h2": "b22",
+        "color": "red"
+      },
+      {
+        "id": "RL3",
+        "kind": "resistor",
+        "h1": "T+:22",
+        "h2": "a26",
+        "ohms": 330
+      },
+      {
+        "id": "L3",
+        "kind": "led",
+        "h1": "b26",
+        "h2": "c22",
+        "color": "red"
+      },
+      {
+        "id": "RL4",
+        "kind": "resistor",
+        "h1": "T+:23",
+        "h2": "a27",
+        "ohms": 330
+      },
+      {
+        "id": "L4",
+        "kind": "led",
+        "h1": "b27",
+        "h2": "d22",
+        "color": "red"
+      }
+    ]
+  },
+  "resistorValues": [
+    100,
+    1000,
+    10000,
+    100000
+  ],
+  "locked": [
+    "IC1",
+    "WP",
+    "WN",
+    "WV1",
+    "WG1",
+    "SW1",
+    "RSW",
+    "WH",
+    "Q1",
+    "WE",
+    "RL1",
+    "L1",
+    "RL2",
+    "L2",
+    "RL3",
+    "L3",
+    "RL4",
+    "L4"
+  ],
+  "tools": [
+    "resistor",
+    "wire",
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "switched-led",
+      "part": "L1",
+      "min": 0.006,
+      "max": 0.012,
+      "explain": "Q1 passes up to β × I_B, so the base resistor sets how much load it can carry."
+    },
+    {
+      "kind": "switched-led",
+      "part": "L2",
+      "min": 0.006,
+      "max": 0.012
+    },
+    {
+      "kind": "switched-led",
+      "part": "L3",
+      "min": 0.006,
+      "max": 0.012
+    },
+    {
+      "kind": "switched-led",
+      "part": "L4",
+      "min": 0.006,
+      "max": 0.012
+    },
+    {
+      "kind": "part-current",
+      "part": "IC1.1",
+      "max": 0.02,
+      "label": "Chip output under 20 mA",
+      "explain": "A logic pin only gives a few mA safely; the transistor does the heavy lifting."
+    },
+    {
+      "kind": "no-burnt"
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 1
+  },
+  "debrief": "Logic outputs are signals, not power: a 74HC pin gives about 20 mA at most. A transistor driver turns that small signal into a big current: 0.43 mA into the base controls 36 mA of LEDs. Every relay, buzzer, motor and LED strip on a microcontroller board is driven this way."
+}

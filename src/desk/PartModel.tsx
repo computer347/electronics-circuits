@@ -9,7 +9,7 @@ import { createContext, useContext, useMemo, useRef, type ReactNode, type RefObj
 import * as THREE from 'three';
 import { colorBands } from '../breadboard/colorCode';
 import { reducedMotion } from './anim';
-import { TO92 } from '../parts3d/tht';
+import { DiodeTHT, Dip14, Potentiometer, SlideSwitch, TO220, TO92 } from '../parts3d/tht';
 import { Multimeter } from './assets/Multimeter';
 import type { PartId } from './notebook';
 import { DPR } from '../lib/gfx';
@@ -150,6 +150,18 @@ function Transistor({ labels }: { labels: string[] }) {
   );
 }
 
+/** A real part model (millimetres) scaled up for the page, with up to four callouts. */
+function Scaled({ children, scale, y = -1.4, rotation = [0, 0, 0], calls, labels }: {
+  children: ReactNode; scale: number; y?: number; rotation?: [number, number, number]; calls: [number, number, number][]; labels: string[];
+}) {
+  return (
+    <group position={[0, y, 0]}>
+      <group scale={scale} rotation={rotation}>{children}</group>
+      {calls.slice(0, labels.length).map((at, i) => <Callout key={i} n={i + 1} at={at} label={labels[i]!} />)}
+    </group>
+  );
+}
+
 function Meter({ labels }: { labels: string[] }) {
   return (
     <group scale={16} rotation={[0.9, 0, 0]} position={[0, 0, 0]}>
@@ -179,6 +191,13 @@ export function PartModel({ part, labels }: { part: PartId; labels: string[] }) 
     led: <Led labels={labels} />, resistor: <Resistor labels={labels} />, breadboard: <BoardPatch labels={labels} />,
     capacitor: <Capacitor labels={labels} />, button: <Button labels={labels} />, multimeter: <Meter labels={labels} />,
     battery: <Battery labels={labels} />, transistor: <Transistor labels={labels} />,
+    diode: <Scaled scale={0.3} y={0} rotation={[0.25, 0, 0]} labels={labels} calls={[[1.4, 0.9, 0], [-1.4, 0.9, 0], [0, -0.8, 0.4], [0, 1.6, 0]]}><DiodeTHT kind="1N4007" /></Scaled>,
+    pot: <Scaled scale={0.16} y={-1.1} rotation={[0.3, 0, 0]} labels={labels} calls={[[-1.1, -1.05, 0], [0, -1.55, 0.6], [1.1, -1.05, 0], [0, 1.6, 0]]}><Potentiometer /></Scaled>,
+    // TO-220s turned to show their print: then the legs read G · D · S (IN · GND · OUT) left to right.
+    mosfet: <Scaled scale={0.12} y={-1.4} rotation={[0, Math.PI, 0]} labels={labels} calls={[[-0.9, -1.15, 0], [0, -1.6, 0.3], [0.9, -1.15, 0], [0, 1.95, 0]]}><TO220 marking="IRLZ44N" /></Scaled>,
+    regulator: <Scaled scale={0.12} y={-1.4} rotation={[0, Math.PI, 0]} labels={labels} calls={[[-0.9, -1.15, 0], [0, -1.6, 0.3], [0.9, -1.15, 0], [0, 1.95, 0]]}><TO220 marking="LM7805" /></Scaled>,
+    chip: <Scaled scale={0.24} y={-0.4} rotation={[0.9, 0, 0]} labels={labels} calls={[[-2.1, 0.75, 0], [-1.8, -1.4, 0.8], [-1.2, 1.25, -0.6], [1.8, -1.4, 0.8]]}><Dip14 marking="74HC00" /></Scaled>,
+    toggle: <Scaled scale={0.3} y={-1} rotation={[0.4, 0, 0]} labels={labels} calls={[[0, 2.2, 0], [-1.1, -0.9, 0], [1.6, 0.8, 0]]}><SlideSwitch on /></Scaled>,
   }[part];
   const layer = useRef<HTMLDivElement>(null);
   return (

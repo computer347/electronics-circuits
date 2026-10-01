@@ -1,0 +1,281 @@
+{
+  "id": "w1-17-majority-vote",
+  "world": 1,
+  "number": 17,
+  "title": "Majority vote",
+  "format": "build",
+  "skills": [
+    "logic.sum-of-products"
+  ],
+  "brief": {
+    "story": "Three sensors on the boiler each say “too hot”, and one could be faulty, so the cut-out trips when at least two agree: AB + BC + AC. Three ANDs (IC1) feed two ORs (IC2). One AND and one OR input aren’t wired yet.",
+    "goal": "Finish the wiring so TRIP lights when two or three of A, B, C are on.",
+    "datasheet": {
+      "title": "Majority of three",
+      "rows": [
+        [
+          "IC1 74HC08",
+          "A·B → pin 3 · B·C → pin 6 · A·C → pin 8"
+        ],
+        [
+          "IC2 74HC32",
+          "(A·B + B·C) → pin 3 · then + A·C → pin 6"
+        ],
+        [
+          "Missing",
+          "C into gate 3, and gate 3’s output into IC2 pin 5"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "Each pair of sensors gets its own AND, then the three results are ORed together. Gate 3 of IC1 is A·C: its inputs are pin 9 (column 8, bottom, already A) and pin 10 (column 7, bottom).",
+    "Pin 10 needs C (C is column 7, top half): a wire across the gap, column 7 top to column 7 bottom. Gate 3’s output is pin 8, column 9 bottom; it goes to IC2 pin 5, column 21.",
+    "Two wires: column 7 top → column 7 bottom (C into pin 10), and column 9 bottom → column 21 top (A·C into the second OR)."
+  ],
+  "board": {
+    "supply": {
+      "volts": 5,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "IC1",
+        "kind": "dip",
+        "h1": "e3",
+        "h2": "f9",
+        "pins": [
+          "e3",
+          "e4",
+          "e5",
+          "e6",
+          "e7",
+          "e8",
+          "e9",
+          "f9",
+          "f8",
+          "f7",
+          "f6",
+          "f5",
+          "f4",
+          "f3"
+        ],
+        "marking": "74HC08"
+      },
+      {
+        "id": "IC2",
+        "kind": "dip",
+        "h1": "e17",
+        "h2": "f23",
+        "pins": [
+          "e17",
+          "e18",
+          "e19",
+          "e20",
+          "e21",
+          "e22",
+          "e23",
+          "f23",
+          "f22",
+          "f21",
+          "f20",
+          "f19",
+          "f18",
+          "f17"
+        ],
+        "marking": "74HC32"
+      },
+      {
+        "id": "WP",
+        "kind": "wire",
+        "h1": "T+:25",
+        "h2": "B+:25",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WN",
+        "kind": "wire",
+        "h1": "T-:24",
+        "h2": "B-:24",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "WV1",
+        "kind": "wire",
+        "h1": "g3",
+        "h2": "B+:2",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WG1",
+        "kind": "wire",
+        "h1": "a9",
+        "h2": "T-:7",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "WV2",
+        "kind": "wire",
+        "h1": "g17",
+        "h2": "B+:14",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WG2",
+        "kind": "wire",
+        "h1": "a23",
+        "h2": "T-:19",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "A",
+        "kind": "toggle",
+        "h1": "T+:1",
+        "h2": "a3",
+        "pressed": false
+      },
+      {
+        "id": "RA",
+        "kind": "resistor",
+        "h1": "b3",
+        "h2": "T-:1",
+        "ohms": 10000
+      },
+      {
+        "id": "B",
+        "kind": "toggle",
+        "h1": "T+:3",
+        "h2": "a4",
+        "pressed": false
+      },
+      {
+        "id": "RB",
+        "kind": "resistor",
+        "h1": "b4",
+        "h2": "T-:3",
+        "ohms": 10000
+      },
+      {
+        "id": "WB2",
+        "kind": "wire",
+        "h1": "c4",
+        "h2": "c6",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "C",
+        "kind": "toggle",
+        "h1": "T+:5",
+        "h2": "a7",
+        "pressed": false
+      },
+      {
+        "id": "RC",
+        "kind": "resistor",
+        "h1": "b7",
+        "h2": "T-:5",
+        "ohms": 10000
+      },
+      {
+        "id": "WA3",
+        "kind": "wire",
+        "h1": "d3",
+        "h2": "g8",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "WX1",
+        "kind": "wire",
+        "h1": "c5",
+        "h2": "c17",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "WX2",
+        "kind": "wire",
+        "h1": "d8",
+        "h2": "c18",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "WX3",
+        "kind": "wire",
+        "h1": "d19",
+        "h2": "c20",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "R1",
+        "kind": "resistor",
+        "h1": "a22",
+        "h2": "a27",
+        "ohms": 330
+      },
+      {
+        "id": "TRIP",
+        "kind": "led",
+        "h1": "b27",
+        "h2": "T-:22",
+        "color": "red"
+      }
+    ]
+  },
+  "locked": [
+    "IC1",
+    "IC2",
+    "WP",
+    "WN",
+    "WV1",
+    "WG1",
+    "WV2",
+    "WG2",
+    "A",
+    "RA",
+    "B",
+    "RB",
+    "WB2",
+    "C",
+    "RC",
+    "WA3",
+    "WX1",
+    "WX2",
+    "WX3",
+    "R1",
+    "TRIP"
+  ],
+  "tools": [
+    "wire",
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "truth-table",
+      "inputs": [
+        "A",
+        "B",
+        "C"
+      ],
+      "output": "TRIP",
+      "table": [
+        0,
+        0,
+        0,
+        1,
+        0,
+        1,
+        1,
+        1
+      ],
+      "label": "TRIP = AB + BC + AC",
+      "explain": "A sum of products: one AND per way of being true, all ORed together."
+    },
+    {
+      "kind": "no-burnt"
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 2
+  },
+  "debrief": "Read a truth table row by row, write an AND for every row that should be 1, and OR them: a sum of products, the standard way to turn any table into gates. Majority voting is how aircraft and rockets survive a faulty sensor: three computers vote, and one wrong answer is simply outvoted."
+}

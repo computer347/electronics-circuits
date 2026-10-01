@@ -1,0 +1,130 @@
+{
+  "id": "w0-12-mixed-colours",
+  "world": 0,
+  "number": 12,
+  "title": "Mixed colours",
+  "format": "build",
+  "skills": [
+    "led.forward-voltage",
+    "parallel"
+  ],
+  "brief": {
+    "story": "The control panel has a red power light and a blue Bluetooth light side by side, and the client wants them equally bright: both at 13–16 mA. Different colours drop different voltages, so one resistor value won’t fit both.",
+    "goal": "Fit a resistor for each LED so both carry 13–16 mA.",
+    "datasheet": {
+      "title": "Forward voltage by colour",
+      "rows": [
+        [
+          "Red",
+          "2.0 V"
+        ],
+        [
+          "Yellow",
+          "2.1 V"
+        ],
+        [
+          "Green",
+          "2.2 V"
+        ],
+        [
+          "Blue / white",
+          "3.0 V"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "Each LED has its own branch from column 3: red LEDR in columns 10–12, blue LEDB in 17–19. Each needs its own resistor from column 3.",
+    "The resistor gets 9 V minus the LED’s forward voltage: 7 V for red, but only 6 V for blue.",
+    "Red: 7 V ÷ 470 Ω = 14.9 mA. Blue: 6 V ÷ 390 Ω = 15.4 mA. 470 Ω on the blue one gives only 12.8 mA."
+  ],
+  "board": {
+    "supply": {
+      "volts": 9,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "W1",
+        "kind": "wire",
+        "h1": "T+:3",
+        "h2": "a3",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "LEDR",
+        "kind": "led",
+        "h1": "b10",
+        "h2": "b12",
+        "color": "red"
+      },
+      {
+        "id": "W2",
+        "kind": "wire",
+        "h1": "a12",
+        "h2": "T-:11",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "LEDB",
+        "kind": "led",
+        "h1": "b17",
+        "h2": "b19",
+        "color": "blue"
+      },
+      {
+        "id": "W3",
+        "kind": "wire",
+        "h1": "a19",
+        "h2": "T-:17",
+        "wireColor": "#2f6fe0"
+      }
+    ]
+  },
+  "resistorValues": [
+    220,
+    270,
+    330,
+    390,
+    470,
+    560,
+    680,
+    820,
+    1000
+  ],
+  "locked": [
+    "W1",
+    "LEDR",
+    "W2",
+    "LEDB",
+    "W3"
+  ],
+  "tools": [
+    "resistor",
+    "wire",
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "led-current",
+      "part": "LEDR",
+      "min": 0.013,
+      "max": 0.016
+    },
+    {
+      "kind": "led-current",
+      "part": "LEDB",
+      "min": 0.013,
+      "max": 0.016,
+      "explain": "A blue LED drops 3.0 V, a red one 2.0 V: the blue one’s resistor gets 1 V less, so it needs a smaller value for the same current."
+    },
+    {
+      "kind": "no-burnt"
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 2
+  },
+  "debrief": "Same current, same brightness: but a blue LED keeps 3 V for itself and a red one only 2 V, so their resistors differ (470 Ω and 390 Ω here). Every multi-colour status panel and RGB LED is sized this way, one resistor per colour."
+}

@@ -1,0 +1,173 @@
+{
+  "id": "w0-25-heavy-lifting",
+  "world": 0,
+  "number": 25,
+  "title": "Heavy lifting",
+  "format": "build",
+  "skills": [
+    "mosfet",
+    "pinout"
+  ],
+  "brief": {
+    "story": "Three white LEDs (a strip segment) should come on with the button. This time the switch is a MOSFET: its gate needs a voltage, not a current. The gate resistor, the pull-down and the wiring are in; the MOSFET isn’t.",
+    "goal": "Fit the IRLZ44N in columns 10–12 so all three LEDs carry 15–20 mA while SW1 is held, and go dark when it’s let go.",
+    "datasheet": {
+      "title": "IRLZ44N · N-channel MOSFET",
+      "rows": [
+        [
+          "Pins, facing you",
+          "G · D · S"
+        ],
+        [
+          "On above",
+          "2 V at the gate"
+        ],
+        [
+          "Gate current",
+          "none (it’s insulated)"
+        ],
+        [
+          "Body diode",
+          "from S to D: points backwards"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "Click column 10 with the MOSFET: G lands in 10, D in 11, S in 12. The gate is driven from SW1, the LEDs’ cathodes are on column 11, and column 12 goes to ground.",
+    "G · D · S, left to right. Turned round (S in 10), its body diode connects the LEDs to ground and they never switch off.",
+    "With the gate at 9 V the MOSFET is a 0.03 Ω switch: each LED gets (9 − 3.0) ÷ 330 = 18 mA."
+  ],
+  "board": {
+    "supply": {
+      "volts": 9,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "W2",
+        "kind": "wire",
+        "h1": "T+:3",
+        "h2": "a4",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "SW1",
+        "kind": "button",
+        "h1": "b4",
+        "h2": "b7",
+        "pressed": false
+      },
+      {
+        "id": "RG",
+        "kind": "resistor",
+        "h1": "c7",
+        "h2": "c10",
+        "ohms": 100
+      },
+      {
+        "id": "RPD",
+        "kind": "resistor",
+        "h1": "d10",
+        "h2": "T-:9",
+        "ohms": 10000
+      },
+      {
+        "id": "W1",
+        "kind": "wire",
+        "h1": "a12",
+        "h2": "T-:11",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "R1",
+        "kind": "resistor",
+        "h1": "T+:14",
+        "h2": "a14",
+        "ohms": 330
+      },
+      {
+        "id": "LED1",
+        "kind": "led",
+        "h1": "b14",
+        "h2": "a11",
+        "color": "white"
+      },
+      {
+        "id": "R2",
+        "kind": "resistor",
+        "h1": "T+:16",
+        "h2": "a16",
+        "ohms": 330
+      },
+      {
+        "id": "LED2",
+        "kind": "led",
+        "h1": "b16",
+        "h2": "b11",
+        "color": "white"
+      },
+      {
+        "id": "R3",
+        "kind": "resistor",
+        "h1": "T+:18",
+        "h2": "a18",
+        "ohms": 330
+      },
+      {
+        "id": "LED3",
+        "kind": "led",
+        "h1": "b18",
+        "h2": "c11",
+        "color": "white"
+      }
+    ]
+  },
+  "locked": [
+    "W2",
+    "SW1",
+    "RG",
+    "RPD",
+    "W1",
+    "R1",
+    "LED1",
+    "R2",
+    "LED2",
+    "R3",
+    "LED3"
+  ],
+  "tools": [
+    "nmos",
+    "wire",
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "switched-led",
+      "part": "LED1",
+      "min": 0.015,
+      "max": 0.02,
+      "explain": "A MOSFET turns on when its gate is a couple of volts above its source; turned round, its body diode conducts all the time."
+    },
+    {
+      "kind": "switched-led",
+      "part": "LED2",
+      "min": 0.015,
+      "max": 0.02
+    },
+    {
+      "kind": "switched-led",
+      "part": "LED3",
+      "min": 0.015,
+      "max": 0.02
+    },
+    {
+      "kind": "no-burnt"
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 1
+  },
+  "debrief": "A MOSFET is switched by voltage: its gate is insulated, so it draws no current once charged, and when it’s on its channel is a fraction of an ohm. That’s why LED strips, motors and heaters are driven by MOSFETs. The 10 kΩ pull-down holds the gate low when the button is let go, and the pinout matters: backwards, the built-in body diode conducts."
+}

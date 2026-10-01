@@ -1,0 +1,303 @@
+{
+  "id": "w1-20-crack-the-code",
+  "world": 1,
+  "number": 20,
+  "title": "Crack the code",
+  "format": "build",
+  "skills": [
+    "logic.comparator",
+    "logic.and-tree"
+  ],
+  "brief": {
+    "story": "The workshop door lock opens only for the code 1010 on four switches (D3 D2 D1 D0). D3 and D1 must be on, D2 and D0 off: the off ones go through inverters (IC1) before the AND gates (IC2). The inverted bits aren’t wired into their AND gate.",
+    "goal": "Wire NOT D0 and NOT D2 into IC2’s gate 2 so OPEN lights only for D3 D2 D1 D0 = 1 0 1 0.",
+    "datasheet": {
+      "title": "Code lock 1010",
+      "rows": [
+        [
+          "IC1 74HC04",
+          "NOT D0 → column 4 · NOT D2 → column 6"
+        ],
+        [
+          "IC2 gate 1",
+          "D3 · D1 (done)"
+        ],
+        [
+          "IC2 gate 2",
+          "pins 4, 5 = columns 20, 21"
+        ],
+        [
+          "IC2 gate 3",
+          "gate 1 · gate 2 → OPEN"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "The lock is one big AND of four conditions: D3, NOT D2, D1, NOT D0. ANDs combine two at a time, so it takes three.",
+    "Gate 2 of IC2 should get the two inverted bits: pin 4 is column 20, pin 5 is column 21. NOT D0 comes out of IC1 on column 4, NOT D2 on column 6.",
+    "Column 4 → column 20, and column 6 → column 21."
+  ],
+  "board": {
+    "supply": {
+      "volts": 5,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "IC1",
+        "kind": "dip",
+        "h1": "e3",
+        "h2": "f9",
+        "pins": [
+          "e3",
+          "e4",
+          "e5",
+          "e6",
+          "e7",
+          "e8",
+          "e9",
+          "f9",
+          "f8",
+          "f7",
+          "f6",
+          "f5",
+          "f4",
+          "f3"
+        ],
+        "marking": "74HC04"
+      },
+      {
+        "id": "IC2",
+        "kind": "dip",
+        "h1": "e17",
+        "h2": "f23",
+        "pins": [
+          "e17",
+          "e18",
+          "e19",
+          "e20",
+          "e21",
+          "e22",
+          "e23",
+          "f23",
+          "f22",
+          "f21",
+          "f20",
+          "f19",
+          "f18",
+          "f17"
+        ],
+        "marking": "74HC08"
+      },
+      {
+        "id": "WP",
+        "kind": "wire",
+        "h1": "T+:25",
+        "h2": "B+:25",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WN",
+        "kind": "wire",
+        "h1": "T-:24",
+        "h2": "B-:24",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "WV1",
+        "kind": "wire",
+        "h1": "g3",
+        "h2": "B+:2",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WG1",
+        "kind": "wire",
+        "h1": "a9",
+        "h2": "T-:7",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "WV2",
+        "kind": "wire",
+        "h1": "g17",
+        "h2": "B+:14",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WG2",
+        "kind": "wire",
+        "h1": "a23",
+        "h2": "T-:19",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "D0",
+        "kind": "toggle",
+        "h1": "T+:1",
+        "h2": "a3",
+        "pressed": false
+      },
+      {
+        "id": "RD0",
+        "kind": "resistor",
+        "h1": "b3",
+        "h2": "T-:1",
+        "ohms": 10000
+      },
+      {
+        "id": "D2",
+        "kind": "toggle",
+        "h1": "T+:3",
+        "h2": "a5",
+        "pressed": false
+      },
+      {
+        "id": "RD2",
+        "kind": "resistor",
+        "h1": "b5",
+        "h2": "T-:3",
+        "ohms": 10000
+      },
+      {
+        "id": "D1",
+        "kind": "toggle",
+        "h1": "T+:8",
+        "h2": "a12",
+        "pressed": false
+      },
+      {
+        "id": "RD1",
+        "kind": "resistor",
+        "h1": "b12",
+        "h2": "T-:8",
+        "ohms": 10000
+      },
+      {
+        "id": "D3",
+        "kind": "toggle",
+        "h1": "T+:10",
+        "h2": "a14",
+        "pressed": false
+      },
+      {
+        "id": "RD3",
+        "kind": "resistor",
+        "h1": "b14",
+        "h2": "T-:10",
+        "ohms": 10000
+      },
+      {
+        "id": "W1",
+        "kind": "wire",
+        "h1": "c14",
+        "h2": "c17",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "W2",
+        "kind": "wire",
+        "h1": "c12",
+        "h2": "c18",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "W3",
+        "kind": "wire",
+        "h1": "c19",
+        "h2": "h22",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "W4",
+        "kind": "wire",
+        "h1": "c22",
+        "h2": "h21",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "R1",
+        "kind": "resistor",
+        "h1": "g23",
+        "h2": "g27",
+        "ohms": 330
+      },
+      {
+        "id": "OPEN",
+        "kind": "led",
+        "h1": "h27",
+        "h2": "B-:22",
+        "color": "green"
+      }
+    ]
+  },
+  "locked": [
+    "IC1",
+    "IC2",
+    "WP",
+    "WN",
+    "WV1",
+    "WG1",
+    "WV2",
+    "WG2",
+    "D0",
+    "RD0",
+    "D2",
+    "RD2",
+    "D1",
+    "RD1",
+    "D3",
+    "RD3",
+    "W1",
+    "W2",
+    "W3",
+    "W4",
+    "R1",
+    "OPEN"
+  ],
+  "tools": [
+    "wire",
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "truth-table",
+      "inputs": [
+        "D0",
+        "D1",
+        "D2",
+        "D3"
+      ],
+      "output": "OPEN",
+      "table": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "label": "OPEN only for 1010",
+      "explain": "Every bit must match: the ones that must be 0 are inverted first, then everything is ANDed."
+    },
+    {
+      "kind": "no-burnt"
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 2
+  },
+  "debrief": "Comparing against a fixed code is an AND of every bit, with the bits that must be 0 inverted first. Only one of the 16 combinations opens it. Keypads, address decoders and the “is this packet for me?” check in every network chip work the same way, just with more bits."
+}

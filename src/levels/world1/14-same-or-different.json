@@ -1,0 +1,193 @@
+{
+  "id": "w1-14-same-or-different",
+  "world": 1,
+  "number": 14,
+  "title": "Same or different",
+  "format": "build",
+  "skills": [
+    "logic.xnor",
+    "chip.unused-inputs"
+  ],
+  "brief": {
+    "story": "The two-key safe opens only when both keys are in the same position. That’s XNOR (equality). The 74HC86 has XOR gates, and an XOR with one input tied high is an inverter. Gate 2’s second input (pin 5) has been left floating.",
+    "goal": "Tie pin 5 (column 14) to + so gate 2 inverts the XOR, making LED1 = SA XNOR SB.",
+    "datasheet": {
+      "title": "74HC86 · quad XOR",
+      "rows": [
+        [
+          "Gate 1",
+          "SA XOR SB → pin 3"
+        ],
+        [
+          "Gate 2",
+          "pins 4 (from 3) and 5 → 6"
+        ],
+        [
+          "XOR with 1",
+          "inverts"
+        ],
+        [
+          "XOR with 0",
+          "passes through"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "XOR with a 1 inverts its other input; with a 0 it passes it through. A floating CMOS input is neither: never leave one unconnected.",
+    "Pin 5 is column 14. Wire it to the + rail.",
+    "A wire from column 14 to the T+ rail. Gate 2 then gives NOT(SA XOR SB): lit when the switches match."
+  ],
+  "board": {
+    "supply": {
+      "volts": 5,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "IC1",
+        "kind": "dip",
+        "h1": "e10",
+        "h2": "f16",
+        "pins": [
+          "e10",
+          "e11",
+          "e12",
+          "e13",
+          "e14",
+          "e15",
+          "e16",
+          "f16",
+          "f15",
+          "f14",
+          "f13",
+          "f12",
+          "f11",
+          "f10"
+        ],
+        "marking": "74HC86"
+      },
+      {
+        "id": "WP",
+        "kind": "wire",
+        "h1": "T+:25",
+        "h2": "B+:25",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WN",
+        "kind": "wire",
+        "h1": "T-:24",
+        "h2": "B-:24",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "WV1",
+        "kind": "wire",
+        "h1": "g10",
+        "h2": "B+:8",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WG1",
+        "kind": "wire",
+        "h1": "a16",
+        "h2": "T-:16",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "SA",
+        "kind": "toggle",
+        "h1": "T+:3",
+        "h2": "a10",
+        "pressed": false
+      },
+      {
+        "id": "RSA",
+        "kind": "resistor",
+        "h1": "b10",
+        "h2": "T-:3",
+        "ohms": 10000
+      },
+      {
+        "id": "SB",
+        "kind": "toggle",
+        "h1": "T+:9",
+        "h2": "a11",
+        "pressed": false
+      },
+      {
+        "id": "RSB",
+        "kind": "resistor",
+        "h1": "b11",
+        "h2": "T-:10",
+        "ohms": 10000
+      },
+      {
+        "id": "W34",
+        "kind": "wire",
+        "h1": "c12",
+        "h2": "c13",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "R1",
+        "kind": "resistor",
+        "h1": "a15",
+        "h2": "a20",
+        "ohms": 330
+      },
+      {
+        "id": "LED1",
+        "kind": "led",
+        "h1": "b20",
+        "h2": "T-:19",
+        "color": "green"
+      }
+    ]
+  },
+  "locked": [
+    "IC1",
+    "WP",
+    "WN",
+    "WV1",
+    "WG1",
+    "SA",
+    "RSA",
+    "SB",
+    "RSB",
+    "W34",
+    "R1",
+    "LED1"
+  ],
+  "tools": [
+    "wire",
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "truth-table",
+      "inputs": [
+        "SA",
+        "SB"
+      ],
+      "output": "LED1",
+      "table": [
+        1,
+        0,
+        0,
+        1
+      ],
+      "label": "LED1 = SA XNOR SB (equal)",
+      "explain": "XOR(x, 1) = NOT x. With pin 5 floating (read as 0) gate 2 just passes the XOR through."
+    },
+    {
+      "kind": "no-burnt"
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 1
+  },
+  "debrief": "XNOR is the equality gate: 1 when both inputs match. An XOR with one input held high is a controllable inverter, which is how ALUs subtract (flip every bit) with the same adder. And the floating pin was a real lesson: an unconnected CMOS input can read as 0, 1, or flicker between them, so every unused input gets tied to + or −."
+}

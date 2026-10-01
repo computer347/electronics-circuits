@@ -1,0 +1,118 @@
+{
+  "id": "w0-15-dead-rail",
+  "world": 0,
+  "number": 15,
+  "title": "Dead rail",
+  "format": "find-fault",
+  "skills": [
+    "breadboard.rails",
+    "meter.continuity"
+  ],
+  "brief": {
+    "story": "This circuit was built along the bottom rails, which the bench supply doesn’t reach by itself: jumpers carry + and − down from the top. The LED is dark, and the parts all test fine.",
+    "goal": "Find out why the bottom rails are dead and fix it, so LED1 carries 10–25 mA.",
+    "datasheet": {
+      "title": "The rails",
+      "rows": [
+        [
+          "Top",
+          "T+ and T−: wired to the bench supply"
+        ],
+        [
+          "Bottom",
+          "B+ and B−: only live through jumpers"
+        ],
+        [
+          "WP",
+          "T+ to B+"
+        ],
+        [
+          "Missing?",
+          "a ground jumper"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "Measure from the top − rail to B−. If B− isn’t joined to ground, the meter shows the full 9 V across the dark circuit.",
+    "The bottom rails are only live through jumpers from the top rails. Count them: + has WP. Where’s the ground one?",
+    "Add a wire from the B− rail to the T− rail."
+  ],
+  "board": {
+    "supply": {
+      "volts": 9,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "WP",
+        "kind": "wire",
+        "h1": "T+:25",
+        "h2": "B+:25",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WN",
+        "kind": "wire",
+        "h1": "T-:24",
+        "h2": "B-:24",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "R1",
+        "kind": "resistor",
+        "h1": "B+:5",
+        "h2": "h8",
+        "ohms": 470
+      },
+      {
+        "id": "LED1",
+        "kind": "led",
+        "h1": "i8",
+        "h2": "i11",
+        "color": "yellow"
+      },
+      {
+        "id": "W2",
+        "kind": "wire",
+        "h1": "j11",
+        "h2": "B-:9",
+        "wireColor": "#2f6fe0"
+      }
+    ]
+  },
+  "faults": [
+    {
+      "kind": "remove",
+      "part": "WN"
+    }
+  ],
+  "locked": [
+    "WP",
+    "R1",
+    "LED1",
+    "W2"
+  ],
+  "tools": [
+    "wire",
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "led-current",
+      "part": "LED1",
+      "min": 0.01,
+      "max": 0.025,
+      "explain": "Current needs a complete loop back to the supply’s −. Without the ground jumper the bottom − rail is connected to nothing."
+    },
+    {
+      "kind": "no-burnt"
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 1,
+    "measurements": 1
+  },
+  "debrief": "A breadboard’s rails aren’t magic: the bottom pair is a separate strip until something joins it to the supply. With the ground jumper missing, the loop is open and no current flows anywhere. Long breadboards even split each rail in the middle. Check both rails with the meter before you blame a part."
+}

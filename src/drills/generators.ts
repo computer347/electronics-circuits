@@ -351,8 +351,314 @@ const currentSource: Generator = {
   },
 };
 
+
+// ---- generators for World 0 levels 11–25 and World 1's drivers ----------------
+
+const diodePart = (id: string, p1: Pt, p2: Pt, vf: number, color?: LedColor): SchPart =>
+  ({ kind: 'diode', id, p1, p2, vf, ...(color ? { led: { color } } : {}) } as SchPart);
+
+const seriesLeds: Generator = {
+  id: 'series-leds', topic: 'LEDs', title: 'One resistor for a string of LEDs',
+  make(rng, seed) {
+    const b = base(this, seed);
+    const n = pick(rng, [2, 3] as const);
+    const color = pick(rng, ['red', 'yellow', 'green'] as LedColor[]);
+    const vf = LED_VF[color];
+    const v = n === 2 ? pick(rng, [9, 12] as const) : 12;
+    const target = pick(rng, [0.01, 0.015, 0.02]);
+    const expected = (v - n * vf) / target;
+    const parts: SchPart[] = [V('V1', [0, 0], [0, 4], v), { ...R('R1', [0, 0], [3, 0], expected), label: 'R = ?' }];
+    for (let k = 0; k < n; k++) parts.push(diodePart(`LED${k + 1}`, [3 + k * 2, 0], [5 + k * 2, 0], vf, color));
+    parts.push(W([3 + n * 2, 0], [3 + n * 2, 4]), W([3 + n * 2, 4], [0, 4]));
+    const schematic: Schematic = { parts, grounds: [[0, 4]] };
+    return {
+      ...b, schematic, expected,
+      prompt: `${n} ${color} LEDs (${vf} V each) in series on ${f(v, 'V')}. Which resistance gives ${f(target, 'A')}?`,
+      highlight: { parts: ['R1'] },
+      answer: { value: expected, unit: 'Ω', tolerancePct: 1 },
+      solution: [
+        `In series the LEDs’ voltages add: ${n} × ${vf} V = ${f(n * vf, 'V')}`,
+        `The resistor gets the rest: ${f(v, 'V')} − ${f(n * vf, 'V')} = ${f(v - n * vf, 'V')}`,
+        `R = ${f(v - n * vf, 'V')} ÷ ${f(target, 'A')} = ${f(expected, 'Ω')}`,
+      ],
+    };
+  },
+};
+
+const combineResistors: Generator = {
+  id: 'combine-resistors', topic: 'Series & parallel', title: 'Resistance of a combination',
+  make(rng, seed) {
+    const b = base(this, seed);
+    const v = 10;
+    const [r1, r2, r3] = [e12(rng, 100, 4700), e12(rng, 100, 4700), e12(rng, 100, 4700)];
+    // R1 in series with (R2 ∥ R3); the supply current gives the total
+    const schematic: Schematic = {
+      parts: [
+        V('V1', [0, 0], [0, 3], v), R('R1', [0, 0], [3, 0], r1), R('R2', [3, 0], [3, 3], r2),
+        W([3, 0], [6, 0]), R('R3', [6, 0], [6, 3], r3), W([6, 3], [3, 3]), W([3, 3], [0, 3]),
+      ],
+      grounds: [[0, 3]],
+    };
+    const { r } = solveSchematic(schematic);
+    const p23 = par(r2, r3);
+    const expected = r1 + p23;
+    return {
+      ...b, schematic, expected,
+      prompt: 'What is the total resistance the source sees (R1 in series with R2 ∥ R3)?',
+      highlight: { parts: ['R1', 'R2', 'R3'] },
+      // The formula's value; the solver's (V ÷ I) agrees to within its leakage (tests/drills.test.ts).
+      answer: { value: Math.abs(v / currentMag(r, 'V1') - expected) < expected * 1e-4 ? expected : v / currentMag(r, 'V1'), unit: 'Ω', tolerancePct: 1 },
+      solution: [
+        `Parallel pair first: R2 ∥ R3 = ${f(r2, 'Ω')} × ${f(r3, 'Ω')} ÷ (${f(r2, 'Ω')} + ${f(r3, 'Ω')}) = ${f(p23, 'Ω')}`,
+        `Then series adds: ${f(r1, 'Ω')} + ${f(p23, 'Ω')} = ${f(expected, 'Ω')}`,
+      ],
+    };
+  },
+};
+
+const diodeDrop: Generator = {
+  id: 'diode-drop', topic: 'Diodes', title: 'LED current after a series diode',
+  make(rng, seed) {
+    const b = base(this, seed);
+    const v = pick(rng, [5, 9, 12] as const);
+    const color = pick(rng, ['red', 'green', 'yellow'] as LedColor[]);
+    const vf = LED_VF[color];
+    const r1 = e12(rng, 220, 1000);
+    const schematic: Schematic = {
+      parts: [
+        V('V1', [0, 0], [0, 3], v), diodePart('D1', [0, 0], [2, 0], 0.7), R('R1', [2, 0], [5, 0], r1),
+        diodePart('LED1', [5, 0], [5, 3], vf, color), W([5, 3], [0, 3]),
+      ],
+      grounds: [[0, 3]],
+    };
+    const { r } = solveSchematic(schematic);
+    const expected = (v - 0.7 - vf) / r1;
+    return {
+      ...b, schematic, expected,
+      prompt: `A 0.7 V diode, ${f(r1, 'Ω')} and a ${color} LED (${vf} V) in series on ${f(v, 'V')}. What current flows?`,
+      highlight: { parts: ['D1', 'LED1'] },
+      answer: { value: currentMag(r, 'R1'), unit: 'A', tolerancePct: 2 },
+      solution: [
+        `Round the loop: ${f(v, 'V')} = 0.7 V + V_R + ${vf} V`,
+        `V_R = ${f(v, 'V')} − 0.7 V − ${vf} V = ${f(v - 0.7 - vf, 'V')}`,
+        `I = ${f(v - 0.7 - vf, 'V')} ÷ ${f(r1, 'Ω')} = ${f(expected, 'A')}`,
+      ],
+    };
+  },
+};
+
+const rheostat: Generator = {
+  id: 'rheostat', topic: 'Potentiometers', title: 'Current through a potentiometer used as a resistor',
+  make(rng, seed) {
+    const b = base(this, seed);
+    const v = 9;
+    const track = pick(rng, [1000, 5000, 10000] as const);
+    const k = pick(rng, [0.1, 0.2, 0.3, 0.5, 0.7]);
+    const rs = pick(rng, [220, 330, 470] as const);
+    const rk = track * k;
+    const schematic: Schematic = {
+      parts: [
+        V('V1', [0, 0], [0, 3], v), { ...R('RV1', [0, 0], [3, 0], rk), label: `${f(track, 'Ω')} at ${Math.round(k * 100)} %` },
+        R('R1', [3, 0], [6, 0], rs), diodePart('LED1', [6, 0], [6, 3], 2.0, 'red'), W([6, 3], [0, 3]),
+      ],
+      grounds: [[0, 3]],
+    };
+    const { r } = solveSchematic(schematic);
+    const expected = (v - 2) / (rk + rs);
+    return {
+      ...b, schematic, expected,
+      prompt: `A ${f(track, 'Ω')} pot with its knob at ${Math.round(k * 100)} % (leg 1 to the wiper), ${f(rs, 'Ω')} and a red LED on 9 V. What current flows?`,
+      highlight: { parts: ['RV1'] },
+      answer: { value: currentMag(r, 'R1'), unit: 'A', tolerancePct: 2 },
+      solution: [
+        `Leg 1 to the wiper: ${f(track, 'Ω')} × ${k} = ${f(rk, 'Ω')}`,
+        `In the loop: ${f(rk, 'Ω')} + ${f(rs, 'Ω')} = ${f(rk + rs, 'Ω')}`,
+        `I = (9 V − 2.0 V) ÷ ${f(rk + rs, 'Ω')} = ${f(expected, 'A')}`,
+      ],
+    };
+  },
+};
+
+const potWiper: Generator = {
+  id: 'pot-wiper', topic: 'Potentiometers', title: 'Voltage on a potentiometer’s wiper',
+  make(rng, seed) {
+    const b = base(this, seed);
+    const v = pick(rng, SUPPLIES);
+    const track = 10000;
+    const k = pick(rng, [0.1, 0.25, 0.4, 0.6, 0.75, 0.9]);
+    const schematic: Schematic = {
+      parts: [
+        V('V1', [0, 0], [0, 4], v), W([0, 0], [3, 0]), R('RVa', [3, 0], [3, 2], track * k), R('RVb', [3, 2], [3, 4], track * (1 - k)),
+        W([3, 4], [0, 4]), W([3, 2], [5, 2]),
+      ],
+      grounds: [[0, 4]],
+      labels: [{ at: [5, 2], name: 'wiper' }],
+    };
+    const { volt } = solveSchematic(schematic);
+    const expected = v * (1 - k);
+    return {
+      ...b, schematic, expected,
+      prompt: `A 10 kΩ pot across ${f(v, 'V')}, knob at ${Math.round(k * 100)} % from leg 1 (the + end). What voltage is on the wiper?`,
+      highlight: { nodes: [{ at: [5, 2], label: 'wiper = ?' }] },
+      answer: { value: volt([5, 2]), unit: 'V', tolerancePct: 1 },
+      solution: [
+        `Above the wiper: 10 kΩ × ${k} = ${f(track * k, 'Ω')}; below it: ${f(track * (1 - k), 'Ω')}`,
+        `It’s a divider: V = ${f(v, 'V')} × ${f(track * (1 - k), 'Ω')} ÷ 10 kΩ = ${f(expected, 'V')}`,
+      ],
+    };
+  },
+};
+
+const loadedDivider: Generator = {
+  id: 'loaded-divider', topic: 'Dividers', title: 'Divider output with a load',
+  make(rng, seed) {
+    const b = base(this, seed);
+    const v = pick(rng, SUPPLIES);
+    const r1 = e12(rng, 1000, 22_000);
+    const r2 = e12(rng, 1000, 22_000);
+    const rl = e12(rng, 1000, 47_000);
+    const schematic: Schematic = {
+      parts: [
+        V('V1', [0, 0], [0, 4], v), W([0, 0], [3, 0]), R('R1', [3, 0], [3, 2], r1), R('R2', [3, 2], [3, 4], r2),
+        W([3, 2], [6, 2]), R('RL', [6, 2], [6, 4], rl), W([6, 4], [3, 4]), W([3, 4], [0, 4]),
+      ],
+      grounds: [[0, 4]],
+      labels: [{ at: [3, 2], name: 'out' }],
+    };
+    const { volt } = solveSchematic(schematic);
+    const bottom = par(r2, rl);
+    const expected = (v * bottom) / (r1 + bottom);
+    return {
+      ...b, schematic, expected,
+      prompt: 'What is the output voltage with the load RL connected?',
+      highlight: { nodes: [{ at: [3, 2], label: 'out = ?' }] },
+      answer: { value: volt([3, 2]), unit: 'V', tolerancePct: 1 },
+      solution: [
+        `RL is in parallel with R2: ${f(r2, 'Ω')} ∥ ${f(rl, 'Ω')} = ${f(bottom, 'Ω')}`,
+        `Divider: ${f(v, 'V')} × ${f(bottom, 'Ω')} ÷ (${f(r1, 'Ω')} + ${f(bottom, 'Ω')}) = ${f(expected, 'V')}`,
+        `(Unloaded it would be ${f((v * r2) / (r1 + r2), 'V')}: the load pulls it down.)`,
+      ],
+    };
+  },
+};
+
+const parallelCaps: Generator = {
+  id: 'parallel-caps', topic: 'RC circuits', title: 'Time constant with capacitors in parallel',
+  make(rng, seed) {
+    const b = base(this, seed);
+    const v = pick(rng, SUPPLIES);
+    const r1 = e12(rng, 1000, 47_000);
+    const c1 = pick(rng, [10e-6, 22e-6, 47e-6, 100e-6]);
+    const c2 = pick(rng, [10e-6, 22e-6, 47e-6, 100e-6]);
+    const expected = r1 * (c1 + c2);
+    const schematic: Schematic = {
+      parts: [
+        V('V1', [0, 0], [0, 3], v), R('R1', [0, 0], [3, 0], r1), { kind: 'capacitor', id: 'C1', p1: [3, 0], p2: [3, 3], farads: c1 } as SchPart,
+        W([3, 0], [5, 0]), { kind: 'capacitor', id: 'C2', p1: [5, 0], p2: [5, 3], farads: c2 } as SchPart, W([5, 3], [3, 3]), W([3, 3], [0, 3]),
+      ],
+      grounds: [[0, 3]],
+    };
+    return {
+      ...b, schematic, expected,
+      prompt: 'What is the time constant τ for charging C1 and C2 through R1?',
+      highlight: { parts: ['C1', 'C2'] },
+      answer: { value: expected, unit: 's', tolerancePct: 1 },
+      solution: [
+        `In parallel, capacitance adds: ${f(c1, 'F')} + ${f(c2, 'F')} = ${f(c1 + c2, 'F')}`,
+        `τ = R × C = ${f(r1, 'Ω')} × ${f(c1 + c2, 'F')} = ${f(expected, 's')}`,
+      ],
+    };
+  },
+};
+
+const regulatorLed: Generator = {
+  id: 'regulator-led', topic: 'LEDs', title: 'LED current on a regulated rail',
+  make(rng, seed) {
+    const b = base(this, seed);
+    const vout = pick(rng, [3.3, 5] as const);
+    const color = vout === 5 ? pick(rng, ['red', 'green', 'blue'] as LedColor[]) : pick(rng, ['red', 'yellow'] as LedColor[]);
+    const vf = LED_VF[color];
+    const r1 = e12(rng, 68, 470);
+    const schematic: Schematic = {
+      parts: [{ ...V('U1', [0, 0], [0, 3], vout), label: `${vout} V regulated` }, R('R1', [0, 0], [4, 0], r1), diodePart('LED1', [4, 0], [4, 3], vf, color), W([4, 3], [0, 3])],
+      grounds: [[0, 3]],
+    };
+    const { r } = solveSchematic(schematic);
+    const expected = (vout - vf) / r1;
+    return {
+      ...b, schematic, expected,
+      prompt: `A ${color} LED (${vf} V) and ${f(r1, 'Ω')} run from a ${vout} V regulator. What current flows?`,
+      highlight: { parts: ['LED1'] },
+      answer: { value: currentMag(r, 'R1'), unit: 'A', tolerancePct: 2 },
+      solution: [
+        `After the regulator the supply is ${vout} V, whatever went in.`,
+        `I = (${vout} V − ${vf} V) ÷ ${f(r1, 'Ω')} = ${f(expected, 'A')}`,
+      ],
+    };
+  },
+};
+
+const transistorBase: Generator = {
+  id: 'transistor-base', topic: 'Transistors', title: 'Base current, and how much it can switch',
+  make(rng, seed) {
+    const b = base(this, seed);
+    const v = pick(rng, [5, 9, 12] as const);
+    const rb = e12(rng, 1000, 100_000);
+    // The base–emitter junction behaves like a 0.7 V diode.
+    const schematic: Schematic = {
+      parts: [V('V1', [0, 0], [0, 3], v), R('RB', [0, 0], [4, 0], rb), { ...diodePart('BE', [4, 0], [4, 3], 0.7), label: 'base–emitter' }, W([4, 3], [0, 3])],
+      grounds: [[0, 3]],
+    };
+    const { r } = solveSchematic(schematic);
+    const ib = (v - 0.7) / rb;
+    const expected = 200 * ib;
+    return {
+      ...b, schematic, expected,
+      prompt: `A BC547 (β = 200) has its base fed from ${f(v, 'V')} through ${f(rb, 'Ω')}. What is the most collector current it can pass?`,
+      highlight: { parts: ['RB'] },
+      answer: { value: 200 * currentMag(r, 'RB'), unit: 'A', tolerancePct: 2 },
+      solution: [
+        `The base sits 0.7 V above the emitter: I_B = (${f(v, 'V')} − 0.7 V) ÷ ${f(rb, 'Ω')} = ${f(ib, 'A')}`,
+        `I_C can be at most β × I_B = 200 × ${f(ib, 'A')} = ${f(expected, 'A')}`,
+        'For a switch, make sure that’s 5–10 times what the load needs.',
+      ],
+    };
+  },
+};
+
+const gateLed: Generator = {
+  id: 'gate-led', topic: 'Logic outputs', title: 'LED current from a logic output',
+  make(rng, seed) {
+    const b = base(this, seed);
+    const color = pick(rng, ['red', 'yellow', 'green'] as LedColor[]);
+    const vf = LED_VF[color];
+    const r1 = e12(rng, 150, 1000);
+    const schematic: Schematic = {
+      parts: [
+        { ...V('OUT', [0, 0], [0, 3], 5), label: '74HC output, high' }, { ...R('RO', [0, 0], [2, 0], 50), label: '50 Ω inside' },
+        R('R1', [2, 0], [5, 0], r1), diodePart('LED1', [5, 0], [5, 3], vf, color), W([5, 3], [0, 3]),
+      ],
+      grounds: [[0, 3]],
+    };
+    const { r } = solveSchematic(schematic);
+    const expected = (5 - vf) / (r1 + 50);
+    return {
+      ...b, schematic, expected,
+      prompt: `A 74HC output (5 V, about 50 Ω inside) drives ${f(r1, 'Ω')} and a ${color} LED (${vf} V). What current flows?`,
+      highlight: { parts: ['LED1'] },
+      answer: { value: currentMag(r, 'R1'), unit: 'A', tolerancePct: 2 },
+      solution: [
+        `The output’s own resistance adds to R1: ${f(r1, 'Ω')} + 50 Ω = ${f(r1 + 50, 'Ω')}`,
+        `I = (5 V − ${vf} V) ÷ ${f(r1 + 50, 'Ω')} = ${f(expected, 'A')}`,
+        `Under the 20 mA a pin can give? ${expected < 0.02 ? 'Yes.' : 'No: use a bigger resistor or a transistor.'}`,
+      ],
+    };
+  },
+};
+
 export const GENERATORS: Generator[] = [
   ohm, seriesVoltage, divider, parallelTotal, seriesParallel, ledResistor, rcCharge, bridge, currentSource,
+  seriesLeds, combineResistors, diodeDrop, rheostat, potWiper, loadedDivider, parallelCaps, regulatorLed, transistorBase, gateLed,
 ];
 
 export const TOPICS = [...new Set(GENERATORS.map((g) => g.topic))];

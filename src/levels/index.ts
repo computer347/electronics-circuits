@@ -5,26 +5,6 @@
 import { HOLE_BY_ID } from '../breadboard/layout';
 import { applyFaults } from './faults';
 import type { LevelDef } from './types';
-import firstLight from './world0/01-first-light.json';
-import wrongWayRound from './world0/02-wrong-way-round.json';
-import sideBySide from './world0/03-side-by-side.json';
-import splitTheDifference from './world0/04-split-the-difference.json';
-import slowBlink from './world0/05-slow-blink.json';
-import forkInTheRoad from './world0/06-fork-in-the-road.json';
-import pushToLight from './world0/07-push-to-light.json';
-import stackThemUp from './world0/08-stack-them-up.json';
-import balanceTheBridge from './world0/09-balance-the-bridge.json';
-import switchIt from './world0/10-switch-it.json';
-import countInLights from './world1/01-count-in-lights.json';
-import both from './world1/02-both.json';
-import either from './world1/03-either.json';
-import notGate from './world1/04-not.json';
-import notBoth from './world1/05-not-both.json';
-import stairwell from './world1/06-stairwell.json';
-import powerTheChip from './world1/07-power-the-chip.json';
-import halfAdder from './world1/08-half-adder.json';
-import remember from './world1/09-remember.json';
-
 export class LevelError extends Error {}
 
 const TOOLS = new Set(['select', 'wire', 'resistor', 'led', 'button', 'toggle', 'spdt', 'dip', 'battery', 'capacitor', 'generator', 'diode', 'pot', 'npn', 'nmos', 'regulator', 'probe', 'scope']);
@@ -61,11 +41,12 @@ export function parseLevel(raw: unknown): LevelDef {
   return l;
 }
 
+/** A world's level files, in file-name order (01-…, 02-…), parsed and checked. */
+const load = (files: Record<string, unknown>) =>
+  Object.keys(files).sort().map((k) => parseLevel((files[k] as { default?: unknown }).default ?? files[k]));
+
 /** World 0, in order. */
-export const WORLD0: LevelDef[] = [
-  firstLight, wrongWayRound, sideBySide, splitTheDifference, slowBlink,
-  forkInTheRoad, pushToLight, stackThemUp, balanceTheBridge, switchIt,
-].map(parseLevel);
+export const WORLD0: LevelDef[] = load(import.meta.glob('./world0/*.json', { eager: true }));
 
 /** World 0's slots, so the level map can show what's coming. */
 export const WORLD0_PLAN = [
@@ -79,10 +60,25 @@ export const WORLD0_PLAN = [
   { number: 8, title: 'Stack them up', topic: 'Batteries in series' },
   { number: 9, title: 'Balance the bridge', topic: 'Wheatstone bridge' },
   { number: 10, title: 'Switch it', topic: 'Transistor switch' },
+  { number: 11, title: 'Two in a row', topic: 'LEDs in series' },
+  { number: 12, title: 'Mixed colours', topic: 'Forward voltages' },
+  { number: 13, title: 'Make do', topic: 'Combining resistors' },
+  { number: 14, title: 'Bypassed', topic: 'Short circuits' },
+  { number: 15, title: 'Dead rail', topic: 'Rails and continuity' },
+  { number: 16, title: 'Power budget', topic: 'Power and supply limits' },
+  { number: 17, title: 'One-way valve', topic: 'Diodes' },
+  { number: 18, title: 'Turn it down', topic: 'Potentiometer (rheostat)' },
+  { number: 19, title: 'Set the level', topic: 'Potentiometer (divider)' },
+  { number: 20, title: 'Wrong partner', topic: 'Sensor dividers' },
+  { number: 21, title: 'Under load', topic: 'Loaded dividers' },
+  { number: 22, title: 'Double up', topic: 'Capacitors in parallel' },
+  { number: 23, title: 'Regulated', topic: 'Voltage regulators' },
+  { number: 24, title: 'Enough gain', topic: 'Transistor gain' },
+  { number: 25, title: 'Heavy lifting', topic: 'MOSFETs' },
 ];
 
 /** World 1: logic, built first from the parts World 0 taught (switches, transistors). */
-export const WORLD1: LevelDef[] = [countInLights, both, either, notGate, notBoth, stairwell, powerTheChip, halfAdder, remember].map(parseLevel);
+export const WORLD1: LevelDef[] = load(import.meta.glob('./world1/*.json', { eager: true }));
 
 export const WORLD1_PLAN = [
   { number: 1, title: 'Count in lights', topic: 'Binary' },
@@ -94,6 +90,21 @@ export const WORLD1_PLAN = [
   { number: 7, title: 'Power the chip', topic: 'Logic chips' },
   { number: 8, title: 'Half adder', topic: 'Adding bits' },
   { number: 9, title: 'Remember', topic: 'Latch (memory)' },
+  { number: 10, title: 'Either way in', topic: 'Diode logic' },
+  { number: 11, title: 'Upside down', topic: 'Inverter chip' },
+  { number: 12, title: 'AND from NANDs', topic: 'Universal gates' },
+  { number: 13, title: 'OR from NANDs', topic: 'De Morgan’s law' },
+  { number: 14, title: 'Same or different', topic: 'XNOR (equality)' },
+  { number: 15, title: 'Odd one out', topic: 'Parity' },
+  { number: 16, title: 'Burglar alarm', topic: 'Words to gates' },
+  { number: 17, title: 'Majority vote', topic: 'Sum of products' },
+  { number: 18, title: 'Pick one', topic: 'Multiplexer' },
+  { number: 19, title: 'One of four', topic: 'Decoder' },
+  { number: 20, title: 'Crack the code', topic: 'Code comparator' },
+  { number: 21, title: 'Drive it harder', topic: 'Logic drivers' },
+  { number: 22, title: 'Full adder', topic: 'Adding with carry' },
+  { number: 23, title: 'Hold that bit', topic: 'D latch' },
+  { number: 24, title: 'Traffic lights', topic: 'State decoding' },
 ];
 
 export interface World { number: number; name: string; levels: LevelDef[]; plan: { number: number; title: string; topic: string }[] }

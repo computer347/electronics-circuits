@@ -54,6 +54,19 @@ export function OhmsStepper({ value, values, onChange }: { value: number; values
   );
 }
 
+const KNOB = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1];
+/** ‹ knob 40 % ›: a potentiometer's wiper, from leg 1 (0 %) to leg 3 (100 %). */
+function KnobStepper({ value, onChange }: { value: number; onChange: (k: number) => void }) {
+  const i = Math.max(0, KNOB.findIndex((v) => v >= value - 1e-9));
+  return (
+    <span className="tray-stepper" aria-label="Knob">
+      <button onClick={() => onChange(KNOB[Math.max(0, i - 1)]!)} disabled={i === 0} aria-label="Turn down">‹</button>
+      <b>knob {Math.round(value * 100)} %</b>
+      <button onClick={() => onChange(KNOB[Math.min(KNOB.length - 1, i + 1)]!)} disabled={i >= KNOB.length - 1} aria-label="Turn up">›</button>
+    </span>
+  );
+}
+
 export function PartsTray({ level }: { level: LevelDef }) {
   const tool = useBench((s) => s.tool);
   const ohms = useBench((s) => s.ohms);
@@ -78,6 +91,7 @@ export function PartsTray({ level }: { level: LevelDef }) {
         {tool === 'select' && part && !isLocked && (
           <>
             {part.kind === 'resistor' && !isPinned && <OhmsStepper value={part.ohms ?? 1000} values={values} onChange={(o) => bench.updatePart(part.id, { ohms: o })} />}
+            {part.kind === 'pot' && <KnobStepper value={part.position ?? 0.5} onChange={(k) => bench.updatePart(part.id, { position: k })} />}
             {FLIPPABLE.includes(part.kind) && <button className="desk-chip" onClick={() => bench.flipPart(part.id)}>↻ Turn {part.id} round</button>}
             {part.kind === 'led' && part.burnt && (spares === 0
               ? <span className="desk-pict">No spare LEDs left: restart the level for a fresh set</span>

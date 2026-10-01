@@ -50,6 +50,6 @@ npm run build    # typecheck + production build
 
 ## Status (2026-10-01)
 
-Branch `desk-3d`: everything plays on the 3D bench. World 0 (10 levels, to the transistor switch) and World 1 (9 levels: binary, gates from switches and transistors, 74HC chips, half adder, SR latch). The Workshop has board repair, node coding, wiring and a client job, plus the 39+1-level Parts Lab. See `docs/design/parts-and-jobs-spec.md` for status and next steps.
+Branch `desk-3d`: everything plays on the 3D bench. World 0 (25 levels: LEDs, resistors, dividers, RC, diodes, pots, sensors, regulators, transistors, MOSFETs) and World 1 (24 levels: binary, gates, NAND universality, De Morgan, parity, mux, decoder, full adder, latches, a traffic-light state decoder). Level files load by file name (`import.meta.glob`); `tests/expansion.test.ts` holds each new level's fix. Every class step has a technical `body`, a `plain` note in simple words and, where there's a sum, a `calc` worked calculation (`src/learn/classes2.ts` for levels 0-11+ and 1-10+). The Workshop has board repair, node coding, wiring and a client job, plus the 39+1-level Parts Lab. See `docs/design/parts-and-jobs-spec.md` for status and next steps.
 
 Content rules (Mike's): every level, job and lab states a real-life skill (`skill`/`realLife`, enforced by tests), and every answer is checked against the solver or the 3D models in tests.

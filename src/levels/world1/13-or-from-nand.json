@@ -1,0 +1,200 @@
+{
+  "id": "w1-13-or-from-nand",
+  "world": 1,
+  "number": 13,
+  "title": "OR from NANDs",
+  "format": "build",
+  "skills": [
+    "logic.de-morgan"
+  ],
+  "brief": {
+    "story": "Same drawer, same NAND chips, but now the alarm should sound if either sensor trips: OR. De Morgan’s law says NOT A NAND NOT B is A OR B. Gates 1 and 2 already invert each input.",
+    "goal": "Wire the two inverted inputs (pins 3 and 6) into gate 3 (pins 9 and 10) so LED1 = SA OR SB.",
+    "datasheet": {
+      "title": "74HC00 · quad NAND",
+      "rows": [
+        [
+          "Gate 1",
+          "NOT SA → pin 3 (column 12)"
+        ],
+        [
+          "Gate 2",
+          "NOT SB → pin 6 (column 15)"
+        ],
+        [
+          "Gate 3",
+          "pins 9, 10 → 8 (bottom row)"
+        ],
+        [
+          "Pins 9, 10",
+          "columns 15, 14 (row f)"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "Pins 8–14 come back along row f, right to left: pin 8 is column 16, pin 9 column 15, pin 10 column 14. Bottom-half holes (g–j) reach them.",
+    "Gate 3 needs NOT SA and NOT SB: pin 3 (top of column 12) to pin 9 (bottom of column 15), and pin 6 (top of column 15) to pin 10 (bottom of column 14).",
+    "Wires: column 12 top → column 15 bottom, and column 15 top → column 14 bottom. NAND(NOT A, NOT B) = A OR B."
+  ],
+  "board": {
+    "supply": {
+      "volts": 5,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "IC1",
+        "kind": "dip",
+        "h1": "e10",
+        "h2": "f16",
+        "pins": [
+          "e10",
+          "e11",
+          "e12",
+          "e13",
+          "e14",
+          "e15",
+          "e16",
+          "f16",
+          "f15",
+          "f14",
+          "f13",
+          "f12",
+          "f11",
+          "f10"
+        ],
+        "marking": "74HC00"
+      },
+      {
+        "id": "WP",
+        "kind": "wire",
+        "h1": "T+:25",
+        "h2": "B+:25",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WN",
+        "kind": "wire",
+        "h1": "T-:24",
+        "h2": "B-:24",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "WV1",
+        "kind": "wire",
+        "h1": "g10",
+        "h2": "B+:8",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WG1",
+        "kind": "wire",
+        "h1": "a16",
+        "h2": "T-:16",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "SA",
+        "kind": "toggle",
+        "h1": "T+:3",
+        "h2": "a10",
+        "pressed": false
+      },
+      {
+        "id": "RSA",
+        "kind": "resistor",
+        "h1": "b10",
+        "h2": "T-:3",
+        "ohms": 10000
+      },
+      {
+        "id": "WA",
+        "kind": "wire",
+        "h1": "c10",
+        "h2": "c11",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "SB",
+        "kind": "toggle",
+        "h1": "T+:12",
+        "h2": "a13",
+        "pressed": false
+      },
+      {
+        "id": "RSB",
+        "kind": "resistor",
+        "h1": "b13",
+        "h2": "T-:12",
+        "ohms": 10000
+      },
+      {
+        "id": "WB",
+        "kind": "wire",
+        "h1": "c13",
+        "h2": "c14",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "R1",
+        "kind": "resistor",
+        "h1": "h16",
+        "h2": "h22",
+        "ohms": 330
+      },
+      {
+        "id": "LED1",
+        "kind": "led",
+        "h1": "i22",
+        "h2": "B-:20",
+        "color": "red"
+      }
+    ]
+  },
+  "locked": [
+    "IC1",
+    "WP",
+    "WN",
+    "WV1",
+    "WG1",
+    "SA",
+    "RSA",
+    "WA",
+    "SB",
+    "RSB",
+    "WB",
+    "R1",
+    "LED1"
+  ],
+  "tools": [
+    "wire",
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "truth-table",
+      "inputs": [
+        "SA",
+        "SB"
+      ],
+      "output": "LED1",
+      "table": [
+        0,
+        1,
+        1,
+        1
+      ],
+      "label": "LED1 = SA OR SB",
+      "explain": "De Morgan: NOT(NOT A AND NOT B) = A OR B, and that’s a NAND of the two inverted inputs."
+    },
+    {
+      "kind": "no-burnt"
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 2
+  },
+  "debrief": "De Morgan’s law flips AND and OR when you invert everything: NAND(NOT A, NOT B) = A OR B. Three NAND gates make an OR. It’s why one gate type is enough to build any logic, and why engineers move inverters around freely to save chips."
+}

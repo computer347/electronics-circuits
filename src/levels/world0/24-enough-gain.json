@@ -1,0 +1,179 @@
+{
+  "id": "w0-24-enough-gain",
+  "world": 0,
+  "number": 24,
+  "title": "Enough gain",
+  "format": "build",
+  "skills": [
+    "transistor.saturation",
+    "transistor.gain"
+  ],
+  "brief": {
+    "story": "One push button should light three LEDs through Q1. Each LED branch wants about 14 mA, so Q1 has to pass about 43 mA, and it only passes β × its base current (β ≈ 200).",
+    "goal": "Fit Q1’s base resistor (column 7 to column 11) so all three LEDs carry 13–16 mA while SW1 is held, with the base current under 2 mA.",
+    "datasheet": {
+      "title": "BC547 · NPN",
+      "rows": [
+        [
+          "Legs",
+          "E · B · C"
+        ],
+        [
+          "β (gain)",
+          "about 200"
+        ],
+        [
+          "Base on at",
+          "0.7 V"
+        ],
+        [
+          "Load",
+          "3 × 14.5 mA ≈ 43 mA"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "Q1 can only pass β × I_B. For 43 mA it needs at least 43 mA ÷ 200 = 0.22 mA into the base.",
+    "I_B = (9 V − 0.7 V) ÷ R_B, so R_B can be at most 8.3 V ÷ 0.22 mA ≈ 38 kΩ. Give it a margin: designers aim for 5–10 times more base current than the minimum.",
+    "10 kΩ gives 0.83 mA (room for 166 mA). 47 kΩ is too little (35 mA shared by three). 1 kΩ breaks the 2 mA limit."
+  ],
+  "board": {
+    "supply": {
+      "volts": 9,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "Q1",
+        "kind": "npn",
+        "h1": "e10",
+        "h2": "e11",
+        "h3": "e12",
+        "marking": "BC547"
+      },
+      {
+        "id": "W1",
+        "kind": "wire",
+        "h1": "a10",
+        "h2": "T-:9",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "W2",
+        "kind": "wire",
+        "h1": "T+:3",
+        "h2": "a4",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "SW1",
+        "kind": "button",
+        "h1": "b4",
+        "h2": "b7",
+        "pressed": false
+      },
+      {
+        "id": "R2",
+        "kind": "resistor",
+        "h1": "T+:14",
+        "h2": "a14",
+        "ohms": 470
+      },
+      {
+        "id": "LED1",
+        "kind": "led",
+        "h1": "b14",
+        "h2": "b12",
+        "color": "green"
+      },
+      {
+        "id": "R3",
+        "kind": "resistor",
+        "h1": "T+:16",
+        "h2": "a16",
+        "ohms": 470
+      },
+      {
+        "id": "LED2",
+        "kind": "led",
+        "h1": "b16",
+        "h2": "c12",
+        "color": "green"
+      },
+      {
+        "id": "R4",
+        "kind": "resistor",
+        "h1": "T+:18",
+        "h2": "a18",
+        "ohms": 470
+      },
+      {
+        "id": "LED3",
+        "kind": "led",
+        "h1": "b18",
+        "h2": "d12",
+        "color": "green"
+      }
+    ]
+  },
+  "resistorValues": [
+    1000,
+    4700,
+    10000,
+    47000,
+    100000
+  ],
+  "locked": [
+    "Q1",
+    "W1",
+    "W2",
+    "SW1",
+    "R2",
+    "LED1",
+    "R3",
+    "LED2",
+    "R4",
+    "LED3"
+  ],
+  "tools": [
+    "resistor",
+    "wire",
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "switched-led",
+      "part": "LED1",
+      "min": 0.013,
+      "max": 0.016,
+      "explain": "All three LEDs share Q1’s collector current, which can’t be more than β × I_B."
+    },
+    {
+      "kind": "switched-led",
+      "part": "LED2",
+      "min": 0.013,
+      "max": 0.016
+    },
+    {
+      "kind": "switched-led",
+      "part": "LED3",
+      "min": 0.013,
+      "max": 0.016
+    },
+    {
+      "kind": "part-current",
+      "part": "Q1.base",
+      "max": 0.002,
+      "label": "Base current under 2 mA"
+    },
+    {
+      "kind": "no-burnt"
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 1
+  },
+  "debrief": "A transistor switch must be driven into saturation: enough base current that β × I_B is well above what the load needs, so the load, not the transistor, sets the current. 10 kΩ gives 0.83 mA, room for 166 mA, so the 43 mA of LEDs light fully. With 47 kΩ it can only pass 35 mA and every LED dims."
+}

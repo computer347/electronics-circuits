@@ -69,6 +69,7 @@ export const useSession = create<Session>((set, get) => ({
     bench.setRules({ locked: level.locked ?? [], pinned: level.pinned ?? [], spares: level.spares?.led ?? null });
     if (level.scope?.setup) useScope.getState().apply(level.scope.setup);
     if (level.resistorValues && !level.resistorValues.includes(bench.ohms)) bench.setOhms(level.resistorValues[0]!);
+    if (level.capacitor) bench.setFarads(level.capacitor.farads);
     useScope.getState().setRunning(true);
     set({
       levelId: id, startedAt: Date.now(), finishedIn: null, hintsShown: 0, checks: 0,

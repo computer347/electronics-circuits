@@ -20,8 +20,8 @@ const R = (id: string, h1: string, h2: string, ohms: number): BoardPart => ({ id
 const W = (id: string, h1: string, h2: string): BoardPart => ({ id, kind: 'wire', h1, h2 });
 
 describe('World 1', () => {
-  it('has nine levels, numbered in order, after World 0', () => {
-    expect(WORLD1.map((l) => l.number)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  it('has 24 levels, numbered in order, after World 0', () => {
+    expect(WORLD1.map((l) => l.number)).toEqual(Array.from({ length: 24 }, (_, i) => i + 1));
     expect(WORLD1.every((l) => l.world === 1)).toBe(true);
   });
 
@@ -164,7 +164,8 @@ describe('World 1 inside the circuit', () => {
       8: (b) => set(add(b, W('W8', 'c3', 'a14'), W('W9', 'd4', 'a15')), { SA: { pressed: true }, SB: { pressed: true } }),
       9: (b) => add(b, W('W8', 'a12', 'a13'), W('W9', 'a15', 'a11')),
     };
-    for (const l of WORLD1) {
+    // levels 10 and on are walked in tests/expansion.test.ts
+    for (const l of WORLD1.filter((x) => fixes[x.number])) {
       for (const b of [startingBoard(l), fixes[l.number]!(startingBoard(l))]) {
         const w = buildWorld(b, analyzeBoard(b));
         expect(w.plazas.length, l.id).toBeGreaterThan(0);

@@ -1,0 +1,125 @@
+{
+  "id": "w0-22-double-up",
+  "world": 0,
+  "number": 22,
+  "title": "Double up",
+  "format": "build",
+  "skills": [
+    "capacitor.parallel",
+    "rc-time-constant"
+  ],
+  "brief": {
+    "story": "The soft-start on the bench fan comes on too quickly: R1 (4.7 kΩ) and C1 (100 µF) give it half a second. The box has more 100 µF capacitors, and the client wants about a second.",
+    "goal": "Make the voltage at column 14 reach 63 % in 0.85–1.1 s while SW1 is held.",
+    "datasheet": {
+      "title": "Soft-start",
+      "rows": [
+        [
+          "R1",
+          "4.7 kΩ"
+        ],
+        [
+          "C1",
+          "100 µF"
+        ],
+        [
+          "τ",
+          "R × C"
+        ],
+        [
+          "Parallel caps",
+          "C = C₁ + C₂"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "τ = R × C = 4.7 kΩ × 100 µF = 0.47 s. You need about twice that, without changing R1.",
+    "Capacitors in parallel add up (the opposite of resistors): two 100 µF side by side are 200 µF.",
+    "Fit a second 100 µF with its + leg in column 14 and its − leg on ground: τ = 4.7 kΩ × 200 µF = 0.94 s."
+  ],
+  "board": {
+    "supply": {
+      "volts": 9,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "W1",
+        "kind": "wire",
+        "h1": "T+:3",
+        "h2": "j3",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "SW1",
+        "kind": "button",
+        "h1": "g3",
+        "h2": "g6",
+        "pressed": false
+      },
+      {
+        "id": "R1",
+        "kind": "resistor",
+        "h1": "i6",
+        "h2": "i14",
+        "ohms": 4700
+      },
+      {
+        "id": "C1",
+        "kind": "capacitor",
+        "h1": "h14",
+        "h2": "T-:13",
+        "farads": 0.0001
+      }
+    ]
+  },
+  "capacitor": {
+    "farads": 0.0001
+  },
+  "scope": {
+    "ch1": "j14",
+    "setup": {
+      "tdiv": 0.5,
+      "ch1": {
+        "on": true,
+        "vdiv": 2,
+        "pos": -3
+      },
+      "ch2": {
+        "on": false
+      },
+      "trigger": {
+        "source": "ch1",
+        "level": 1,
+        "edge": "rise",
+        "mode": "auto"
+      }
+    }
+  },
+  "locked": [
+    "W1",
+    "SW1",
+    "R1",
+    "C1"
+  ],
+  "tools": [
+    "capacitor",
+    "wire",
+    "probe",
+    "scope"
+  ],
+  "spec": [
+    {
+      "kind": "charge-time",
+      "part": "C1",
+      "min": 0.85,
+      "max": 1.1
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 1
+  },
+  "debrief": "Capacitors in parallel add their capacitance, because together they hold more charge at the same voltage: 100 µF + 100 µF = 200 µF, doubling τ = R × C. Power boards do this constantly, banking several capacitors side by side instead of one big one."
+}

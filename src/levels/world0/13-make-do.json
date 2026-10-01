@@ -1,0 +1,102 @@
+{
+  "id": "w0-13-make-do",
+  "world": 0,
+  "number": 13,
+  "title": "Make do",
+  "format": "build",
+  "skills": [
+    "resistor.combine",
+    "parallel"
+  ],
+  "brief": {
+    "story": "The LED needs about 350 Ω, but the drawer only has 100 Ω, 470 Ω and 1 kΩ resistors left. It’s Sunday and the shop is shut.",
+    "goal": "Combine resistors from the drawer so LED1 carries 18–23 mA.",
+    "datasheet": {
+      "title": "In the drawer",
+      "rows": [
+        [
+          "Values",
+          "100 Ω, 470 Ω, 1 kΩ"
+        ],
+        [
+          "Series",
+          "R = R₁ + R₂"
+        ],
+        [
+          "Parallel",
+          "R = R₁ × R₂ ÷ (R₁ + R₂)"
+        ],
+        [
+          "Target",
+          "18–23 mA (about 300–390 Ω)"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "You need about 7 V ÷ 20 mA = 350 Ω between column 3 and LED1 (column 14). No single drawer value is close.",
+    "Side by side (parallel), two resistors give less than the smaller one: both from column 3 to column 14.",
+    "470 Ω and 1 kΩ in parallel make 320 Ω: 21.9 mA. Three 1 kΩ in parallel (333 Ω) work too."
+  ],
+  "board": {
+    "supply": {
+      "volts": 9,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "W1",
+        "kind": "wire",
+        "h1": "T+:3",
+        "h2": "a3",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "LED1",
+        "kind": "led",
+        "h1": "b14",
+        "h2": "b16",
+        "color": "red"
+      },
+      {
+        "id": "W2",
+        "kind": "wire",
+        "h1": "a16",
+        "h2": "T-:15",
+        "wireColor": "#2f6fe0"
+      }
+    ]
+  },
+  "resistorValues": [
+    100,
+    470,
+    1000
+  ],
+  "locked": [
+    "W1",
+    "LED1",
+    "W2"
+  ],
+  "tools": [
+    "resistor",
+    "wire",
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "led-current",
+      "part": "LED1",
+      "min": 0.018,
+      "max": 0.023,
+      "explain": "In series resistances add; in parallel the total is less than the smallest: 470 Ω ∥ 1 kΩ = 320 Ω."
+    },
+    {
+      "kind": "no-burnt"
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 2
+  },
+  "debrief": "Series adds resistances, parallel divides them: 470 Ω ∥ 1 kΩ = 470 × 1000 ÷ 1470 = 320 Ω. Repair techs do this all the time when the exact value isn’t in the drawer, and it’s also how you make a resistor that can take more heat: two in parallel share the power."
+}

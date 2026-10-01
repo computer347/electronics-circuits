@@ -1,0 +1,176 @@
+{
+  "id": "w1-10-diode-or",
+  "world": 1,
+  "number": 10,
+  "title": "Either way in",
+  "format": "build",
+  "skills": [
+    "logic.diode-or",
+    "diode.steering"
+  ],
+  "brief": {
+    "story": "Two doorbell buttons (front and back) should both ring the same chime, but each has its own indicator light that must only show its own button. Joining the two switch lines with plain wires would mix them up.",
+    "goal": "Fit two diodes so OUT lights when SA or SB is on, while LEDA shows only SA and LEDB only SB.",
+    "datasheet": {
+      "title": "Diode OR",
+      "rows": [
+        [
+          "Diode",
+          "passes anode → cathode only"
+        ],
+        [
+          "DA",
+          "column 3 → column 12"
+        ],
+        [
+          "DB",
+          "column 9 → column 12"
+        ],
+        [
+          "OUT",
+          "column 12"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "Each switch line (columns 3 and 9) needs a path to the chime line in column 12, one that can’t carry current back the other way.",
+    "A diode from each switch column to column 12, band (cathode) towards column 12. Current flows into OUT, but never from one switch over to the other.",
+    "DA: column 3 → 12, DB: column 9 → 12, bands on 12. With wires instead, switching SA on also lights LEDB."
+  ],
+  "board": {
+    "supply": {
+      "volts": 9,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "SA",
+        "kind": "toggle",
+        "h1": "T+:2",
+        "h2": "a3",
+        "pressed": false
+      },
+      {
+        "id": "RA",
+        "kind": "resistor",
+        "h1": "b3",
+        "h2": "b5",
+        "ohms": 1000
+      },
+      {
+        "id": "LEDA",
+        "kind": "led",
+        "h1": "c5",
+        "h2": "T-:4",
+        "color": "yellow"
+      },
+      {
+        "id": "SB",
+        "kind": "toggle",
+        "h1": "T+:8",
+        "h2": "a9",
+        "pressed": false
+      },
+      {
+        "id": "RB",
+        "kind": "resistor",
+        "h1": "b9",
+        "h2": "b11",
+        "ohms": 1000
+      },
+      {
+        "id": "LEDB",
+        "kind": "led",
+        "h1": "c11",
+        "h2": "T-:10",
+        "color": "yellow"
+      },
+      {
+        "id": "RO",
+        "kind": "resistor",
+        "h1": "b12",
+        "h2": "b16",
+        "ohms": 1000
+      },
+      {
+        "id": "OUT",
+        "kind": "led",
+        "h1": "c16",
+        "h2": "T-:15",
+        "color": "green"
+      }
+    ]
+  },
+  "locked": [
+    "SA",
+    "RA",
+    "LEDA",
+    "SB",
+    "RB",
+    "LEDB",
+    "RO",
+    "OUT"
+  ],
+  "tools": [
+    "diode",
+    "wire",
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "truth-table",
+      "inputs": [
+        "SA",
+        "SB"
+      ],
+      "output": "OUT",
+      "table": [
+        0,
+        1,
+        1,
+        1
+      ],
+      "label": "OUT = SA OR SB"
+    },
+    {
+      "kind": "truth-table",
+      "inputs": [
+        "SA",
+        "SB"
+      ],
+      "output": "LEDA",
+      "table": [
+        0,
+        1,
+        0,
+        1
+      ],
+      "label": "LEDA shows SA only",
+      "explain": "A wire joins both ways: SB’s current would flow back into SA’s line. A diode only lets it go forwards."
+    },
+    {
+      "kind": "truth-table",
+      "inputs": [
+        "SA",
+        "SB"
+      ],
+      "output": "LEDB",
+      "table": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "label": "LEDB shows SB only"
+    },
+    {
+      "kind": "no-burnt"
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 2
+  },
+  "debrief": "Two diodes pointing into one line make an OR gate: either input can lift the output, but neither can feed the other. This is diode logic, the oldest kind, and it’s still how two power sources feed one circuit safely (a USB port and a battery, each through a diode), and how keyboards stop ghost key presses."
+}

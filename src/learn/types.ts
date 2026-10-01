@@ -17,8 +17,12 @@ export type Gate = 'AND' | 'OR' | 'NOT' | 'NAND' | 'XOR';
 
 export interface Step {
   title: string;
-  /** Paragraphs. `**bold**` and `` `formula` `` are the only markup. */
+  /** Paragraphs: the technical explanation. `**bold**` and `` `formula` `` are the only markup. */
   body: string[];
+  /** The same idea in plain words, with no jargon: shown in its own box under the explanation. */
+  plain?: string;
+  /** A worked calculation, one line per step of the sum (same markup as the body). */
+  calc?: string[];
   lab?: LabSpec;
   /** One line under the lab telling you what to try. */
   tryThis?: string;

@@ -97,6 +97,8 @@ export interface LevelDef {
   resistorValues?: number[];
   /** Spare LEDs: each burnt LED costs one to replace. */
   spares?: { led?: number };
+  /** The capacitor the parts box hands out in this level (the bench's default is 100 nF). */
+  capacitor?: { farads: number };
   spec: SpecCheck[];
   /**
    * Gold star: pass within this many checks, added parts and multimeter measurements (both

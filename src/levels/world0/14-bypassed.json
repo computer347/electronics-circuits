@@ -1,0 +1,108 @@
+{
+  "id": "w0-14-bypassed",
+  "world": 0,
+  "number": 14,
+  "title": "Bypassed",
+  "format": "find-fault",
+  "skills": [
+    "fault.short",
+    "meter.voltage"
+  ],
+  "brief": {
+    "story": "A customer’s night light is dark, but the resistor is warm. Nothing is burnt, nothing is backwards. Something is letting the current skip the LED.",
+    "goal": "Find the short and fix it so LED1 carries 15–25 mA.",
+    "datasheet": {
+      "title": "Measured by the customer",
+      "rows": [
+        [
+          "Across LED1",
+          "0 V"
+        ],
+        [
+          "Across R1",
+          "9 V"
+        ],
+        [
+          "R1",
+          "warm to the touch"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "Measure across LED1: a lit LED has about 2 V across it. 0 V means both its legs are at the same voltage, joined by something else.",
+    "Follow the wires: W2 should take LED1’s short leg (column 13) to ground. Where does it actually start?",
+    "W2 starts in column 10, LED1’s long leg, so it shorts the LED out. Move it to column 13."
+  ],
+  "board": {
+    "supply": {
+      "volts": 9,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "W1",
+        "kind": "wire",
+        "h1": "T+:3",
+        "h2": "a3",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "R1",
+        "kind": "resistor",
+        "h1": "c3",
+        "h2": "c10",
+        "ohms": 330
+      },
+      {
+        "id": "LED1",
+        "kind": "led",
+        "h1": "d10",
+        "h2": "d13",
+        "color": "green"
+      },
+      {
+        "id": "W2",
+        "kind": "wire",
+        "h1": "a13",
+        "h2": "T-:12",
+        "wireColor": "#2f6fe0"
+      }
+    ]
+  },
+  "faults": [
+    {
+      "kind": "move-leg",
+      "part": "W2",
+      "leg": "h1",
+      "to": "a10"
+    }
+  ],
+  "locked": [
+    "W1",
+    "R1",
+    "LED1"
+  ],
+  "tools": [
+    "wire",
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "led-current",
+      "part": "LED1",
+      "min": 0.015,
+      "max": 0.025,
+      "explain": "A wire across a part is a short: the current takes the wire, and the part gets nothing."
+    },
+    {
+      "kind": "no-burnt"
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 1,
+    "measurements": 1
+  },
+  "debrief": "A short is a path with (almost) no resistance around a part. The current takes it, the part gets 0 V and does nothing, and everything before it runs hotter. 0 V across a part that should be working is the meter’s way of saying “short”. It’s the commonest fault on a hand-built board: one wire in the wrong column."
+}

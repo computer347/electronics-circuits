@@ -1,0 +1,105 @@
+{
+  "id": "w0-17-one-way",
+  "world": 0,
+  "number": 17,
+  "title": "One-way valve",
+  "format": "build",
+  "skills": [
+    "diode.forward-drop",
+    "protection"
+  ],
+  "brief": {
+    "story": "People keep plugging the battery in backwards and killing the LEDs. A diode in the feed lets current through one way only, so a reversed battery does nothing at all. It costs a little voltage.",
+    "goal": "Fit a diode between column 3 and column 8 so LED1 carries 18–20 mA.",
+    "datasheet": {
+      "title": "1N4148 diode",
+      "rows": [
+        [
+          "Forward drop",
+          "0.7 V"
+        ],
+        [
+          "Black band",
+          "the cathode (−)"
+        ],
+        [
+          "Reverse",
+          "blocks, up to 75 V"
+        ],
+        [
+          "R1",
+          "330 Ω"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "The diode goes from the + feed (column 3) to R1 (column 8). Current flows from its anode to the banded cathode.",
+    "Band towards the LED: anode in column 3, cathode in column 8. Backwards, it blocks everything.",
+    "With the diode the LED gets (9 − 0.7 − 2.0) ÷ 330 = 19.1 mA. A plain wire instead gives 21.2 mA: too much."
+  ],
+  "board": {
+    "supply": {
+      "volts": 9,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "W1",
+        "kind": "wire",
+        "h1": "T+:3",
+        "h2": "a3",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "R1",
+        "kind": "resistor",
+        "h1": "c8",
+        "h2": "c14",
+        "ohms": 330
+      },
+      {
+        "id": "LED1",
+        "kind": "led",
+        "h1": "d14",
+        "h2": "d17",
+        "color": "red"
+      },
+      {
+        "id": "W2",
+        "kind": "wire",
+        "h1": "a17",
+        "h2": "T-:15",
+        "wireColor": "#2f6fe0"
+      }
+    ]
+  },
+  "locked": [
+    "W1",
+    "R1",
+    "LED1",
+    "W2"
+  ],
+  "tools": [
+    "diode",
+    "wire",
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "led-current",
+      "part": "LED1",
+      "min": 0.018,
+      "max": 0.02,
+      "explain": "A silicon diode keeps about 0.7 V when it conducts, and blocks completely the other way round."
+    },
+    {
+      "kind": "no-burnt"
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 1
+  },
+  "debrief": "A diode is a one-way valve: forwards it conducts and keeps about 0.7 V for itself; backwards it blocks. In series with a supply it’s reverse-polarity protection: put the battery in wrong and nothing flows, so nothing breaks. The 0.7 V it costs is why the LED runs at 19 mA instead of 21."
+}

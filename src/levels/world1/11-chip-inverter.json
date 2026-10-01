@@ -1,0 +1,166 @@
+{
+  "id": "w1-11-chip-inverter",
+  "world": 1,
+  "number": 11,
+  "title": "Upside down",
+  "format": "build",
+  "skills": [
+    "logic.not",
+    "chip.pinout"
+  ],
+  "brief": {
+    "story": "The porch light should come on when the daylight switch is off. The 74HC04 hex inverter is powered and its input is on SA, but the light isn’t connected to the right pin.",
+    "goal": "Wire the inverter’s output (pin 2) to the light, so LED1 is lit when SA is off and dark when it’s on.",
+    "datasheet": {
+      "title": "74HC04 · hex inverter",
+      "rows": [
+        [
+          "Gate 1",
+          "in pin 1 → out pin 2"
+        ],
+        [
+          "Pin 1",
+          "column 10 (SA)"
+        ],
+        [
+          "Pin 2",
+          "column 11"
+        ],
+        [
+          "Light",
+          "R1 in column 20"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "Pins count from the notch: pin 1 is column 10, pin 2 is column 11, along row e.",
+    "The light’s resistor R1 starts in column 20. One wire from the output pin’s column to column 20.",
+    "A wire from column 11 (pin 2) to column 20. From column 10 instead, the light would just copy SA."
+  ],
+  "board": {
+    "supply": {
+      "volts": 5,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "IC1",
+        "kind": "dip",
+        "h1": "e10",
+        "h2": "f16",
+        "pins": [
+          "e10",
+          "e11",
+          "e12",
+          "e13",
+          "e14",
+          "e15",
+          "e16",
+          "f16",
+          "f15",
+          "f14",
+          "f13",
+          "f12",
+          "f11",
+          "f10"
+        ],
+        "marking": "74HC04"
+      },
+      {
+        "id": "WP",
+        "kind": "wire",
+        "h1": "T+:25",
+        "h2": "B+:25",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WN",
+        "kind": "wire",
+        "h1": "T-:24",
+        "h2": "B-:24",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "WV1",
+        "kind": "wire",
+        "h1": "g10",
+        "h2": "B+:8",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WG1",
+        "kind": "wire",
+        "h1": "a16",
+        "h2": "T-:14",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "SA",
+        "kind": "toggle",
+        "h1": "T+:9",
+        "h2": "a10",
+        "pressed": false
+      },
+      {
+        "id": "RSA",
+        "kind": "resistor",
+        "h1": "b10",
+        "h2": "T-:10",
+        "ohms": 10000
+      },
+      {
+        "id": "R1",
+        "kind": "resistor",
+        "h1": "b20",
+        "h2": "b24",
+        "ohms": 330
+      },
+      {
+        "id": "LED1",
+        "kind": "led",
+        "h1": "c24",
+        "h2": "T-:22",
+        "color": "yellow"
+      }
+    ]
+  },
+  "locked": [
+    "IC1",
+    "WP",
+    "WN",
+    "WV1",
+    "WG1",
+    "SA",
+    "RSA",
+    "R1",
+    "LED1"
+  ],
+  "tools": [
+    "wire",
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "truth-table",
+      "inputs": [
+        "SA"
+      ],
+      "output": "LED1",
+      "table": [
+        1,
+        0
+      ],
+      "label": "LED1 = NOT SA",
+      "explain": "A 74HC04 gate’s output is always the opposite of its input: pin 2 is high when pin 1 is low."
+    },
+    {
+      "kind": "no-burnt"
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 1
+  },
+  "debrief": "One chip, six inverters: each output is the opposite of its input. Real circuits use them constantly, because enable signals are often active-low (they act when pulled to 0), and an inverter is how you flip a signal to match."
+}

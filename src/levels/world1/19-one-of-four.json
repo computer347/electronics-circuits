@@ -1,0 +1,373 @@
+{
+  "id": "w1-19-one-of-four",
+  "world": 1,
+  "number": 19,
+  "title": "One of four",
+  "format": "build",
+  "skills": [
+    "logic.decoder"
+  ],
+  "brief": {
+    "story": "The rack has four relays and a two-bit address (A, B): exactly one relay should be on for each address, 00 to 11. That’s a 2-to-4 decoder: two inverters (IC1) and four ANDs (IC2). Output Y2 (B on, A off) isn’t wired.",
+    "goal": "Wire IC2’s gate 3 so Y2 lights only for B = 1, A = 0, and each address lights exactly one LED.",
+    "datasheet": {
+      "title": "2-to-4 decoder",
+      "rows": [
+        [
+          "Y0",
+          "NOT A · NOT B"
+        ],
+        [
+          "Y1",
+          "A · NOT B"
+        ],
+        [
+          "Y2",
+          "NOT A · B (gate 3: pins 9, 10)"
+        ],
+        [
+          "Y3",
+          "A · B"
+        ],
+        [
+          "NOT A",
+          "column 4"
+        ],
+        [
+          "B",
+          "column 5"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "Each output is the AND of the inputs, each in its true or inverted form. Y2 = NOT A AND B.",
+    "Gate 3’s inputs are pin 9 (column 22, bottom) and pin 10 (column 21, bottom). NOT A is on column 4 (IC1 pin 2), B on column 5.",
+    "Column 4 → column 22 bottom, and column 5 → column 21 bottom."
+  ],
+  "board": {
+    "supply": {
+      "volts": 5,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "IC1",
+        "kind": "dip",
+        "h1": "e3",
+        "h2": "f9",
+        "pins": [
+          "e3",
+          "e4",
+          "e5",
+          "e6",
+          "e7",
+          "e8",
+          "e9",
+          "f9",
+          "f8",
+          "f7",
+          "f6",
+          "f5",
+          "f4",
+          "f3"
+        ],
+        "marking": "74HC04"
+      },
+      {
+        "id": "IC2",
+        "kind": "dip",
+        "h1": "e17",
+        "h2": "f23",
+        "pins": [
+          "e17",
+          "e18",
+          "e19",
+          "e20",
+          "e21",
+          "e22",
+          "e23",
+          "f23",
+          "f22",
+          "f21",
+          "f20",
+          "f19",
+          "f18",
+          "f17"
+        ],
+        "marking": "74HC08"
+      },
+      {
+        "id": "WP",
+        "kind": "wire",
+        "h1": "T+:25",
+        "h2": "B+:25",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WN",
+        "kind": "wire",
+        "h1": "T-:24",
+        "h2": "B-:24",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "WV1",
+        "kind": "wire",
+        "h1": "g3",
+        "h2": "B+:2",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WG1",
+        "kind": "wire",
+        "h1": "a9",
+        "h2": "T-:7",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "WV2",
+        "kind": "wire",
+        "h1": "g17",
+        "h2": "B+:14",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WG2",
+        "kind": "wire",
+        "h1": "a23",
+        "h2": "T-:19",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "A",
+        "kind": "toggle",
+        "h1": "T+:1",
+        "h2": "a3",
+        "pressed": false
+      },
+      {
+        "id": "RA",
+        "kind": "resistor",
+        "h1": "b3",
+        "h2": "T-:1",
+        "ohms": 10000
+      },
+      {
+        "id": "B",
+        "kind": "toggle",
+        "h1": "T+:3",
+        "h2": "a5",
+        "pressed": false
+      },
+      {
+        "id": "RB",
+        "kind": "resistor",
+        "h1": "b5",
+        "h2": "T-:3",
+        "ohms": 10000
+      },
+      {
+        "id": "W1",
+        "kind": "wire",
+        "h1": "b4",
+        "h2": "b17",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "W2",
+        "kind": "wire",
+        "h1": "b6",
+        "h2": "b18",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "W3",
+        "kind": "wire",
+        "h1": "c3",
+        "h2": "b20",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "W4",
+        "kind": "wire",
+        "h1": "c6",
+        "h2": "b21",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "W5",
+        "kind": "wire",
+        "h1": "d3",
+        "h2": "h19",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "W6",
+        "kind": "wire",
+        "h1": "d5",
+        "h2": "h18",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "R0",
+        "kind": "resistor",
+        "h1": "a19",
+        "h2": "a26",
+        "ohms": 330
+      },
+      {
+        "id": "Y0",
+        "kind": "led",
+        "h1": "b26",
+        "h2": "T-:21",
+        "color": "red"
+      },
+      {
+        "id": "R1",
+        "kind": "resistor",
+        "h1": "a22",
+        "h2": "a28",
+        "ohms": 330
+      },
+      {
+        "id": "Y1",
+        "kind": "led",
+        "h1": "b28",
+        "h2": "T-:23",
+        "color": "red"
+      },
+      {
+        "id": "R2",
+        "kind": "resistor",
+        "h1": "g23",
+        "h2": "g26",
+        "ohms": 330
+      },
+      {
+        "id": "Y2",
+        "kind": "led",
+        "h1": "h26",
+        "h2": "B-:21",
+        "color": "red"
+      },
+      {
+        "id": "R3",
+        "kind": "resistor",
+        "h1": "g20",
+        "h2": "g28",
+        "ohms": 330
+      },
+      {
+        "id": "Y3",
+        "kind": "led",
+        "h1": "h28",
+        "h2": "B-:23",
+        "color": "red"
+      }
+    ]
+  },
+  "locked": [
+    "IC1",
+    "IC2",
+    "WP",
+    "WN",
+    "WV1",
+    "WG1",
+    "WV2",
+    "WG2",
+    "A",
+    "RA",
+    "B",
+    "RB",
+    "W1",
+    "W2",
+    "W3",
+    "W4",
+    "W5",
+    "W6",
+    "R0",
+    "Y0",
+    "R1",
+    "Y1",
+    "R2",
+    "Y2",
+    "R3",
+    "Y3"
+  ],
+  "tools": [
+    "wire",
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "truth-table",
+      "inputs": [
+        "A",
+        "B"
+      ],
+      "output": "Y0",
+      "table": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "label": "Y0 = NOT A · NOT B"
+    },
+    {
+      "kind": "truth-table",
+      "inputs": [
+        "A",
+        "B"
+      ],
+      "output": "Y1",
+      "table": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "label": "Y1 = A · NOT B"
+    },
+    {
+      "kind": "truth-table",
+      "inputs": [
+        "A",
+        "B"
+      ],
+      "output": "Y2",
+      "table": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "label": "Y2 = NOT A · B",
+      "explain": "Each output ANDs every input, true or inverted, so exactly one is 1 for each address."
+    },
+    {
+      "kind": "truth-table",
+      "inputs": [
+        "A",
+        "B"
+      ],
+      "output": "Y3",
+      "table": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "label": "Y3 = A · B"
+    },
+    {
+      "kind": "no-burnt"
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 2
+  },
+  "debrief": "A decoder turns a binary number into “one line out of many”: 2 bits pick 1 of 4, 3 bits 1 of 8 (the 74HC138). That’s how a computer’s address bus selects one memory chip out of several, and how a microcontroller drives many LEDs or relays from a few pins."
+}

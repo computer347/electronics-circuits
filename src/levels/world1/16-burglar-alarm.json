@@ -1,0 +1,242 @@
+{
+  "id": "w1-16-burglar-alarm",
+  "world": 1,
+  "number": 16,
+  "title": "Burglar alarm",
+  "format": "build",
+  "skills": [
+    "logic.combine",
+    "logic.spec-to-gates"
+  ],
+  "brief": {
+    "story": "The client’s spec, in words: “the siren sounds when the alarm is armed and the door or the window is open.” That’s ARM AND (DOOR OR WINDOW): a 74HC32 for the OR and a 74HC08 for the AND. Both chips are wired except the link between them.",
+    "goal": "Wire the OR gate’s output into the AND gate so SIREN = ARM AND (DOOR OR WINDOW).",
+    "datasheet": {
+      "title": "Two chips",
+      "rows": [
+        [
+          "IC1 74HC32",
+          "DOOR, WINDOW → pin 3 (column 5)"
+        ],
+        [
+          "IC2 74HC08",
+          "pins 1 (column 17), 2 (ARM) → 3"
+        ],
+        [
+          "SIREN",
+          "from IC2 pin 3"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "Split the sentence at the AND: one input is ARM, the other is “door or window”, which IC1 already makes on its pin 3.",
+    "IC1’s pin 3 is column 5. IC2’s free input, pin 1, is column 17.",
+    "A wire from column 5 to column 17."
+  ],
+  "board": {
+    "supply": {
+      "volts": 5,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "IC1",
+        "kind": "dip",
+        "h1": "e3",
+        "h2": "f9",
+        "pins": [
+          "e3",
+          "e4",
+          "e5",
+          "e6",
+          "e7",
+          "e8",
+          "e9",
+          "f9",
+          "f8",
+          "f7",
+          "f6",
+          "f5",
+          "f4",
+          "f3"
+        ],
+        "marking": "74HC32"
+      },
+      {
+        "id": "IC2",
+        "kind": "dip",
+        "h1": "e17",
+        "h2": "f23",
+        "pins": [
+          "e17",
+          "e18",
+          "e19",
+          "e20",
+          "e21",
+          "e22",
+          "e23",
+          "f23",
+          "f22",
+          "f21",
+          "f20",
+          "f19",
+          "f18",
+          "f17"
+        ],
+        "marking": "74HC08"
+      },
+      {
+        "id": "WP",
+        "kind": "wire",
+        "h1": "T+:25",
+        "h2": "B+:25",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WN",
+        "kind": "wire",
+        "h1": "T-:24",
+        "h2": "B-:24",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "WV1",
+        "kind": "wire",
+        "h1": "g3",
+        "h2": "B+:2",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WG1",
+        "kind": "wire",
+        "h1": "a9",
+        "h2": "T-:7",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "WV2",
+        "kind": "wire",
+        "h1": "g17",
+        "h2": "B+:14",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WG2",
+        "kind": "wire",
+        "h1": "a23",
+        "h2": "T-:19",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "DOOR",
+        "kind": "toggle",
+        "h1": "T+:2",
+        "h2": "a3",
+        "pressed": false
+      },
+      {
+        "id": "RDOOR",
+        "kind": "resistor",
+        "h1": "b3",
+        "h2": "T-:2",
+        "ohms": 10000
+      },
+      {
+        "id": "WINDOW",
+        "kind": "toggle",
+        "h1": "T+:4",
+        "h2": "a4",
+        "pressed": false
+      },
+      {
+        "id": "RWINDOW",
+        "kind": "resistor",
+        "h1": "b4",
+        "h2": "T-:4",
+        "ohms": 10000
+      },
+      {
+        "id": "ARM",
+        "kind": "toggle",
+        "h1": "T+:15",
+        "h2": "a18",
+        "pressed": false
+      },
+      {
+        "id": "RARM",
+        "kind": "resistor",
+        "h1": "b18",
+        "h2": "T-:15",
+        "ohms": 10000
+      },
+      {
+        "id": "R1",
+        "kind": "resistor",
+        "h1": "a19",
+        "h2": "a26",
+        "ohms": 330
+      },
+      {
+        "id": "SIREN",
+        "kind": "led",
+        "h1": "b26",
+        "h2": "T-:21",
+        "color": "red"
+      }
+    ]
+  },
+  "locked": [
+    "IC1",
+    "IC2",
+    "WP",
+    "WN",
+    "WV1",
+    "WG1",
+    "WV2",
+    "WG2",
+    "DOOR",
+    "RDOOR",
+    "WINDOW",
+    "RWINDOW",
+    "ARM",
+    "RARM",
+    "R1",
+    "SIREN"
+  ],
+  "tools": [
+    "wire",
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "truth-table",
+      "inputs": [
+        "DOOR",
+        "WINDOW",
+        "ARM"
+      ],
+      "output": "SIREN",
+      "table": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "label": "SIREN = ARM AND (DOOR OR WINDOW)",
+      "explain": "Brackets come first: the OR makes “door or window”, then the AND needs that and ARM."
+    },
+    {
+      "kind": "no-burnt"
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 1
+  },
+  "debrief": "Turning a sentence into gates: “and” is AND, “or” is OR, and the brackets decide which gate comes first. Every alarm panel, lift controller and washing machine safety lock started as a sentence like this one, then became gates or a few lines of code."
+}

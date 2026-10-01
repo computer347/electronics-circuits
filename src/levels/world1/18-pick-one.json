@@ -1,0 +1,229 @@
+{
+  "id": "w1-18-pick-one",
+  "world": 1,
+  "number": 18,
+  "title": "Pick one",
+  "format": "build",
+  "skills": [
+    "logic.multiplexer"
+  ],
+  "brief": {
+    "story": "The amplifier has two inputs (A: radio, B: phone) and a selector switch S. When S is off you hear A, when it’s on you hear B. That’s a 2-to-1 multiplexer, and four NAND gates make one. The last gate isn’t connected.",
+    "goal": "Wire gates 2 and 3 into gate 4 so OUT = A when S is off, and B when S is on.",
+    "datasheet": {
+      "title": "Mux from 4 NANDs",
+      "rows": [
+        [
+          "Gate 1",
+          "NOT S → pin 3"
+        ],
+        [
+          "Gate 2",
+          "NAND(A, NOT S) → pin 6 (column 15)"
+        ],
+        [
+          "Gate 3",
+          "NAND(B, S) → pin 8 (column 16, bottom)"
+        ],
+        [
+          "Gate 4",
+          "pins 12, 13 (columns 12, 11, bottom) → OUT"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "Gates 2 and 3 each let one input through (inverted) when it’s selected. Gate 4 NANDs them back together: NAND of two NANDs is an OR of ANDs.",
+    "Gate 4’s inputs are pin 12 (column 12, bottom half) and pin 13 (column 11, bottom half).",
+    "Column 15 top (pin 6) → column 12 bottom (pin 12), and column 16 bottom (pin 8) → column 11 bottom (pin 13)."
+  ],
+  "board": {
+    "supply": {
+      "volts": 5,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "IC1",
+        "kind": "dip",
+        "h1": "e10",
+        "h2": "f16",
+        "pins": [
+          "e10",
+          "e11",
+          "e12",
+          "e13",
+          "e14",
+          "e15",
+          "e16",
+          "f16",
+          "f15",
+          "f14",
+          "f13",
+          "f12",
+          "f11",
+          "f10"
+        ],
+        "marking": "74HC00"
+      },
+      {
+        "id": "WP",
+        "kind": "wire",
+        "h1": "T+:25",
+        "h2": "B+:25",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WN",
+        "kind": "wire",
+        "h1": "T-:24",
+        "h2": "B-:24",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "WV1",
+        "kind": "wire",
+        "h1": "g10",
+        "h2": "B+:8",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WG1",
+        "kind": "wire",
+        "h1": "a16",
+        "h2": "T-:16",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "S",
+        "kind": "toggle",
+        "h1": "T+:9",
+        "h2": "a10",
+        "pressed": false
+      },
+      {
+        "id": "RS",
+        "kind": "resistor",
+        "h1": "b10",
+        "h2": "T-:9",
+        "ohms": 10000
+      },
+      {
+        "id": "WS",
+        "kind": "wire",
+        "h1": "c10",
+        "h2": "c11",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "WS2",
+        "kind": "wire",
+        "h1": "d10",
+        "h2": "g14",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "A",
+        "kind": "toggle",
+        "h1": "T+:12",
+        "h2": "a13",
+        "pressed": false
+      },
+      {
+        "id": "RA",
+        "kind": "resistor",
+        "h1": "b13",
+        "h2": "T-:12",
+        "ohms": 10000
+      },
+      {
+        "id": "WN5",
+        "kind": "wire",
+        "h1": "c12",
+        "h2": "c14",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "B",
+        "kind": "toggle",
+        "h1": "B+:13",
+        "h2": "j15",
+        "pressed": false
+      },
+      {
+        "id": "RB",
+        "kind": "resistor",
+        "h1": "i15",
+        "h2": "B-:13",
+        "ohms": 10000
+      },
+      {
+        "id": "R1",
+        "kind": "resistor",
+        "h1": "h13",
+        "h2": "h20",
+        "ohms": 330
+      },
+      {
+        "id": "OUT",
+        "kind": "led",
+        "h1": "i20",
+        "h2": "B-:18",
+        "color": "green"
+      }
+    ]
+  },
+  "locked": [
+    "IC1",
+    "WP",
+    "WN",
+    "WV1",
+    "WG1",
+    "S",
+    "RS",
+    "WS",
+    "WS2",
+    "A",
+    "RA",
+    "WN5",
+    "B",
+    "RB",
+    "R1",
+    "OUT"
+  ],
+  "tools": [
+    "wire",
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "truth-table",
+      "inputs": [
+        "A",
+        "B",
+        "S"
+      ],
+      "output": "OUT",
+      "table": [
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1
+      ],
+      "label": "OUT = S ? B : A",
+      "explain": "OUT = (A AND NOT S) OR (B AND S), built as NAND(NAND(A, NOT S), NAND(B, S))."
+    },
+    {
+      "kind": "no-burnt"
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 2
+  },
+  "debrief": "A multiplexer picks one of several inputs with a select line: (A AND NOT S) OR (B AND S), here in four NANDs. Inside every CPU, multiplexers choose which register feeds the adder; on a board, they let one microcontroller pin read eight sensors in turn."
+}

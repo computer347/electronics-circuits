@@ -1,0 +1,362 @@
+{
+  "id": "w1-22-full-adder",
+  "world": 1,
+  "number": 22,
+  "title": "Full adder",
+  "format": "build",
+  "skills": [
+    "logic.full-adder",
+    "logic.carry"
+  ],
+  "brief": {
+    "story": "The half adder couldn’t take a carry from the column before. A full adder adds three bits (A, B and carry in): SUM = A ⊕ B ⊕ Cin and COUT = A·B + Cin·(A ⊕ B). Two XORs, two ANDs and an OR, on three chips. The OR that makes the carry isn’t fed.",
+    "goal": "Wire the two AND outputs (columns 13 and 16) into the OR gate (columns 21 and 22) so SUM and COUT add A + B + Cin.",
+    "datasheet": {
+      "title": "Full adder",
+      "rows": [
+        [
+          "IC1 74HC86",
+          "P = A ⊕ B · SUM = P ⊕ Cin"
+        ],
+        [
+          "IC2 74HC08",
+          "A·B → column 13 · Cin·P → column 16"
+        ],
+        [
+          "IC3 74HC32",
+          "pins 1, 2 = columns 21, 22 → COUT"
+        ],
+        [
+          "1 + 1 + 1",
+          "= 11: SUM 1, COUT 1"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "The carry out is 1 when A and B are both 1, or when the carry in meets a single 1 (P = A ⊕ B). IC2 makes both of those; IC3 ORs them.",
+    "A·B comes out on column 13, Cin·P on column 16. IC3’s inputs are pins 1 and 2: columns 21 and 22.",
+    "Column 13 → column 21, and column 16 → column 22."
+  ],
+  "board": {
+    "supply": {
+      "volts": 5,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "IC1",
+        "kind": "dip",
+        "h1": "e2",
+        "h2": "f8",
+        "pins": [
+          "e2",
+          "e3",
+          "e4",
+          "e5",
+          "e6",
+          "e7",
+          "e8",
+          "f8",
+          "f7",
+          "f6",
+          "f5",
+          "f4",
+          "f3",
+          "f2"
+        ],
+        "marking": "74HC86"
+      },
+      {
+        "id": "IC2",
+        "kind": "dip",
+        "h1": "e11",
+        "h2": "f17",
+        "pins": [
+          "e11",
+          "e12",
+          "e13",
+          "e14",
+          "e15",
+          "e16",
+          "e17",
+          "f17",
+          "f16",
+          "f15",
+          "f14",
+          "f13",
+          "f12",
+          "f11"
+        ],
+        "marking": "74HC08"
+      },
+      {
+        "id": "IC3",
+        "kind": "dip",
+        "h1": "e21",
+        "h2": "f27",
+        "pins": [
+          "e21",
+          "e22",
+          "e23",
+          "e24",
+          "e25",
+          "e26",
+          "e27",
+          "f27",
+          "f26",
+          "f25",
+          "f24",
+          "f23",
+          "f22",
+          "f21"
+        ],
+        "marking": "74HC32"
+      },
+      {
+        "id": "WP",
+        "kind": "wire",
+        "h1": "T+:25",
+        "h2": "B+:25",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WN",
+        "kind": "wire",
+        "h1": "T-:24",
+        "h2": "B-:24",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "WV1",
+        "kind": "wire",
+        "h1": "g2",
+        "h2": "B+:1",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WG1",
+        "kind": "wire",
+        "h1": "a8",
+        "h2": "T-:6",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "WV2",
+        "kind": "wire",
+        "h1": "g11",
+        "h2": "B+:9",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WG2",
+        "kind": "wire",
+        "h1": "a17",
+        "h2": "T-:13",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "WV3",
+        "kind": "wire",
+        "h1": "g21",
+        "h2": "B+:17",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WG3",
+        "kind": "wire",
+        "h1": "a27",
+        "h2": "T-:22",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "A",
+        "kind": "toggle",
+        "h1": "T+:1",
+        "h2": "a2",
+        "pressed": false
+      },
+      {
+        "id": "RA",
+        "kind": "resistor",
+        "h1": "b2",
+        "h2": "T-:1",
+        "ohms": 10000
+      },
+      {
+        "id": "B",
+        "kind": "toggle",
+        "h1": "T+:2",
+        "h2": "a3",
+        "pressed": false
+      },
+      {
+        "id": "RB",
+        "kind": "resistor",
+        "h1": "b3",
+        "h2": "T-:2",
+        "ohms": 10000
+      },
+      {
+        "id": "CIN",
+        "kind": "toggle",
+        "h1": "T+:4",
+        "h2": "a6",
+        "pressed": false
+      },
+      {
+        "id": "RCIN",
+        "kind": "resistor",
+        "h1": "b6",
+        "h2": "T-:4",
+        "ohms": 10000
+      },
+      {
+        "id": "WA",
+        "kind": "wire",
+        "h1": "c2",
+        "h2": "c11",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "WB",
+        "kind": "wire",
+        "h1": "c3",
+        "h2": "c12",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "WP1",
+        "kind": "wire",
+        "h1": "c4",
+        "h2": "c5",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "WP2",
+        "kind": "wire",
+        "h1": "d4",
+        "h2": "c14",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "WC",
+        "kind": "wire",
+        "h1": "c6",
+        "h2": "c15",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "RS",
+        "kind": "resistor",
+        "h1": "d7",
+        "h2": "d9",
+        "ohms": 330
+      },
+      {
+        "id": "SUM",
+        "kind": "led",
+        "h1": "c9",
+        "h2": "T-:7",
+        "color": "yellow"
+      },
+      {
+        "id": "RC",
+        "kind": "resistor",
+        "h1": "a23",
+        "h2": "a29",
+        "ohms": 330
+      },
+      {
+        "id": "COUT",
+        "kind": "led",
+        "h1": "b29",
+        "h2": "T-:23",
+        "color": "red"
+      }
+    ]
+  },
+  "locked": [
+    "IC1",
+    "IC2",
+    "IC3",
+    "WP",
+    "WN",
+    "WV1",
+    "WG1",
+    "WV2",
+    "WG2",
+    "WV3",
+    "WG3",
+    "A",
+    "RA",
+    "B",
+    "RB",
+    "CIN",
+    "RCIN",
+    "WA",
+    "WB",
+    "WP1",
+    "WP2",
+    "WC",
+    "RS",
+    "SUM",
+    "RC",
+    "COUT"
+  ],
+  "tools": [
+    "wire",
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "truth-table",
+      "inputs": [
+        "A",
+        "B",
+        "CIN"
+      ],
+      "output": "SUM",
+      "table": [
+        0,
+        1,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1
+      ],
+      "label": "SUM = A ⊕ B ⊕ Cin"
+    },
+    {
+      "kind": "truth-table",
+      "inputs": [
+        "A",
+        "B",
+        "CIN"
+      ],
+      "output": "COUT",
+      "table": [
+        0,
+        0,
+        0,
+        1,
+        0,
+        1,
+        1,
+        1
+      ],
+      "label": "COUT = A·B + Cin·(A ⊕ B)",
+      "explain": "A carry comes out when at least two of the three bits are 1."
+    },
+    {
+      "kind": "no-burnt"
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 2
+  },
+  "debrief": "A full adder adds three bits: the two digits and the carry from the column to the right. Chain eight of them, each COUT into the next one’s Cin, and you have an 8-bit adder: the ripple-carry adder at the heart of every early CPU. Your phone adds the same way, just faster and wider."
+}

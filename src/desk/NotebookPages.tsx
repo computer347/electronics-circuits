@@ -55,6 +55,13 @@ function StepSpread({ spread }: { spread: Extract<Spread, { kind: 'step' }> }) {
         <p className="nb-kicker">Theory · {cls.title} · {index + 1}/{cls.steps.length}</p>
         <h2>{step.title}</h2>
         {step.body.map((b, i) => <p key={i}><Rich text={b} /></p>)}
+        {step.calc && (
+          <div className="nb-calc" aria-label="Worked calculation">
+            <p className="nb-kicker">Work it out</p>
+            <ol>{step.calc.map((c, i) => <li key={i}><Rich text={c} /></li>)}</ol>
+          </div>
+        )}
+        {step.plain && <p className="nb-plain"><b>In plain words</b> {step.plain}</p>}
       </div>
       <div className="nb-page right">
         {step.lab ? (

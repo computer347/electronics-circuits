@@ -1,0 +1,311 @@
+{
+  "id": "w1-23-hold-that-bit",
+  "world": 1,
+  "number": 23,
+  "title": "Hold that bit",
+  "format": "build",
+  "skills": [
+    "logic.d-latch",
+    "logic.memory"
+  ],
+  "brief": {
+    "story": "The SR latch remembered, but needed two buttons. A D latch has one data switch (D) and a STORE button (E): while STORE is held, Q copies D; let go and Q keeps that value, whatever D does next. Four NANDs and an inverter. The feedback that makes it remember is missing.",
+    "goal": "Wire the two feedback links so Q copies D while STORE is held, and holds it after.",
+    "datasheet": {
+      "title": "Gated D latch",
+      "rows": [
+        [
+          "IC1 74HC04",
+          "NOT D → column 4"
+        ],
+        [
+          "IC2 gates 1, 2",
+          "S̄ = NAND(D, E) · R̄ = NAND(NOT D, E)"
+        ],
+        [
+          "IC2 gates 3, 4",
+          "Q = NAND(S̄, Q̄) · Q̄ = NAND(R̄, Q)"
+        ],
+        [
+          "Feedback",
+          "Q (col 20, bottom) → pin 13 (col 15) · Q̄ (col 17) → pin 10 (col 18)"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "Gates 3 and 4 are the SR latch from World 1’s level 9: each one’s output feeds the other one’s input.",
+    "Q is pin 8 (column 20, bottom half); it goes to pin 13 (column 15, bottom). Q̄ is pin 11 (column 17, bottom); it goes to pin 10 (column 18, bottom).",
+    "Wires: column 20 bottom → column 15 bottom, and column 17 bottom → column 18 bottom."
+  ],
+  "board": {
+    "supply": {
+      "volts": 5,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "IC1",
+        "kind": "dip",
+        "h1": "e3",
+        "h2": "f9",
+        "pins": [
+          "e3",
+          "e4",
+          "e5",
+          "e6",
+          "e7",
+          "e8",
+          "e9",
+          "f9",
+          "f8",
+          "f7",
+          "f6",
+          "f5",
+          "f4",
+          "f3"
+        ],
+        "marking": "74HC04"
+      },
+      {
+        "id": "IC2",
+        "kind": "dip",
+        "h1": "e14",
+        "h2": "f20",
+        "pins": [
+          "e14",
+          "e15",
+          "e16",
+          "e17",
+          "e18",
+          "e19",
+          "e20",
+          "f20",
+          "f19",
+          "f18",
+          "f17",
+          "f16",
+          "f15",
+          "f14"
+        ],
+        "marking": "74HC00"
+      },
+      {
+        "id": "WP",
+        "kind": "wire",
+        "h1": "T+:25",
+        "h2": "B+:25",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WN",
+        "kind": "wire",
+        "h1": "T-:24",
+        "h2": "B-:24",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "WV1",
+        "kind": "wire",
+        "h1": "g3",
+        "h2": "B+:2",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WG1",
+        "kind": "wire",
+        "h1": "a9",
+        "h2": "T-:7",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "WV2",
+        "kind": "wire",
+        "h1": "g14",
+        "h2": "B+:12",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WG2",
+        "kind": "wire",
+        "h1": "a20",
+        "h2": "T-:17",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "D",
+        "kind": "toggle",
+        "h1": "T+:1",
+        "h2": "a3",
+        "pressed": false
+      },
+      {
+        "id": "RD",
+        "kind": "resistor",
+        "h1": "b3",
+        "h2": "T-:1",
+        "ohms": 10000
+      },
+      {
+        "id": "WD",
+        "kind": "wire",
+        "h1": "c3",
+        "h2": "a14",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "WND",
+        "kind": "wire",
+        "h1": "b4",
+        "h2": "a17",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "E",
+        "kind": "button",
+        "h1": "T+:12",
+        "h2": "a15",
+        "pressed": false
+      },
+      {
+        "id": "RE",
+        "kind": "resistor",
+        "h1": "b15",
+        "h2": "T-:12",
+        "ohms": 10000
+      },
+      {
+        "id": "WE",
+        "kind": "wire",
+        "h1": "c15",
+        "h2": "a18",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "WS",
+        "kind": "wire",
+        "h1": "a16",
+        "h2": "g19",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "WR",
+        "kind": "wire",
+        "h1": "a19",
+        "h2": "g16",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "R1",
+        "kind": "resistor",
+        "h1": "i20",
+        "h2": "i24",
+        "ohms": 330
+      },
+      {
+        "id": "Q",
+        "kind": "led",
+        "h1": "j24",
+        "h2": "B-:20",
+        "color": "green"
+      }
+    ]
+  },
+  "locked": [
+    "IC1",
+    "IC2",
+    "WP",
+    "WN",
+    "WV1",
+    "WG1",
+    "WV2",
+    "WG2",
+    "D",
+    "RD",
+    "WD",
+    "WND",
+    "E",
+    "RE",
+    "WE",
+    "WS",
+    "WR",
+    "R1",
+    "Q"
+  ],
+  "tools": [
+    "wire",
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "sequence",
+      "label": "Q copies D while STORE is held, and keeps it",
+      "steps": [
+        {
+          "set": {
+            "D": true,
+            "E": true
+          },
+          "expect": {
+            "Q": true
+          },
+          "say": "D on, STORE held"
+        },
+        {
+          "set": {
+            "E": false
+          },
+          "expect": {
+            "Q": true
+          },
+          "say": "STORE let go"
+        },
+        {
+          "set": {
+            "D": false
+          },
+          "expect": {
+            "Q": true
+          },
+          "say": "D switched off (STORE not held)"
+        },
+        {
+          "set": {
+            "E": true
+          },
+          "expect": {
+            "Q": false
+          },
+          "say": "STORE held with D off"
+        },
+        {
+          "set": {
+            "E": false
+          },
+          "expect": {
+            "Q": false
+          },
+          "say": "STORE let go again"
+        },
+        {
+          "set": {
+            "D": true
+          },
+          "expect": {
+            "Q": false
+          },
+          "say": "D switched on (STORE not held)"
+        }
+      ],
+      "explain": "Without the feedback links the last two gates can’t hold anything: memory is outputs feeding back into inputs."
+    },
+    {
+      "kind": "no-burnt"
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 2
+  },
+  "debrief": "A D latch stores one bit: while enabled it follows D, and once the enable drops it holds. Eight of them side by side make a register that holds a byte; clock them and you get the flip-flops every CPU, counter and memory buffer is made of."
+}

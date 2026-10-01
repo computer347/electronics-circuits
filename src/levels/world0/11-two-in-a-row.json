@@ -1,0 +1,118 @@
+{
+  "id": "w0-11-two-in-a-row",
+  "world": 0,
+  "number": 11,
+  "title": "Two in a row",
+  "format": "build",
+  "skills": [
+    "led.series",
+    "kvl"
+  ],
+  "brief": {
+    "story": "The bike light needs two red LEDs, one after the other, on the 9 V pack. Both LEDs and their wiring are in; the one resistor that feeds them isn’t.",
+    "goal": "Fit one resistor so both LEDs carry 12–20 mA.",
+    "datasheet": {
+      "title": "Two red LEDs in series",
+      "rows": [
+        [
+          "Each LED",
+          "2.0 V when lit"
+        ],
+        [
+          "Supply",
+          "9 V"
+        ],
+        [
+          "Target",
+          "12–20 mA through both"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "One resistor feeds both LEDs: it goes from column 3 (the + feed) to column 8, where LED1’s long leg is.",
+    "In series the same current flows through everything, and the voltages add up: the two LEDs take 2.0 V each, so the resistor gets 9 − 2 − 2 = 5 V.",
+    "R = 5 V ÷ 15 mA ≈ 330 Ω (15.2 mA). 270 Ω or 390 Ω work too."
+  ],
+  "board": {
+    "supply": {
+      "volts": 9,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "W1",
+        "kind": "wire",
+        "h1": "T+:3",
+        "h2": "a3",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "LED1",
+        "kind": "led",
+        "h1": "b8",
+        "h2": "b11",
+        "color": "red"
+      },
+      {
+        "id": "LED2",
+        "kind": "led",
+        "h1": "c11",
+        "h2": "c14",
+        "color": "red"
+      },
+      {
+        "id": "W2",
+        "kind": "wire",
+        "h1": "a14",
+        "h2": "T-:12",
+        "wireColor": "#2f6fe0"
+      }
+    ]
+  },
+  "resistorValues": [
+    100,
+    150,
+    220,
+    270,
+    330,
+    390,
+    470,
+    560,
+    1000
+  ],
+  "locked": [
+    "W1",
+    "LED1",
+    "LED2",
+    "W2"
+  ],
+  "tools": [
+    "resistor",
+    "wire",
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "led-current",
+      "part": "LED1",
+      "min": 0.012,
+      "max": 0.02,
+      "explain": "Both LEDs share one current: the resistor gets what the two LEDs leave, 9 − 2 − 2 = 5 V."
+    },
+    {
+      "kind": "led-current",
+      "part": "LED2",
+      "min": 0.012,
+      "max": 0.02
+    },
+    {
+      "kind": "no-burnt"
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 1
+  },
+  "debrief": "Two LEDs in a line share one current, and their voltages stack: 2 V + 2 V, leaving 5 V for the resistor. That’s why LED strips run from 12 V in groups of three: three LEDs take about 9 V and a small resistor takes the rest, so almost nothing is wasted as heat."
+}

@@ -1,0 +1,299 @@
+{
+  "id": "w1-24-traffic-lights",
+  "world": 1,
+  "number": 24,
+  "title": "Traffic lights",
+  "format": "build",
+  "skills": [
+    "logic.state-decoding",
+    "logic.design"
+  ],
+  "brief": {
+    "story": "The junction’s controller counts through four states on two bits (S1 S0): 00 red, 01 red and amber, 10 green, 11 amber, the UK sequence. Red = NOT S1 and amber = S0 are done. Green = S1 AND NOT S0 needs its AND gate fed.",
+    "goal": "Wire S1 and NOT S0 into IC2’s gate 1 so each state shows the right lights.",
+    "datasheet": {
+      "title": "Light sequence",
+      "rows": [
+        [
+          "00",
+          "red"
+        ],
+        [
+          "01",
+          "red + amber"
+        ],
+        [
+          "10",
+          "green"
+        ],
+        [
+          "11",
+          "amber"
+        ],
+        [
+          "IC2 gate 1",
+          "pins 1, 2 = columns 17, 18"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "Look down the green column of the table: green is on only in state 10, S1 on and S0 off. So green = S1 AND NOT S0.",
+    "S1 is on column 3. NOT S0 comes out of IC1 on column 6. The AND gate’s inputs are columns 17 and 18.",
+    "Column 3 → column 17, and column 6 → column 18."
+  ],
+  "board": {
+    "supply": {
+      "volts": 5,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "IC1",
+        "kind": "dip",
+        "h1": "e3",
+        "h2": "f9",
+        "pins": [
+          "e3",
+          "e4",
+          "e5",
+          "e6",
+          "e7",
+          "e8",
+          "e9",
+          "f9",
+          "f8",
+          "f7",
+          "f6",
+          "f5",
+          "f4",
+          "f3"
+        ],
+        "marking": "74HC04"
+      },
+      {
+        "id": "IC2",
+        "kind": "dip",
+        "h1": "e17",
+        "h2": "f23",
+        "pins": [
+          "e17",
+          "e18",
+          "e19",
+          "e20",
+          "e21",
+          "e22",
+          "e23",
+          "f23",
+          "f22",
+          "f21",
+          "f20",
+          "f19",
+          "f18",
+          "f17"
+        ],
+        "marking": "74HC08"
+      },
+      {
+        "id": "WP",
+        "kind": "wire",
+        "h1": "T+:25",
+        "h2": "B+:25",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WN",
+        "kind": "wire",
+        "h1": "T-:24",
+        "h2": "B-:24",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "WV1",
+        "kind": "wire",
+        "h1": "g3",
+        "h2": "B+:2",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WG1",
+        "kind": "wire",
+        "h1": "a9",
+        "h2": "T-:7",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "WV2",
+        "kind": "wire",
+        "h1": "g17",
+        "h2": "B+:14",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WG2",
+        "kind": "wire",
+        "h1": "a23",
+        "h2": "T-:19",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "S1",
+        "kind": "toggle",
+        "h1": "T+:1",
+        "h2": "a3",
+        "pressed": false
+      },
+      {
+        "id": "RS1",
+        "kind": "resistor",
+        "h1": "b3",
+        "h2": "T-:1",
+        "ohms": 10000
+      },
+      {
+        "id": "S0",
+        "kind": "toggle",
+        "h1": "T+:3",
+        "h2": "a5",
+        "pressed": false
+      },
+      {
+        "id": "RS0",
+        "kind": "resistor",
+        "h1": "b5",
+        "h2": "T-:3",
+        "ohms": 10000
+      },
+      {
+        "id": "W1",
+        "kind": "wire",
+        "h1": "c6",
+        "h2": "c7",
+        "wireColor": "#c87533"
+      },
+      {
+        "id": "RR",
+        "kind": "resistor",
+        "h1": "a4",
+        "h2": "a11",
+        "ohms": 330
+      },
+      {
+        "id": "RED",
+        "kind": "led",
+        "h1": "b11",
+        "h2": "T-:9",
+        "color": "red"
+      },
+      {
+        "id": "RA",
+        "kind": "resistor",
+        "h1": "a8",
+        "h2": "a13",
+        "ohms": 330
+      },
+      {
+        "id": "AMBER",
+        "kind": "led",
+        "h1": "b13",
+        "h2": "T-:11",
+        "color": "yellow"
+      },
+      {
+        "id": "RG",
+        "kind": "resistor",
+        "h1": "a19",
+        "h2": "a25",
+        "ohms": 330
+      },
+      {
+        "id": "GREEN",
+        "kind": "led",
+        "h1": "b25",
+        "h2": "T-:20",
+        "color": "green"
+      }
+    ]
+  },
+  "locked": [
+    "IC1",
+    "IC2",
+    "WP",
+    "WN",
+    "WV1",
+    "WG1",
+    "WV2",
+    "WG2",
+    "S1",
+    "RS1",
+    "S0",
+    "RS0",
+    "W1",
+    "RR",
+    "RED",
+    "RA",
+    "AMBER",
+    "RG",
+    "GREEN"
+  ],
+  "tools": [
+    "wire",
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "truth-table",
+      "inputs": [
+        "S0",
+        "S1"
+      ],
+      "output": "RED",
+      "table": [
+        1,
+        1,
+        0,
+        0
+      ],
+      "label": "RED = NOT S1"
+    },
+    {
+      "kind": "truth-table",
+      "inputs": [
+        "S0",
+        "S1"
+      ],
+      "output": "AMBER",
+      "table": [
+        0,
+        1,
+        0,
+        1
+      ],
+      "label": "AMBER = S0"
+    },
+    {
+      "kind": "truth-table",
+      "inputs": [
+        "S0",
+        "S1"
+      ],
+      "output": "GREEN",
+      "table": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "label": "GREEN = S1 · NOT S0",
+      "explain": "Each light’s column of the state table is one function of the state bits; green is on in state 10 only."
+    },
+    {
+      "kind": "no-burnt"
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 2
+  },
+  "debrief": "A controller is a state (a few bits of memory) plus logic that turns each state into outputs. Write one column of the table per output, find the gates for each, and you’ve built the output decoder of a finite-state machine. Traffic lights, washing machines and vending machines are all state machines like this one."
+}

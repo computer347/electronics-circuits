@@ -12,7 +12,8 @@ import type { LevelDef } from '../levels/types';
 export type Section = 'task' | 'theory' | 'math';
 export const SECTIONS: Section[] = ['task', 'theory', 'math'];
 
-export type PartId = 'led' | 'resistor' | 'breadboard' | 'multimeter' | 'capacitor' | 'button' | 'battery' | 'transistor';
+export type PartId = 'led' | 'resistor' | 'breadboard' | 'multimeter' | 'capacitor' | 'button' | 'battery' | 'transistor'
+  | 'diode' | 'pot' | 'mosfet' | 'regulator' | 'chip' | 'toggle';
 
 export interface PartExplainer {
   id: PartId;
@@ -111,6 +112,59 @@ export const PARTS: Record<PartId, PartExplainer> = {
       { label: 'Base resistor', text: 'always: it sets the base current, or the base takes far too much' },
     ],
   },
+  diode: {
+    id: 'diode', name: 'Diode', job: 'A one-way valve: current flows from the anode to the banded cathode, and is blocked the other way.',
+    facts: [
+      { label: 'Band', text: 'the cathode (−): current comes out here' },
+      { label: 'Plain end', text: 'the anode (+)' },
+      { label: '0.7 V', text: 'what a silicon diode keeps when it conducts' },
+      { label: 'Reverse', text: 'blocks up to its rating: 75 V (1N4148), 1000 V (1N4007)' },
+    ],
+  },
+  pot: {
+    id: 'pot', name: 'Potentiometer', job: 'A resistor track with a sliding contact: a knob that sets a resistance or a voltage.',
+    facts: [
+      { label: 'Leg 1', text: 'one end of the track' },
+      { label: 'Wiper', text: 'the middle leg, the slider the knob moves' },
+      { label: 'Leg 3', text: 'the other end of the track' },
+      { label: '10 kΩ', text: 'the whole track, end to end' },
+    ],
+  },
+  mosfet: {
+    id: 'mosfet', name: 'N-channel MOSFET', job: 'A voltage-controlled switch: a few volts on the gate connect drain to source, with no gate current.',
+    facts: [
+      { label: 'Gate', text: 'left leg: the control, insulated from the rest' },
+      { label: 'Drain', text: 'middle leg (and the tab): the load connects here' },
+      { label: 'Source', text: 'right leg: to ground' },
+      { label: 'Body diode', text: 'source to drain inside: backwards, it conducts' },
+    ],
+  },
+  regulator: {
+    id: 'regulator', name: 'Voltage regulator', job: 'Holds its output at a fixed voltage (5 V for an LM7805) whatever its input does, above about 7 V.',
+    facts: [
+      { label: 'IN', text: 'left leg: the higher, unsteady supply' },
+      { label: 'GND', text: 'middle leg and the tab: ground' },
+      { label: 'OUT', text: 'right leg: a steady 5.0 V' },
+      { label: 'Heat', text: '(V_in − V_out) × I: big loads need a heatsink' },
+    ],
+  },
+  chip: {
+    id: 'chip', name: '14-pin logic chip', job: 'Four (or six) logic gates in one package, powered from pin 14 and pin 7.',
+    facts: [
+      { label: 'Notch', text: 'marks the pin 1 end' },
+      { label: 'Pin 1', text: 'next to the notch; count anticlockwise from it' },
+      { label: 'Pin 14', text: 'VCC: + (2–6 V for 74HC)' },
+      { label: 'Pin 7', text: 'GND' },
+    ],
+  },
+  toggle: {
+    id: 'toggle', name: 'Slide switch', job: 'Stays where you put it: on (joined) or off (open), until you move it again.',
+    facts: [
+      { label: 'Slider', text: 'pushed across: closed, current flows' },
+      { label: 'Legs', text: 'the two contacts it joins' },
+      { label: 'Pull-down', text: 'a resistor to ground keeps the input at 0 when it’s open' },
+    ],
+  },
 };
 
 export const FORMULAS: Record<string, Formula> = {
@@ -194,6 +248,151 @@ export const FORMULAS: Record<string, Formula> = {
     terms: [['S̄ (set)', 'pulled low by START: Q goes to 1'], ['R̄ (reset)', 'pulled low by STOP: Q goes to 0'], ['both high', 'hold: Q stays what it was']],
     when: 'Feedback makes memory: each output holds the other gate’s input.',
   },
+  'series-leds': {
+    name: 'LEDs in series', expr: 'R = (V − n × V_f) ÷ I',
+    terms: [['n', 'how many LEDs in the string'], ['V_f', 'each LED’s forward voltage'], ['I', 'the one current through all of them']],
+    when: 'One current through the whole string; the forward voltages add up.',
+  },
+  colours: {
+    name: 'Forward voltage by colour', expr: 'red 2.0 · yellow 2.1 · green 2.2 · blue/white 3.0 V',
+    terms: [['V_f', 'the voltage a lit LED keeps for itself'], ['bluer', 'more energy per electron, so more volts']],
+    when: 'Size each colour’s resistor from its own V_f.',
+  },
+  combine: {
+    name: 'Combining resistors', expr: 'series: R₁ + R₂ · parallel: R₁ × R₂ ÷ (R₁ + R₂)',
+    terms: [['series', 'always more than the biggest'], ['parallel', 'always less than the smallest'], ['equal pair', 'in parallel: exactly half']],
+    when: 'Make a value you don’t have, or share heat between two resistors.',
+  },
+  short: {
+    name: 'Short circuit', expr: 'V_shorted ≈ 0 · I = V ÷ R_rest',
+    terms: [['short', 'a near-zero resistance path across a part'], ['R_rest', 'whatever is left in the loop to limit the current']],
+    when: '0 V across a part that should be working means its legs are joined.',
+  },
+  loop: {
+    name: 'Closed and open loops', expr: 'open loop: I = 0 · V_gap = V_supply',
+    terms: [['closed', 'a complete path from + back to −'], ['open', 'a gap anywhere: no current anywhere in the loop']],
+    when: 'Walk the meter along the return path: the reading jumps at the gap.',
+  },
+  power: {
+    name: 'Power', expr: 'P = V × I = I² × R',
+    terms: [['P', 'watts: energy per second'], ['I_total', 'the sum of every branch current'], ['mA·h ÷ mA', 'battery life in hours']],
+    when: 'Add up every branch and check the supply’s rating.',
+  },
+  diode: {
+    name: 'Diode in series', expr: 'I = (V − 0.7 − V_LED) ÷ R',
+    terms: [['0.7 V', 'a silicon diode’s forward drop'], ['reverse', 'blocked: no current at all']],
+    when: 'A series diode costs 0.7 V and blocks a reversed supply.',
+  },
+  rheostat: {
+    name: 'Potentiometer as a resistor', expr: 'R = R_track × position',
+    terms: [['position', '0 at leg 1, 1 at leg 3'], ['safety resistor', 'in series, for when the knob reaches 0 Ω']],
+    when: 'One end and the wiper: a resistance the knob sets.',
+  },
+  pot: {
+    name: 'Potentiometer as a divider', expr: 'V_wiper = V × (1 − position)',
+    terms: [['leg 1', 'on +'], ['leg 3', 'on ground'], ['position', 'counted from leg 1']],
+    when: 'All three legs: an adjustable voltage, from 0 V to the supply.',
+  },
+  sensor: {
+    name: 'Sensor divider', expr: 'V = V_supply × R_s ÷ (R_f + R_s)',
+    terms: [['R_s', 'the sensor’s resistance now'], ['R_f', 'the fixed partner: equal to R_s in mid-range']],
+    when: 'A resistance that changes becomes a voltage a chip can read.',
+  },
+  loaded: {
+    name: 'Divider with a load', expr: 'V = V_in × (R₂ ∥ R_L) ÷ (R₁ + R₂ ∥ R_L)',
+    terms: [['R_L', 'the load, in parallel with the bottom resistor'], ['stiff', 'R₂ much smaller than R_L: the load hardly matters']],
+    when: 'Anything on the output pulls it down; design for it.',
+  },
+  caps: {
+    name: 'Combining capacitors', expr: 'parallel: C₁ + C₂ · series: C₁ × C₂ ÷ (C₁ + C₂)',
+    terms: [['parallel', 'capacitance adds (more charge at the same voltage)'], ['series', 'less capacitance, more voltage rating']],
+    when: 'The opposite of resistors. τ = R × C scales with the total.',
+  },
+  regulator: {
+    name: 'Linear regulator', expr: 'V_out = 5 V · P = (V_in − V_out) × I',
+    terms: [['dropout', 'V_in must be about 2 V above V_out'], ['P', 'the heat the regulator burns']],
+    when: 'Design everything after it for 5 V.',
+  },
+  gain: {
+    name: 'Saturating a transistor', expr: 'I_B ≥ I_load ÷ β, × 5 to 10 for margin',
+    terms: [['β', 'about 200 for a BC547'], ['R_B', '(V − 0.7) ÷ I_B'], ['saturated', 'fully on: the load sets the current']],
+    when: 'Enough base current that the transistor isn’t the limit.',
+  },
+  mosfet: {
+    name: 'MOSFET switch', expr: 'on when V_GS > V_th · I_gate = 0',
+    terms: [['V_th', 'about 2 V for a logic-level IRLZ44N'], ['R_on', 'about 0.03 Ω when fully on'], ['pull-down', '10 kΩ gate to source']],
+    when: 'Voltage switches it; a pull-down switches it off reliably.',
+  },
+  'diode-or': {
+    name: 'Diode OR', expr: 'OUT = A OR B (minus 0.7 V)',
+    terms: [['diodes', 'one from each input, pointing into the output'], ['isolation', 'no input can feed another']],
+    when: 'Combine signals or supplies so they can’t back-feed each other.',
+  },
+  universal: {
+    name: 'NAND is universal', expr: 'NOT A = NAND(A, A) · A AND B = NOT NAND(A, B)',
+    terms: [['tied inputs', 'a NAND becomes an inverter'], ['universal', 'any logic can be built from NANDs']],
+    when: 'Make the gate you need from the chip you have.',
+  },
+  demorgan: {
+    name: 'De Morgan’s laws', expr: 'NOT(A·B) = Ā + B̄ · NOT(A+B) = Ā·B̄',
+    terms: [['bar', 'inverted'], ['swap', 'invert everything and AND ↔ OR']],
+    when: 'OR from NANDs: NAND(Ā, B̄) = A + B.',
+  },
+  xnor: {
+    name: 'XNOR and XOR tricks', expr: 'A XNOR B = NOT(A ⊕ B) · x ⊕ 1 = NOT x',
+    terms: [['XNOR', '1 when the inputs match'], ['x ⊕ 0', 'passes x through']],
+    when: 'Equality tests, and switchable inverters.',
+  },
+  parity: {
+    name: 'Parity', expr: 'P = A ⊕ B ⊕ C ⊕ …',
+    terms: [['odd parity', '1 when an odd number of bits are 1'], ['parity bit', 'added so the total of 1s comes out even']],
+    when: 'One flipped bit changes the parity: the receiver notices.',
+  },
+  words: {
+    name: 'Words to logic', expr: '“and” → · · “or” → + · “not” → bar',
+    terms: [['brackets', 'follow the sentence: the bracket is the first gate'], ['8 rows', 'a 3-input truth table to check against']],
+    when: 'Write the expression from the spec, then check every row.',
+  },
+  sop: {
+    name: 'Sum of products', expr: 'OUT = (AND of each true row) + …',
+    terms: [['product', 'an AND of inputs, inverted where they’re 0'], ['sum', 'all those ANDs ORed together']],
+    when: 'Any truth table becomes gates; then simplify (majority = AB + BC + AC).',
+  },
+  mux: {
+    name: 'Multiplexer', expr: 'OUT = A·S̄ + B·S',
+    terms: [['S', 'the select line'], ['NAND form', 'NAND(NAND(A, S̄), NAND(B, S))']],
+    when: 'Choose which input reaches the output.',
+  },
+  decoder: {
+    name: 'Decoder', expr: 'Y0 = Ā·B̄ · Y1 = A·B̄ · Y2 = Ā·B · Y3 = A·B',
+    terms: [['one-hot', 'exactly one output is 1'], ['n inputs', '2ⁿ outputs']],
+    when: 'Turn a binary address into a single select line.',
+  },
+  comparator: {
+    name: 'Code comparator', expr: 'OPEN = D3 · D̄2 · D1 · D̄0',
+    terms: [['inverted bits', 'the ones that must be 0'], ['AND tree', 'n conditions need n − 1 two-input ANDs']],
+    when: 'Matches exactly one of 2ⁿ codes.',
+  },
+  driver: {
+    name: 'Driving a load from logic', expr: 'I_B = (5 − 0.7) ÷ R_B · I_pin ≤ 20 mA',
+    terms: [['logic pin', 'a signal: about 20 mA at most'], ['transistor', 'carries the load from the supply']],
+    when: 'Anything over a few mA gets a transistor (or MOSFET) driver.',
+  },
+  'full-adder': {
+    name: 'Full adder', expr: 'SUM = A ⊕ B ⊕ Cin · COUT = A·B + Cin·(A ⊕ B)',
+    terms: [['Cin', 'the carry from the column to the right'], ['COUT', '1 when two or more inputs are 1']],
+    when: 'Chain one per bit: COUT into the next Cin.',
+  },
+  'd-latch': {
+    name: 'D latch', expr: 'E = 1: Q = D · E = 0: Q holds',
+    terms: [['E', 'enable (STORE)'], ['S̄, R̄', 'NAND(D, E) and NAND(D̄, E) into an SR latch']],
+    when: 'Stores one bit; eight make a byte register.',
+  },
+  fsm: {
+    name: 'State decoding', expr: 'RED = S̄1 · AMBER = S0 · GREEN = S1·S̄0',
+    terms: [['state', 'a number held in bits'], ['output column', 'one function of the state bits per output']],
+    when: 'Read each output’s column of the state table as logic.',
+  },
   rc: {
     name: 'RC time constant', expr: 'τ = R × C',
     terms: [['τ', 'the time to reach 63 % of the final voltage (seconds)'], ['R', 'ohms'], ['C', 'farads (100 µF = 0.0001 F)'], ['V(t)', 'V × (1 − e^(−t/τ))']],
@@ -221,6 +420,36 @@ const LEVEL: Record<string, { parts: PartId[]; formulas: string[]; generators: s
   'w1-07-power-the-chip': { parts: ['multimeter'], formulas: ['chip', 'nand'], generators: ['led-resistor'] },
   'w1-08-half-adder': { parts: ['led'], formulas: ['adder', 'xor', 'chip'], generators: ['led-resistor'] },
   'w1-09-remember': { parts: ['button'], formulas: ['latch', 'nand', 'chip'], generators: ['led-resistor'] },
+  'w0-11-two-in-a-row': { parts: ['led', 'resistor'], formulas: ['series-leds', 'kvl'], generators: ['series-leds', 'led-resistor'] },
+  'w0-12-mixed-colours': { parts: ['led'], formulas: ['colours', 'led'], generators: ['led-resistor', 'parallel-total'] },
+  'w0-13-make-do': { parts: ['resistor'], formulas: ['combine', 'led'], generators: ['combine-resistors', 'parallel-total'] },
+  'w0-14-bypassed': { parts: ['multimeter', 'led'], formulas: ['short', 'ohm'], generators: ['ohm', 'series-voltage'] },
+  'w0-15-dead-rail': { parts: ['breadboard', 'multimeter'], formulas: ['loop', 'kvl'], generators: ['series-voltage'] },
+  'w0-16-power-budget': { parts: ['led', 'resistor'], formulas: ['power', 'kcl'], generators: ['parallel-total', 'led-resistor'] },
+  'w0-17-one-way': { parts: ['diode', 'led'], formulas: ['diode', 'led'], generators: ['diode-drop'] },
+  'w0-18-turn-it-down': { parts: ['pot', 'led'], formulas: ['rheostat', 'led'], generators: ['rheostat'] },
+  'w0-19-set-the-level': { parts: ['pot', 'multimeter'], formulas: ['pot', 'divider'], generators: ['pot-wiper', 'divider'] },
+  'w0-20-wrong-sensor': { parts: ['resistor', 'multimeter'], formulas: ['sensor', 'divider'], generators: ['divider'] },
+  'w0-21-under-load': { parts: ['resistor'], formulas: ['loaded', 'divider', 'combine'], generators: ['loaded-divider', 'divider'] },
+  'w0-22-double-up': { parts: ['capacitor', 'button'], formulas: ['caps', 'rc'], generators: ['parallel-caps', 'rc-charge'] },
+  'w0-23-regulated': { parts: ['regulator', 'led'], formulas: ['regulator', 'led'], generators: ['regulator-led'] },
+  'w0-24-enough-gain': { parts: ['transistor', 'resistor'], formulas: ['gain', 'npn'], generators: ['transistor-base', 'led-resistor'] },
+  'w0-25-heavy-lifting': { parts: ['mosfet', 'led'], formulas: ['mosfet', 'led'], generators: ['led-resistor'] },
+  'w1-10-diode-or': { parts: ['diode', 'toggle'], formulas: ['diode-or', 'diode', 'logic'], generators: ['diode-drop'] },
+  'w1-11-chip-inverter': { parts: ['chip', 'toggle'], formulas: ['chip', 'inverter'], generators: ['gate-led'] },
+  'w1-12-and-from-nand': { parts: ['chip'], formulas: ['universal', 'nand'], generators: ['gate-led'] },
+  'w1-13-or-from-nand': { parts: ['chip'], formulas: ['demorgan', 'universal'], generators: ['gate-led'] },
+  'w1-14-same-or-different': { parts: ['chip', 'toggle'], formulas: ['xnor', 'xor'], generators: ['gate-led'] },
+  'w1-15-odd-one-out': { parts: ['chip', 'toggle'], formulas: ['parity', 'xor'], generators: ['gate-led'] },
+  'w1-16-burglar-alarm': { parts: ['chip', 'toggle'], formulas: ['words', 'logic'], generators: ['gate-led'] },
+  'w1-17-majority-vote': { parts: ['chip'], formulas: ['sop', 'logic'], generators: ['gate-led'] },
+  'w1-18-pick-one': { parts: ['chip', 'toggle'], formulas: ['mux', 'demorgan'], generators: ['gate-led'] },
+  'w1-19-one-of-four': { parts: ['chip'], formulas: ['decoder', 'binary'], generators: ['gate-led'] },
+  'w1-20-crack-the-code': { parts: ['chip', 'toggle'], formulas: ['comparator', 'binary'], generators: ['gate-led'] },
+  'w1-21-drive-it-harder': { parts: ['chip', 'transistor'], formulas: ['driver', 'gain'], generators: ['transistor-base', 'gate-led'] },
+  'w1-22-full-adder': { parts: ['chip'], formulas: ['full-adder', 'adder'], generators: ['gate-led'] },
+  'w1-23-hold-that-bit': { parts: ['chip', 'button'], formulas: ['d-latch', 'latch'], generators: ['gate-led'] },
+  'w1-24-traffic-lights': { parts: ['chip', 'toggle'], formulas: ['fsm', 'binary'], generators: ['gate-led'] },
 };
 
 /** A stable seed per level so the worked example is the same each time you open it. */

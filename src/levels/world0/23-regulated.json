@@ -1,0 +1,123 @@
+{
+  "id": "w0-23-regulated",
+  "world": 0,
+  "number": 23,
+  "title": "Regulated",
+  "format": "build",
+  "skills": [
+    "regulator",
+    "led.resistor"
+  ],
+  "brief": {
+    "story": "The sensor board runs on 5 V, but the bench gives 9 V. An LM7805 regulator turns any 7–25 V into a steady 5 V. Its ground wire and the LED circuit on its output are in; the regulator isn’t.",
+    "goal": "Fit the LM7805 so its output (column 7) is 4.9–5.1 V and LED1 carries 10–16 mA.",
+    "datasheet": {
+      "title": "LM7805 · TO-220",
+      "rows": [
+        [
+          "Pins, facing you",
+          "IN · GND · OUT"
+        ],
+        [
+          "Output",
+          "5.0 V"
+        ],
+        [
+          "Needs",
+          "at least 7 V in"
+        ],
+        [
+          "R1",
+          "220 Ω to LED1"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "Take the regulator from the bar and click column 5: its legs land in 5 (IN), 6 (GND) and 7 (OUT).",
+    "IN gets the 9 V feed (column 5), GND is wired to ground (column 6), and OUT feeds R1 (column 7).",
+    "On 5 V the LED gets (5 − 2) ÷ 220 = 13.6 mA. Wired straight to 9 V instead it would take 32 mA and burn."
+  ],
+  "board": {
+    "supply": {
+      "volts": 9,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "W1",
+        "kind": "wire",
+        "h1": "T+:3",
+        "h2": "a5",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "W2",
+        "kind": "wire",
+        "h1": "a6",
+        "h2": "T-:5",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "R1",
+        "kind": "resistor",
+        "h1": "b7",
+        "h2": "b13",
+        "ohms": 220
+      },
+      {
+        "id": "LED1",
+        "kind": "led",
+        "h1": "c13",
+        "h2": "c16",
+        "color": "red"
+      },
+      {
+        "id": "W3",
+        "kind": "wire",
+        "h1": "a16",
+        "h2": "T-:15",
+        "wireColor": "#2f6fe0"
+      }
+    ]
+  },
+  "spares": {
+    "led": 2
+  },
+  "locked": [
+    "W1",
+    "W2",
+    "R1",
+    "LED1",
+    "W3"
+  ],
+  "tools": [
+    "regulator",
+    "wire",
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "voltage",
+      "hole": "c7",
+      "min": 4.9,
+      "max": 5.1,
+      "label": "Regulator output"
+    },
+    {
+      "kind": "led-current",
+      "part": "LED1",
+      "min": 0.01,
+      "max": 0.016,
+      "explain": "R1 was sized for 5 V: (5 − 2) ÷ 220 = 13.6 mA. On 9 V the same resistor lets 32 mA through."
+    },
+    {
+      "kind": "no-burnt"
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 1
+  },
+  "debrief": "A linear regulator holds its output at a fixed voltage whatever the input does, by burning the difference as heat: here (9 − 5) V × 14 mA = 56 mW. Every Arduino and USB gadget has one between its supply and its chips, which is why a 9 V battery can safely run 5 V logic."
+}

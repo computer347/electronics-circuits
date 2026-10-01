@@ -1,0 +1,100 @@
+{
+  "id": "w0-21-under-load",
+  "world": 0,
+  "number": 21,
+  "title": "Under load",
+  "format": "build",
+  "skills": [
+    "divider.loading"
+  ],
+  "brief": {
+    "story": "The sensor board needs a 4.5 V reference from the 9 V supply, and it draws current from it like a 10 kΩ resistor (RL, already fitted). The battery budget allows the divider at most 5 mA.",
+    "goal": "Build a divider (column 3 to column 10 on top, column 10 to ground below) so column 10 sits at 4.2–4.8 V with RL connected, using at most 5 mA.",
+    "datasheet": {
+      "title": "The load",
+      "rows": [
+        [
+          "RL",
+          "10 kΩ from column 10 to ground"
+        ],
+        [
+          "Target",
+          "4.2–4.8 V"
+        ],
+        [
+          "Budget",
+          "5 mA from the supply"
+        ],
+        [
+          "Parallel",
+          "R_bottom ∥ RL = R × RL ÷ (R + RL)"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "RL is in parallel with the divider’s bottom resistor, so the bottom half is smaller than it looks and the voltage sags.",
+    "Two 10 kΩ give only 3 V: the bottom becomes 10 kΩ ∥ 10 kΩ = 5 kΩ. Either make the divider much smaller than RL, or make the bottom bigger to make up for it.",
+    "Two 1 kΩ: the bottom is 1 kΩ ∥ 10 kΩ = 909 Ω, giving 4.3 V at 4.7 mA. Or 4.7 kΩ on top with 10 kΩ below: 4.6 V at under 1 mA."
+  ],
+  "board": {
+    "supply": {
+      "volts": 9,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "W1",
+        "kind": "wire",
+        "h1": "T+:3",
+        "h2": "a3",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "RL",
+        "kind": "resistor",
+        "h1": "e10",
+        "h2": "T-:12",
+        "ohms": 10000
+      }
+    ]
+  },
+  "resistorValues": [
+    470,
+    1000,
+    2200,
+    4700,
+    10000,
+    22000
+  ],
+  "locked": [
+    "W1",
+    "RL"
+  ],
+  "tools": [
+    "resistor",
+    "wire",
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "voltage",
+      "hole": "d10",
+      "min": 4.2,
+      "max": 4.8,
+      "label": "Reference voltage",
+      "divider": true,
+      "explain": "A load in parallel with the bottom resistor lowers it, so the output sags: R_bottom ∥ RL."
+    },
+    {
+      "kind": "supply-current",
+      "max": 0.005,
+      "explain": "Small resistors hold the voltage up under load, but they waste current: (9 V ÷ total resistance)."
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 2
+  },
+  "debrief": "Anything connected to a divider’s output is in parallel with its bottom resistor and pulls the voltage down. Make the divider’s resistors much smaller than the load (stiffer, but more current wasted), or account for the load in the sum. When neither is good enough, engineers use a buffer or a regulator instead."
+}

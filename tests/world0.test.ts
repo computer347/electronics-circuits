@@ -11,9 +11,9 @@ const W = (id: string, h1: string, h2: string): BoardPart => ({ id, kind: 'wire'
 const check = (n: number, b: BoardState) => checkLevel(L(n), b, analyzeBoard(b));
 
 describe('World 0', () => {
-  it('has all ten levels, numbered in order', () => {
-    expect(WORLD0.map((l) => l.number)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-    expect(new Set(WORLD0.map((l) => l.id)).size).toBe(10);
+  it('has all 25 levels, numbered in order', () => {
+    expect(WORLD0.map((l) => l.number)).toEqual(Array.from({ length: 25 }, (_, i) => i + 1));
+    expect(new Set(WORLD0.map((l) => l.id)).size).toBe(25);
   });
 });
 

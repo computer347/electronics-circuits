@@ -1,0 +1,110 @@
+{
+  "id": "w0-18-turn-it-down",
+  "world": 0,
+  "number": 18,
+  "title": "Turn it down",
+  "format": "build",
+  "skills": [
+    "potentiometer.rheostat"
+  ],
+  "brief": {
+    "story": "The bedside lamp is far too bright at night. It has a 10 kΩ knob (a potentiometer) in series with a fixed 330 Ω, so the brightness can be set without touching the wiring.",
+    "goal": "Turn RV1’s knob so LED1 runs at a gentle 4.5–5.5 mA.",
+    "datasheet": {
+      "title": "RV1 · 10 kΩ potentiometer",
+      "rows": [
+        [
+          "Leg 1 to wiper",
+          "10 kΩ × knob position"
+        ],
+        [
+          "Wired as",
+          "a variable resistor (leg 3 unused)"
+        ],
+        [
+          "R1",
+          "330 Ω (stops 0 Ω burning the LED)"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "Select RV1 and turn its knob with ‹ ›. Here the current goes in at leg 1 and out at the wiper, so the knob sets how much of the 10 kΩ track it passes through.",
+    "The current is 7 V ÷ (330 Ω + track). For 5 mA the total wants to be 7 V ÷ 0.005 A = 1.4 kΩ.",
+    "At 10 % the track is 1 kΩ: 7 V ÷ 1.33 kΩ = 5.3 mA."
+  ],
+  "board": {
+    "supply": {
+      "volts": 9,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "W1",
+        "kind": "wire",
+        "h1": "T+:3",
+        "h2": "a5",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "RV1",
+        "kind": "pot",
+        "h1": "e5",
+        "h2": "e6",
+        "h3": "e7",
+        "ohms": 10000,
+        "position": 0.5
+      },
+      {
+        "id": "R1",
+        "kind": "resistor",
+        "h1": "b6",
+        "h2": "b12",
+        "ohms": 330
+      },
+      {
+        "id": "LED1",
+        "kind": "led",
+        "h1": "c12",
+        "h2": "c14",
+        "color": "red"
+      },
+      {
+        "id": "W2",
+        "kind": "wire",
+        "h1": "a14",
+        "h2": "T-:13",
+        "wireColor": "#2f6fe0"
+      }
+    ]
+  },
+  "pinned": [
+    "RV1"
+  ],
+  "locked": [
+    "W1",
+    "R1",
+    "LED1",
+    "W2"
+  ],
+  "tools": [
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "led-current",
+      "part": "LED1",
+      "min": 0.0045,
+      "max": 0.0055,
+      "explain": "Between leg 1 and the wiper, a potentiometer is a resistor whose value the knob sets: 10 kΩ × the position."
+    },
+    {
+      "kind": "no-burnt"
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 0
+  },
+  "debrief": "Used from one end to the wiper, a potentiometer is a variable resistor (a rheostat): the knob sets how much of its track is in the loop. The fixed 330 Ω keeps the LED safe when the knob is turned right down to 0 Ω. Dimmers, fan speeds and old volume knobs all started out like this."
+}

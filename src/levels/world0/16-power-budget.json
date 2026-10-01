@@ -1,0 +1,174 @@
+{
+  "id": "w0-16-power-budget",
+  "world": 0,
+  "number": 16,
+  "title": "Power budget",
+  "format": "build",
+  "skills": [
+    "power",
+    "kcl"
+  ],
+  "brief": {
+    "story": "The status panel runs from a small 9 V adapter rated for 45 mA. Three LEDs, each fed through 330 Ω, ask for more than that. Every LED still has to be clearly lit (at least 10 mA).",
+    "goal": "Change the resistors so the whole panel draws at most 45 mA, with every LED at 10 mA or more.",
+    "datasheet": {
+      "title": "Adapter",
+      "rows": [
+        [
+          "Output",
+          "9 V"
+        ],
+        [
+          "Rated",
+          "45 mA max"
+        ],
+        [
+          "Power",
+          "P = V × I = 0.4 W"
+        ],
+        [
+          "Each LED",
+          "at least 10 mA"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "Parallel branch currents add up at the supply. With 330 Ω each takes about 21 mA, so 63 mA in all.",
+    "You need each branch under 15 mA (3 × 15 = 45) but over 10 mA. Which resistor gives 10–15 mA from 7 V?",
+    "560 Ω gives 12.5 mA (37 mA in all). 470 Ω just fits too (44 mA). 820 Ω is too dim."
+  ],
+  "board": {
+    "supply": {
+      "volts": 9,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "W1",
+        "kind": "wire",
+        "h1": "T+:3",
+        "h2": "a3",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "R1",
+        "kind": "resistor",
+        "h1": "b3",
+        "h2": "a10",
+        "ohms": 330
+      },
+      {
+        "id": "LED1",
+        "kind": "led",
+        "h1": "b10",
+        "h2": "b12",
+        "color": "red"
+      },
+      {
+        "id": "W2",
+        "kind": "wire",
+        "h1": "a12",
+        "h2": "T-:11",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "R2",
+        "kind": "resistor",
+        "h1": "c3",
+        "h2": "a15",
+        "ohms": 330
+      },
+      {
+        "id": "LED2",
+        "kind": "led",
+        "h1": "b15",
+        "h2": "b17",
+        "color": "yellow"
+      },
+      {
+        "id": "W3",
+        "kind": "wire",
+        "h1": "a17",
+        "h2": "T-:15",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "R3",
+        "kind": "resistor",
+        "h1": "d3",
+        "h2": "a20",
+        "ohms": 330
+      },
+      {
+        "id": "LED3",
+        "kind": "led",
+        "h1": "b20",
+        "h2": "b22",
+        "color": "green"
+      },
+      {
+        "id": "W4",
+        "kind": "wire",
+        "h1": "a22",
+        "h2": "T-:20",
+        "wireColor": "#2f6fe0"
+      }
+    ]
+  },
+  "resistorValues": [
+    220,
+    330,
+    390,
+    470,
+    560,
+    680,
+    820,
+    1000
+  ],
+  "locked": [
+    "W1",
+    "LED1",
+    "W2",
+    "LED2",
+    "W3",
+    "LED3",
+    "W4"
+  ],
+  "tools": [
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "supply-current",
+      "max": 0.045,
+      "explain": "Branch currents add at the supply (Kirchhoff’s current law): three LEDs at 21 mA each is 63 mA."
+    },
+    {
+      "kind": "led-current",
+      "part": "LED1",
+      "min": 0.01,
+      "max": 0.025
+    },
+    {
+      "kind": "led-current",
+      "part": "LED2",
+      "min": 0.01,
+      "max": 0.025
+    },
+    {
+      "kind": "led-current",
+      "part": "LED3",
+      "min": 0.01,
+      "max": 0.025
+    },
+    {
+      "kind": "no-burnt"
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 0
+  },
+  "debrief": "A supply has a limit, and every branch takes its share: the total is the sum of the branches. Here 3 × 12.5 mA = 37.5 mA, which is 9 V × 37.5 mA = 0.34 W. Battery gadgets are designed exactly like this: add up every current, check it against the battery or adapter, and trim the brightness until it fits."
+}

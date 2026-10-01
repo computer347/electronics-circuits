@@ -1,0 +1,101 @@
+{
+  "id": "w0-20-wrong-sensor",
+  "world": 0,
+  "number": 20,
+  "title": "Wrong partner",
+  "format": "find-fault",
+  "skills": [
+    "sensor.divider",
+    "fault.value"
+  ],
+  "brief": {
+    "story": "The greenhouse thermometer reads far too high. The sensor is a 10 kΩ thermistor (10 kΩ at 25 °C), and the voltage it makes with its fixed partner R1 should sit at mid-scale, about 4.5 V, at room temperature. It reads over 8 V.",
+    "goal": "Find the wrong part and fix it so the sensor voltage (column 8) is 4.3–4.7 V at 25 °C.",
+    "datasheet": {
+      "title": "RT1 · NTC thermistor",
+      "rows": [
+        [
+          "At 25 °C",
+          "10 kΩ"
+        ],
+        [
+          "Hotter",
+          "less resistance"
+        ],
+        [
+          "Divider",
+          "R1 on top, RT1 to ground"
+        ],
+        [
+          "Mid-scale",
+          "when R1 = RT1"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "The sensor voltage is a divider: V = 9 V × RT1 ÷ (R1 + RT1). Measure it, then read R1’s bands.",
+    "For mid-scale (half of 9 V) the two halves of a divider must be equal.",
+    "R1 is 1 kΩ: 9 × 10 ÷ 11 = 8.2 V. Change it to 10 kΩ for 4.5 V."
+  ],
+  "board": {
+    "supply": {
+      "volts": 9,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "R1",
+        "kind": "resistor",
+        "h1": "T+:6",
+        "h2": "a8",
+        "ohms": 10000
+      },
+      {
+        "id": "RT1",
+        "kind": "resistor",
+        "h1": "b8",
+        "h2": "T-:8",
+        "ohms": 10000
+      }
+    ]
+  },
+  "faults": [
+    {
+      "kind": "value",
+      "part": "R1",
+      "ohms": 1000
+    }
+  ],
+  "resistorValues": [
+    1000,
+    2200,
+    4700,
+    10000,
+    22000,
+    47000
+  ],
+  "locked": [
+    "RT1"
+  ],
+  "tools": [
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "voltage",
+      "hole": "c8",
+      "min": 4.3,
+      "max": 4.7,
+      "label": "Sensor voltage",
+      "divider": true,
+      "explain": "A sensor divider is most sensitive with its fixed resistor equal to the sensor’s middle value."
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 0,
+    "measurements": 1
+  },
+  "debrief": "A resistive sensor (thermistor, light sensor, strain gauge) is read as one half of a divider. With the fixed half equal to the sensor’s value in the middle of its range, the output sits at half the supply and moves the most for each degree. A 1 kΩ partner squashed every reading up near 8 V, where a change in temperature barely shows."
+}

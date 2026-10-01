@@ -1,0 +1,201 @@
+{
+  "id": "w1-15-odd-one-out",
+  "world": 1,
+  "number": 15,
+  "title": "Odd one out",
+  "format": "build",
+  "skills": [
+    "logic.parity"
+  ],
+  "brief": {
+    "story": "The serial link adds a parity bit so the receiver can spot a flipped bit: the parity LED is lit when an odd number of the three data switches are on. XOR chained through three inputs does exactly that, but the chain is broken.",
+    "goal": "Wire gate 1’s output (pin 3) into gate 2 (pin 4) so LED1 lights for an odd number of switches on.",
+    "datasheet": {
+      "title": "Odd parity of 3 bits",
+      "rows": [
+        [
+          "Gate 1",
+          "SA XOR SB → pin 3 (column 12)"
+        ],
+        [
+          "Gate 2",
+          "pins 4 (column 13) and 5 (SC) → 6"
+        ],
+        [
+          "Lit for",
+          "1 or 3 switches on"
+        ]
+      ]
+    }
+  },
+  "hints": [
+    "XOR is 1 when its inputs differ, which is the same as “an odd number of them are 1”. Chaining XORs counts odd for any number of inputs.",
+    "Gate 1 does SA XOR SB on pin 3, column 12. Gate 2 needs that on pin 4, column 13.",
+    "One wire from column 12 to column 13."
+  ],
+  "board": {
+    "supply": {
+      "volts": 5,
+      "on": true
+    },
+    "parts": [
+      {
+        "id": "IC1",
+        "kind": "dip",
+        "h1": "e10",
+        "h2": "f16",
+        "pins": [
+          "e10",
+          "e11",
+          "e12",
+          "e13",
+          "e14",
+          "e15",
+          "e16",
+          "f16",
+          "f15",
+          "f14",
+          "f13",
+          "f12",
+          "f11",
+          "f10"
+        ],
+        "marking": "74HC86"
+      },
+      {
+        "id": "WP",
+        "kind": "wire",
+        "h1": "T+:25",
+        "h2": "B+:25",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WN",
+        "kind": "wire",
+        "h1": "T-:24",
+        "h2": "B-:24",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "WV1",
+        "kind": "wire",
+        "h1": "g10",
+        "h2": "B+:8",
+        "wireColor": "#e8413c"
+      },
+      {
+        "id": "WG1",
+        "kind": "wire",
+        "h1": "a16",
+        "h2": "T-:16",
+        "wireColor": "#2f6fe0"
+      },
+      {
+        "id": "SA",
+        "kind": "toggle",
+        "h1": "T+:3",
+        "h2": "a10",
+        "pressed": false
+      },
+      {
+        "id": "RSA",
+        "kind": "resistor",
+        "h1": "b10",
+        "h2": "T-:3",
+        "ohms": 10000
+      },
+      {
+        "id": "SB",
+        "kind": "toggle",
+        "h1": "T+:9",
+        "h2": "a11",
+        "pressed": false
+      },
+      {
+        "id": "RSB",
+        "kind": "resistor",
+        "h1": "b11",
+        "h2": "T-:10",
+        "ohms": 10000
+      },
+      {
+        "id": "SC",
+        "kind": "toggle",
+        "h1": "T+:13",
+        "h2": "a14",
+        "pressed": false
+      },
+      {
+        "id": "RSC",
+        "kind": "resistor",
+        "h1": "b14",
+        "h2": "T-:13",
+        "ohms": 10000
+      },
+      {
+        "id": "R1",
+        "kind": "resistor",
+        "h1": "a15",
+        "h2": "a20",
+        "ohms": 330
+      },
+      {
+        "id": "LED1",
+        "kind": "led",
+        "h1": "b20",
+        "h2": "T-:19",
+        "color": "yellow"
+      }
+    ]
+  },
+  "locked": [
+    "IC1",
+    "WP",
+    "WN",
+    "WV1",
+    "WG1",
+    "SA",
+    "RSA",
+    "SB",
+    "RSB",
+    "SC",
+    "RSC",
+    "R1",
+    "LED1"
+  ],
+  "tools": [
+    "wire",
+    "probe"
+  ],
+  "spec": [
+    {
+      "kind": "truth-table",
+      "inputs": [
+        "SA",
+        "SB",
+        "SC"
+      ],
+      "output": "LED1",
+      "table": [
+        0,
+        1,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1
+      ],
+      "label": "LED1 = SA XOR SB XOR SC",
+      "explain": "Each XOR flips the result once for every input that’s on, so the end result is 1 for an odd count."
+    },
+    {
+      "kind": "no-burnt"
+    }
+  ],
+  "par": {
+    "checks": 1,
+    "partsAdded": 1
+  },
+  "debrief": "Chained XORs compute parity: 1 when an odd number of inputs are 1. A sender adds that bit; if one bit flips on the way, the receiver’s parity no longer matches and it knows. Serial ports, memory chips (ECC) and RAID disk arrays all use parity, from three bits to thousands."
+}
