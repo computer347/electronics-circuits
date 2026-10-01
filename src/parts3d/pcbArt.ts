@@ -101,7 +101,13 @@ export function pcbArt(def: BoardDef, finish: 'hasl' | 'enig' = 'hasl') {
     if (p.kind !== 'chipR' && p.kind !== 'chipC' && p.kind !== 'chipLed') {
       g.strokeRect(X(box.x0 - pad), Z(box.z0 - pad), (box.x1 - box.x0 + 2 * pad) * PX, (box.z1 - box.z0 + 2 * pad) * PX);
     }
-    if (p.kind === 'qfp' || p.kind === 'soic8' || p.kind === 'qfn') { g.beginPath(); g.arc(X(box.x0 - pad - 0.6), Z(box.z1 + pad + 0.6), 0.35 * PX, 0, Math.PI * 2); g.fill(); }
+    if (p.kind === 'chipLed') {
+      // the cathode bar: a silkscreen line past pad 1 (−x before the part is turned)
+      const t = ((p.rot ?? 0) * Math.PI) / 180, l = 1.6;
+      const cx = p.at[0] - Math.cos(t) * l, cz = p.at[1] + Math.sin(t) * l;
+      g.save(); g.translate(X(cx), Z(cz)); g.rotate(-t); g.fillRect(-0.12 * PX, -0.55 * PX, 0.24 * PX, 1.1 * PX); g.restore();
+    }
+    if (p.kind === 'qfp' || p.kind === 'soic8' || p.kind === 'qfn' || p.kind === 'tsop48') { g.beginPath(); g.arc(X(box.x0 - pad - 0.6), Z(box.z1 + pad + 0.6), 0.35 * PX, 0, Math.PI * 2); g.fill(); }
     // The reference name, beside the part where it fits on the board.
     const below = box.z1 + 1.2 < def.d / 2 - 1;
     g.fillText(designators.get(p.id) ?? p.id, X((box.x0 + box.x1) / 2), Z(below ? box.z1 + 1.1 : box.z0 - 1.1));
@@ -128,7 +134,7 @@ export function pcbArt(def: BoardDef, finish: 'hasl' | 'enig' = 'hasl') {
 
 /** The letter a board prints before each part's number, by kind (IEEE 315 style). */
 const PREFIX: Partial<Record<string, string>> = {
-  chipR: 'R', chipC: 'C', elec: 'C', chipLed: 'D', sot23: 'Q', sot223: 'U', soic8: 'U', qfp: 'U', qfn: 'U', wroom: 'U', crystal: 'Y', xtal3225: 'Y', jumper: 'JP',
+  chipR: 'R', chipC: 'C', elec: 'C', chipLed: 'D', sot23: 'Q', tsop48: 'U', sot223: 'U', soic8: 'U', qfp: 'U', qfn: 'U', wroom: 'U', crystal: 'Y', xtal3225: 'Y', jumper: 'JP',
   usbB: 'J', microUsb: 'J', usbA: 'J', dcJack: 'J', header: 'J', headerF: 'J', button: 'SW', transducer: 'X', dhtBody: 'U',
 };
 

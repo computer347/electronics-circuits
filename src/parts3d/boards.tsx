@@ -12,11 +12,11 @@ import { HeaderRow, Pcb, printTexture, SHIELD, silkTexture } from './common';
 import { ChipCap, ChipLed, ChipResistor, Crystal, DcJack, MicroUsb, QFP, SmdButton, SOIC8, SOT223, SOT23, UsbB, type ChipSize } from './smd';
 import { Electrolytic } from './tht';
 import { pcbArt } from './pcbArt';
-import { JumperCap, QFN, Xtal3225 } from './smd';
+import { JumperCap, QFN, TSOP48, Xtal3225 } from './smd';
 
 export type PlacedKind =
   | 'chipR' | 'chipC' | 'chipLed' | 'sot23' | 'sot223' | 'soic8' | 'qfp' | 'crystal' | 'usbB' | 'microUsb' | 'dcJack'
-  | 'button' | 'header' | 'headerF' | 'elec' | 'wroom' | 'display' | 'transducer' | 'dhtBody' | 'usbA' | 'qfn' | 'xtal3225' | 'jumper';
+  | 'button' | 'header' | 'headerF' | 'elec' | 'wroom' | 'display' | 'transducer' | 'dhtBody' | 'usbA' | 'qfn' | 'xtal3225' | 'jumper' | 'tsop48';
 
 export interface Placed {
   id: string;
@@ -68,10 +68,11 @@ function PlacedModel({ p, onHover }: { p: Placed; onHover?: (p: Placed | null) =
     case 'qfn': m = <QFN n={q.n} size={q.size} marking={q.marking} />; break;
     case 'xtal3225': m = <Xtal3225 mhz={q.mhz} />; break;
     case 'jumper': m = <JumperCap color={q.color} />; break;
+    case 'tsop48': m = <TSOP48 marking={q.marking} />; break;
     case 'headerF': m = <HeaderRow n={q.n ?? 8} at={[0, 0, 0]} female />; break;
     case 'elec': m = <group scale={q.scale ?? 0.8}><Electrolytic uF={q.uF} volts={q.volts} /></group>; break;
     case 'wroom': m = <Wroom />; break;
-    case 'display': m = <Display w={q.w ?? 26} d={q.d ?? 15} />; break;
+    case 'display': m = <Display w={q.w ?? 26} d={q.d ?? 15} flex={q.flex} />; break;
     case 'transducer': m = <Transducer />; break;
     case 'dhtBody': m = <DhtBody />; break;
     case 'usbA': m = <UsbA />; break;
@@ -127,11 +128,30 @@ function antennaTexture() {
   return antTex;
 }
 
-function Display({ w, d }: { w: number; d: number }) {
+/**
+ * A small OLED panel as it sits on its module: two sheets of glass (the top one a little
+ * shorter, so the driver chip's ledge shows), a grey-black active area nearer the far edge,
+ * and, with `flex`, the amber ribbon that leaves the glass and folds round the board's edge
+ * to its back, where it's soldered. Bend that ribbon too sharply and the screen dies.
+ */
+function Display({ w, d, flex }: { w: number; d: number; flex?: number }) {
+  const glass = { color: '#101418', roughness: 0.05, metalness: 0.4 } as const;
   return (
     <group>
-      <mesh position={[0, 0.9, 0]} castShadow><boxGeometry args={[w, 1.6, d]} /><meshStandardMaterial color="#0b0b10" roughness={0.1} metalness={0.3} /></mesh>
-      <mesh position={[0, 1.71, 0.5]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[w * 0.85, d * 0.62]} /><meshStandardMaterial color="#050508" roughness={0.05} metalness={0.5} /></mesh>
+      <mesh position={[0, 0.25, 0]}><boxGeometry args={[w, 0.5, d]} /><meshStandardMaterial color="#e8e2c8" roughness={0.6} /></mesh>
+      <mesh position={[0, 0.85, 0]} castShadow><boxGeometry args={[w, 0.7, d]} /><meshStandardMaterial {...glass} /></mesh>
+      <mesh position={[0, 1.45, -1.2]} castShadow><boxGeometry args={[w, 0.5, d - 2.4]} /><meshStandardMaterial {...glass} transparent opacity={0.92} /></mesh>
+      {/* the active pixels: 128 × 64 in a 21.7 × 10.9 mm window */}
+      <mesh position={[0, 1.71, -2.2]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[21.7, 10.9]} /><meshStandardMaterial color="#1a1d22" roughness={0.2} metalness={0.2} /></mesh>
+      {/* the driver chip (SSD1306) bonded on the ledge */}
+      <mesh position={[0, 1.3, d / 2 - 1.2]}><boxGeometry args={[12, 0.3, 0.9]} /><meshStandardMaterial color="#202226" roughness={0.4} /></mesh>
+      {flex !== undefined && (
+        <group position={[0, 0, d / 2]}>
+          <mesh position={[0, 0.9, flex / 2]}><boxGeometry args={[12, 0.08, flex]} /><meshStandardMaterial color="#c97a1c" roughness={0.4} transparent opacity={0.9} /></mesh>
+          <mesh position={[0, -0.25, flex]} rotation={[0, 0, Math.PI / 2]}><cylinderGeometry args={[1.2, 1.2, 12, 20, 1, true, 0, Math.PI]} /><meshStandardMaterial color="#c97a1c" roughness={0.4} side={THREE.DoubleSide} /></mesh>
+          {Array.from({ length: 13 }, (_, i) => <mesh key={i} position={[-5.4 + i * 0.9, 0.95, flex / 2]}><boxGeometry args={[0.3, 0.02, flex]} /><meshStandardMaterial color="#d9a54a" metalness={0.7} roughness={0.3} /></mesh>)}
+        </group>
+      )}
     </group>
   );
 }
@@ -139,10 +159,26 @@ function Display({ w, d }: { w: number; d: number }) {
 function Transducer() {
   return (
     <group>
-      <mesh position={[0, 6, 0]} castShadow><cylinderGeometry args={[8, 8, 12, 36]} /><meshStandardMaterial {...SHIELD} /></mesh>
-      <mesh position={[0, 12.01, 0]} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[7.2, 36]} /><meshStandardMaterial color="#2a2a2a" roughness={0.9} /></mesh>
+      <mesh position={[0, 6, 0]} castShadow><cylinderGeometry args={[8, 8, 12, 36, 1, true]} /><meshStandardMaterial {...SHIELD} side={THREE.DoubleSide} /></mesh>
+      {/* a rolled lip, and the fine woven mesh that protects the piezo disc behind it */}
+      <mesh position={[0, 12, 0]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[7.6, 0.4, 8, 40]} /><meshStandardMaterial {...SHIELD} /></mesh>
+      <mesh position={[0, 11.4, 0]} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[7.9, 36]} /><meshStandardMaterial map={meshTexture()} roughness={0.95} /></mesh>
     </group>
   );
+}
+
+let meshTex: THREE.CanvasTexture | null = null;
+function meshTexture() {
+  if (meshTex) return meshTex;
+  const c = document.createElement('canvas');
+  c.width = c.height = 256;
+  const g = c.getContext('2d')!;
+  g.fillStyle = '#1b1b1d'; g.fillRect(0, 0, 256, 256);
+  g.strokeStyle = '#4a4a4e'; g.lineWidth = 1.2;
+  for (let i = 0; i < 256; i += 4) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i, 256); g.moveTo(0, i); g.lineTo(256, i); g.stroke(); }
+  meshTex = new THREE.CanvasTexture(c);
+  meshTex.colorSpace = THREE.SRGBColorSpace;
+  return meshTex;
 }
 
 function DhtBody() {
@@ -246,8 +282,11 @@ export const ESP32_DEVKIT: BoardDef = {
   parts: [
     { id: 'U_WROOM', kind: 'wroom', at: [-5, 0], rot: 90, name: 'ESP32-WROOM-32 module (Wi-Fi + Bluetooth)' },
     { id: 'J_USB', kind: 'microUsb', at: [25.5, 0], rot: 90, name: 'Micro-USB socket' },
-    { id: 'U_UART', kind: 'qfp', at: [17, 0], name: 'CP2102 USB to serial', props: { n: 28, size: 5, marking: ['CP2102'] } },
-    { id: 'U_REG', kind: 'sot223', at: [11, 8], name: '3.3 V regulator', props: { marking: 'AMS1117' } },
+    { id: 'U_UART', kind: 'qfn', at: [17, 0], name: 'CP2102 USB to serial (QFN-28)', props: { n: 28, size: 5, marking: ['CP2102', 'SILABS'] } },
+    { id: 'U_REG', kind: 'sot223', at: [11, 8], name: '3.3 V regulator', props: { marking: 'AMS1117', volts: '3.3' } },
+    { id: 'Q1', kind: 'sot23', at: [15.4, -5], name: 'S8050 transistor (auto-reset: pulls EN)', props: { marking: 'J3Y' } },
+    { id: 'Q2', kind: 'sot23', at: [15.4, 5], rot: 180, name: 'S8050 transistor (auto-reset: pulls IO0)', props: { marking: 'J3Y' } },
+    { id: 'LED_IO2', kind: 'chipLed', at: [11, -1.5], name: 'GPIO2 LED (blue)', props: { color: '#3a8bff' } },
     { id: 'SW_EN', kind: 'button', at: [21, -8.5], name: 'EN (reset) button', props: { w: 4 } },
     { id: 'SW_BOOT', kind: 'button', at: [21, 9], name: 'BOOT button', props: { w: 4 } },
     { id: 'LED_PWR', kind: 'chipLed', at: [11, -4], name: 'Power LED', props: { color: '#ff3b30', lit: true } },
@@ -335,7 +374,7 @@ export const OLED_096: BoardDef = {
   holes: [[-11.5, -11.5], [11.5, -11.5], [-11.5, 11.5], [11.5, 11.5]],
   silk: (g, px, w, d) => { const T = toCanvas(w, d); pinLabels(g, px, ['GND', 'VCC', 'SCL', 'SDA'], T.x(-3.8), T.z(-9.5), 2.54, 1.0, false); },
   parts: [
-    { id: 'DISP', kind: 'display', at: [0, 2.5], name: 'OLED panel 128 × 64', props: { w: 26.5, d: 19 } },
+    { id: 'DISP', kind: 'display', at: [0, 2.5], name: 'OLED panel 128 × 64 (SSD1306 driver)', props: { w: 26.5, d: 19, flex: 1.5 } },
     { id: 'H1', kind: 'header', at: [-3.8, -12], name: 'Pins GND, VCC, SCL, SDA', props: { n: 4 } },
   ],
 };
@@ -368,14 +407,15 @@ export const HCSR04: BoardDef = {
 };
 
 export const USB_STICK: BoardDef = {
-  id: 'usb-stick', name: 'USB stick (opened)', w: 34, d: 15, color: '#2e7d3a',
-  silk: (g, px, w, d) => { const T = toCanvas(w, d); g.font = `bold ${1 * px}px 'Space Mono', monospace`; g.fillText('SD-C08G', T.x(4) * px, T.z(6) * px); },
+  id: 'usb-stick', name: 'USB stick (opened)', w: 44, d: 15, color: '#2e7d3a',
+  silk: (g, px, w, d) => { const T = toCanvas(w, d); g.font = `bold ${1 * px}px 'Space Mono', monospace`; g.fillText('SD-C08G', T.x(-4) * px, T.z(6.9) * px); },
   parts: [
-    { id: 'J_USB', kind: 'usbA', at: [-14, 0], name: 'USB-A plug' },
-    { id: 'U_CTRL', kind: 'qfp', at: [-2, 0], name: 'USB flash controller', props: { n: 24, size: 4, marking: ['PS2251'] } },
-    { id: 'U_FLASH', kind: 'qfp', at: [10, 0], name: 'NAND flash (8 GB)', props: { n: 32, size: 9, marking: ['NAND', '8GB'] } },
-    { id: 'Y1', kind: 'crystal', at: [-7, 5], name: 'Crystal 12 MHz', value: { amount: 12e6, unit: 'Hz' }, props: { mhz: '12.00' } },
-    { id: 'LED1', kind: 'chipLed', at: [16, 5.5], name: 'Activity LED', props: { color: '#3a8bff' } },
+    { id: 'J_USB', kind: 'usbA', at: [-19, 0], name: 'USB-A plug' },
+    { id: 'U_CTRL', kind: 'qfp', at: [-4, 0], name: 'USB flash controller', props: { n: 48, size: 7, marking: ['PS2251', '-09'] } },
+    { id: 'U_FLASH', kind: 'tsop48', at: [11.8, 0], name: 'NAND flash 8 GB (TSOP-48)', props: { marking: ['29F64G08', 'NAND'] } },
+    { id: 'Y1', kind: 'xtal3225', at: [-11.2, 4.6], name: 'Crystal 12 MHz', value: { amount: 12e6, unit: 'Hz' }, props: { mhz: '12.000' } },
+    c0603('C1', [-11.2, 1], 1e-6, 90), c0603('C2', [-11.2, -1.8], 100e-9, 90),
+    { id: 'LED1', kind: 'chipLed', at: [-11.2, -5], name: 'Activity LED', props: { color: '#3a8bff' } },
   ],
 };
 

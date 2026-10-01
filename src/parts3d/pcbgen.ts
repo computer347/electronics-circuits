@@ -89,6 +89,7 @@ export function footprint(p: Placed): { x: number; z: number; w: number; d: numb
       }
       return out;
     }
+    case 'tsop48': return [-1, 1].flatMap((k) => Array.from({ length: 24 }, (_, i) => ({ x: k * 9.7, z: -5.75 + i * 0.5, w: 1.3, d: 0.28 })));
     case 'xtal3225': return [[-1.1, -0.8], [1.1, -0.8], [-1.1, 0.8], [1.1, 0.8]].map(([x, z]) => ({ x: x!, z: z!, w: 1.2, d: 1.0 }));
   }
   return [];
@@ -217,7 +218,7 @@ export function partBox(p: Placed): { x0: number; x1: number; z0: number; z1: nu
   const pads = footprint(p);
   const xs = pads.map((f) => [f.x - f.w / 2, f.x + f.w / 2]).flat(), zs = pads.map((f) => [f.z - f.d / 2, f.z + f.d / 2]).flat();
   const q = (p.props ?? {}) as Record<string, number | undefined>;
-  const body = p.kind === 'qfp' ? Number(q.size ?? 7) / 2 : p.kind === 'crystal' ? 5.5 : 1;
+  const body = p.kind === 'qfp' ? Number(q.size ?? 7) / 2 : p.kind === 'crystal' ? 5.5 : p.kind === 'tsop48' ? 6 : 1;
   const x0 = Math.min(-body, ...xs), x1 = Math.max(body, ...xs), z0 = Math.min(-body, ...zs), z1 = Math.max(body, ...zs);
   const turned = Math.round(((p.rot ?? 0) % 180) / 90) % 2 !== 0;
   const [a0, a1, b0, b1] = turned ? [z0, z1, x0, x1] : [x0, x1, z0, z1];

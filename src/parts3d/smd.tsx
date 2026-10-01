@@ -40,6 +40,8 @@ export function ChipLed({ size = '0603', color = '#39d86a', lit = false }: { siz
       <mesh position={[0, h / 2, 0]}><boxGeometry args={[l * 0.7, h, w]} /><meshStandardMaterial color="#f4f4f0" roughness={0.3} /></mesh>
       <mesh position={[0, h + 0.02, 0]}><boxGeometry args={[l * 0.6, 0.05, w * 0.8]} /><meshStandardMaterial color={color} emissive={color} emissiveIntensity={lit ? 2 : 0.05} transparent opacity={0.9} toneMapped={!lit} /></mesh>
       {[-1, 1].map((k) => <mesh key={k} position={[k * l * 0.42, h / 2, 0]}><boxGeometry args={[l * 0.16, h, w]} /><meshStandardMaterial {...TIN} /></mesh>)}
+      {/* the cathode mark: a green line on the body at the cathode end (pad 1, −x) */}
+      <mesh position={[-l * 0.3, h + 0.05, 0]}><boxGeometry args={[l * 0.06, 0.02, w * 0.85]} /><meshBasicMaterial color="#1f9a3a" /></mesh>
       {lit && <pointLight position={[0, h + 1, 0]} color={color} intensity={0.2} distance={6} />}
     </group>
   );
@@ -218,4 +220,23 @@ export function Xtal3225({ mhz = '26.000' }: { mhz?: string }) {
 /** A jumper cap on two header pins (black, or yellow on a Blue Pill). */
 export function JumperCap({ color = '#e8c228' }: { color?: string }) {
   return <mesh position={[1.27, 6.5, 0]} castShadow><boxGeometry args={[4.9, 6, 2.4]} /><meshStandardMaterial color={color} roughness={0.5} /></mesh>;
+}
+
+/**
+ * TSOP-48 (type I): the long, thin package NAND flash comes in, 18.4 × 12 × 1 mm, with its 48
+ * legs (0.5 mm apart) along the two SHORT ends, unlike a QFP's four sides. Pin 1 has a dimple.
+ */
+export function TSOP48({ marking = ['NAND', '8GB'] }: { marking?: string[] }) {
+  const legs = Array.from({ length: 24 }, (_, i) => -5.75 + i * 0.5);
+  return (
+    <group>
+      <mesh position={[0, 0.6, 0]} castShadow><boxGeometry args={[18.4, 1.0, 12]} /><meshStandardMaterial {...EPOXY} /></mesh>
+      <mesh position={[-7.6, 1.11, 4.9]} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[0.5, 16]} /><meshBasicMaterial color="#444" /></mesh>
+      <mesh position={[0.5, 1.11, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[13, 6]} /><meshBasicMaterial map={printTexture(marking, { size: 46, w: 320, h: 150 })} transparent /></mesh>
+      {legs.flatMap((z) => [
+        <GullWing key={`l${z}`} at={[-9.2, z]} dir={[-1, 0]} w={0.2} len={0.8} h={0.5} />,
+        <GullWing key={`r${z}`} at={[9.2, z]} dir={[1, 0]} w={0.2} len={0.8} h={0.5} />,
+      ])}
+    </group>
+  );
 }

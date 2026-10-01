@@ -51,6 +51,24 @@ describe('procedural PCB', () => {
     }
   });
 
+  it('gives a TSOP-48 its 48 legs, 0.5 mm apart, on the two short ends only', () => {
+    const f = footprint({ id: 'U1', kind: 'tsop48', at: [0, 0] });
+    expect(f.length).toBe(48);
+    expect(new Set(f.map((p) => p.x)).size).toBe(2);
+    const left = f.filter((p) => p.x < 0).map((p) => p.z).sort((a, b) => a - b);
+    expect(left[1]! - left[0]!).toBeCloseTo(0.5, 6);
+  });
+
+  it('lays the ESP32 DevKit and the USB stick out with no two parts on top of each other', () => {
+    for (const id of ['esp32-devkit', 'usb-stick']) {
+      const parts = BOARDS.find((b) => b.id === id)!.parts.filter((p) => p.kind !== 'header' && p.kind !== 'wroom' && p.kind !== 'usbA');
+      for (let i = 0; i < parts.length; i++) for (let j = i + 1; j < parts.length; j++) {
+        const x = partBox(parts[i]!), y = partBox(parts[j]!);
+        expect(x.x0 < y.x1 && y.x0 < x.x1 && x.z0 < y.z1 && y.z0 < x.z1, `${id}: ${parts[i]!.id} / ${parts[j]!.id}`).toBe(false);
+      }
+    }
+  });
+
   it('prints resistor codes like the real parts: 4.7 kΩ is 472, 100 Ω is 101, 22 kΩ is 223', () => {
     expect(resistorCode(4700)).toBe('472');
     expect(resistorCode(100)).toBe('101');

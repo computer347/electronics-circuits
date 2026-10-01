@@ -203,7 +203,7 @@ export const LABS: LabSpec[] = [
     hint: 'Two silver cans: the one marked T sends, R listens.', explain: 'T sends eight 40 kHz pulses; R hears the echo. Time there and back ÷ 2 × the speed of sound is the distance.' },
   { part: 'usb-stick', kind: 'identify', board: 'usb-stick', target: 'U_FLASH',
     ask: 'Find the chip your files actually live on.', skill: ID_SKILL, why: ID_WHY,
-    hint: 'Two chips: a controller near the plug, and the bigger flash chip behind it.', explain: 'NAND flash holds the data; the controller next to it talks USB and spreads the wear across the flash.' },
+    hint: 'Two chips: a square controller near the plug, and behind it the long flat flash chip with its legs on the two short ends (a TSOP-48).', explain: 'NAND flash holds the data; the controller next to it talks USB and spreads the wear across the flash.' },
 ];
 
 export const labByPart = (id: string) => LABS.find((l) => l.part === id);
