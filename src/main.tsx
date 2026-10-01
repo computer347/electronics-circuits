@@ -2,12 +2,13 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './app/App';
 import { Gallery } from './parts3d/Gallery';
+import { PartViewer } from './parts3d/PartViewer';
 import './app/base.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {/* ?gallery opens the parts gallery, a testing page for every 3D model. */}
-    {new URLSearchParams(location.search).has('gallery') ? <Gallery /> : <App />}
+    {/* ?gallery opens the parts gallery, a testing page for every 3D model; ?parts the one-at-a-time viewer. */}
+    {new URLSearchParams(location.search).has('gallery') ? <Gallery /> : new URLSearchParams(location.search).has('parts') ? <PartViewer /> : <App />}
   </StrictMode>,
 );
 

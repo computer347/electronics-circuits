@@ -327,6 +327,12 @@
 .gallery-card b { display: block; }
 .gallery-pins { font-weight: 700; }
 .gallery-board { margin-top: 8px; }
+/* ?parts dev viewer */
+.viewer-bar { position: fixed; left: 16px; top: 12px; display: flex; gap: 6px; align-items: center; padding: 6px 8px; background: var(--r-paper); box-shadow: 3px 3px 0 var(--r-blue); max-width: calc(100% - 32px); }
+.viewer-bar select { font: 700 13px var(--r-mono); padding: 4px 6px; min-width: 0; max-width: 60vw; }
+.viewer-count { font-size: 12px; color: var(--r-ink); white-space: nowrap; }
+.viewer-note { position: fixed; left: 16px; bottom: 12px; margin: 0; padding: 8px 10px; max-width: min(560px, calc(100% - 32px)); background: var(--r-paper); color: var(--r-ink); font-size: 12px; line-height: 1.5; box-shadow: 3px 3px 0 var(--r-pink); }
+.viewer-hint { opacity: 0.6; }
 .gallery-board canvas { width: 100% !important; height: 240px !important; display: block; }
 .gallery-tip { margin: 6px 0 0; padding: 6px 8px; background: var(--r-yellow); font-weight: 700; font-size: 12px; }
 .desk-result-skill { padding: 10px 12px; background: rgba(0, 120, 191, 0.12); border-left: 4px solid var(--r-blue); }
