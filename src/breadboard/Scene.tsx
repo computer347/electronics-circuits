@@ -6,7 +6,7 @@ import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import { useMemo, useRef, type ReactNode } from 'react';
 import * as THREE from 'three';
 import { colorBands } from './colorCode';
-import { BOARD, HOLES, hole, type HoleId } from './layout';
+import { BOARD, colX, COLS, HOLES, hole, RAIL_Z, RAILS, ROW_Z, ROWS, type HoleId } from './layout';
 import { useLive } from './live';
 import { isElectrolytic, LED_MAX_AMPS, type BoardAnalysis, type BoardPart, type BoardState } from './model';
 import { translateParts } from './move';
@@ -24,9 +24,48 @@ const Y_AXIS = new THREE.Vector3(0, 1, 0);
 type V3 = [number, number, number];
 
 /** A real white breadboard under a warm lamp; strips that carry a voltage tint riso blue. */
-const LOOK = { body: '#ebe6da', channel: '#d3ccbd', hole: '#3b3530', strip: '#c9c2b3', hot: new THREE.Color('#0078bf'), mark: '#ff48b0' } as const;
+const LOOK = { body: '#ebe6da', channel: '#bdb5a5', collar: '#f3efe6', hole: '#2a2622', strip: '#c9c2b3', hot: new THREE.Color('#0078bf'), mark: '#ff48b0' } as const;
 const useLook = () => LOOK;
 const at = (id: HoleId, y = 0): V3 => { const h = hole(id); return [h.x, y, h.z]; };
+
+/**
+ * What's printed on a real breadboard: the column numbers along both long edges, the row
+ * letters at both ends, and + and − at the ends of every rail, next to its red or blue line.
+ * Drawn once into a texture laid over the board's top.
+ */
+let silkTex: THREE.CanvasTexture | null = null;
+function breadboardSilk() {
+  if (silkTex) return silkTex;
+  const px = 64;
+  const c = document.createElement('canvas');
+  c.width = BOARD.width * px; c.height = BOARD.depth * px;
+  const g = c.getContext('2d')!;
+  const X = (x: number) => (x + BOARD.width / 2) * px, Z = (z: number) => (z + BOARD.depth / 2) * px;
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillStyle = '#3a3530';
+  g.font = `bold ${0.42 * px}px 'Space Mono', monospace`;
+  for (let col = 1; col <= COLS; col++) {
+    g.fillText(String(col), X(colX(col)), Z(ROW_Z.a + 0.72));
+    g.fillText(String(col), X(colX(col)), Z(ROW_Z.j - 0.72));
+  }
+  g.font = `bold ${0.5 * px}px 'Space Mono', monospace`;
+  for (const row of ROWS) {
+    g.fillText(row, X(colX(1) - 0.9), Z(ROW_Z[row]));
+    g.fillText(row, X(colX(COLS) + 0.9), Z(ROW_Z[row]));
+  }
+  // Rails: + in red, − in blue, at both ends, and their printed lines.
+  g.font = `bold ${0.8 * px}px 'Space Mono', monospace`;
+  for (const rail of RAILS) {
+    const plus = rail.endsWith('+');
+    g.fillStyle = plus ? '#c0392b' : '#2f6fe0';
+    g.fillText(plus ? '+' : '−', X(-BOARD.width / 2 + 0.75), Z(RAIL_Z[rail]));
+    g.fillText(plus ? '+' : '−', X(BOARD.width / 2 - 0.75), Z(RAIL_Z[rail]));
+  }
+  silkTex = new THREE.CanvasTexture(c);
+  silkTex.colorSpace = THREE.SRGBColorSpace;
+  silkTex.anisotropy = 8;
+  return silkTex;
+}
 
 /** A cylinder stretched between two points. */
 function Segment({ from, to, r = 0.045, color = '#b9c2bd', emissive }: { from: V3; to: V3; r?: number; color?: string; emissive?: string }) {
@@ -106,14 +145,29 @@ function Board({ analysis, dynamic }: { analysis: BoardAnalysis; dynamic: boolea
     return best;
   };
 
+  const silk = useMemo(() => breadboardSilk(), []);
   return (
     <group>
-      <mesh position={[0, -BOARD.thickness / 2, 0]} receiveShadow>
+      <mesh position={[0, -BOARD.thickness / 2, 0]} receiveShadow castShadow>
         <boxGeometry args={[BOARD.width, BOARD.thickness, BOARD.depth]} />
         <meshStandardMaterial color={look.body} roughness={0.75} />
       </mesh>
-      {/* centre channel and rail stripes */}
-      <mesh position={[0, 0.004, 0]}><boxGeometry args={[BOARD.width - 1, 0.01, 0.6]} /><meshStandardMaterial color={look.channel} roughness={0.8} /></mesh>
+      {/* The centre channel is a real slot (chips straddle it), and the rail strips are separate
+          pieces clipped on: a groove shows where each joins the main block. */}
+      <mesh position={[0, -0.25, 0]}><boxGeometry args={[BOARD.width + 0.02, 0.5, 0.75]} /><meshStandardMaterial color={look.channel} roughness={0.9} /></mesh>
+      <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[BOARD.width, 0.62]} /><meshStandardMaterial color="#9d9483" roughness={0.95} /></mesh>
+      {[-6, 6].map((z) => (
+        <mesh key={z} position={[0, -0.1, z]}><boxGeometry args={[BOARD.width + 0.02, 0.2, 0.12]} /><meshStandardMaterial color={look.channel} roughness={0.9} /></mesh>
+      ))}
+      {/* the dovetail pegs that snap boards together, on the short and long sides */}
+      {[[-BOARD.width / 2 - 0.25, -3.5], [-BOARD.width / 2 - 0.25, 3.5], [BOARD.width / 2 + 0.25, -3.5], [BOARD.width / 2 + 0.25, 3.5], [-9, BOARD.depth / 2 + 0.25], [9, BOARD.depth / 2 + 0.25]].map(([x, z]) => (
+        <mesh key={`${x}${z}`} position={[x!, -BOARD.thickness / 2, z!]}><cylinderGeometry args={[0.32, 0.32, BOARD.thickness * 0.8, 12]} /><meshStandardMaterial color={look.body} roughness={0.75} /></mesh>
+      ))}
+      {/* the printing: row letters, column numbers, + and − on the rails */}
+      <mesh position={[0, 0.008, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[BOARD.width, BOARD.depth]} />
+        <meshBasicMaterial map={silk} transparent depthWrite={false} />
+      </mesh>
       {/* rail markings: red beside the + rails, blue beside the - rails */}
       {[[-6.45, '#c0392b'], [-8.55, '#2f6fe0'], [6.45, '#c0392b'], [8.55, '#2f6fe0']].map(([z, c]) => (
         <mesh key={z as number} position={[0, 0.006, z as number]}>
@@ -133,8 +187,13 @@ function Board({ analysis, dynamic }: { analysis: BoardAnalysis; dynamic: boolea
           </mesh>
         );
       })}
+      {/* each hole: a slightly raised square collar round a dark square opening */}
       <instancedMesh args={[undefined, undefined, HOLES.length]} ref={(m) => { if (m) holeMatrices.forEach((mat, i) => m.setMatrixAt(i, mat)); if (m) m.instanceMatrix.needsUpdate = true; }}>
-        <boxGeometry args={[0.3, 0.02, 0.3]} />
+        <boxGeometry args={[0.52, 0.04, 0.52]} />
+        <meshStandardMaterial color={look.collar} roughness={0.7} />
+      </instancedMesh>
+      <instancedMesh args={[undefined, undefined, HOLES.length]} ref={(m) => { if (m) holeMatrices.forEach((mat, i) => m.setMatrixAt(i, mat)); if (m) m.instanceMatrix.needsUpdate = true; }}>
+        <boxGeometry args={[0.32, 0.05, 0.32]} />
         <meshBasicMaterial color={look.hole} />
       </instancedMesh>
       {/* invisible hit plane for picking the nearest hole */}

@@ -23,7 +23,9 @@ export type HoleId = string;
 const ROW_Z: Record<Row, number> = { j: -5, i: -4, h: -3, g: -2, f: -1, e: 1, d: 2, c: 3, b: 4, a: 5 };
 const RAIL_Z: Record<Rail, number> = { 'T-': -8, 'T+': -7, 'B+': 7, 'B-': 8 };
 
-export const BOARD = { width: 32, depth: 19, thickness: 0.8 } as const;
+/** A real half-size board is 82 × 55 × 8.5 mm: 32 × 19 pitches across, about 3.3 thick (drawn a little thinner). */
+export const BOARD = { width: 32, depth: 19, thickness: 2.4 } as const;
+export { ROW_Z, RAIL_Z, colX };
 
 const colX = (col: number) => col - (COLS + 1) / 2;
 /** Rail holes sit in five groups of five, aligned under columns 2–6, 8–12, ... */
