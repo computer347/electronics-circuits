@@ -8,7 +8,8 @@
  * Pads: two-pad parts have pad 1 at their local −x end and pad 2 at +x (an LED's anode is pad 1).
  */
 import type { LedColor } from '../sim';
-import { ARDUINO_UNO, DHT11, type BoardDef, type Placed } from '../parts3d/boards';
+import { ARDUINO_UNO, DHT11, type BoardDef } from '../parts3d/boards';
+import { boardPads } from '../parts3d/pcbgen';
 
 export type ElectricalPart =
   | { kind: 'resistor'; nets: [string, string]; ohms: number }
@@ -87,6 +88,10 @@ export const NETLISTS: Record<string, { def: BoardDef; net: BoardNetlist; fixed?
   dht11: { def: DHT11, net: DHT11_NETLIST, fixed: { SENSOR: DHT11_SENSOR } },
 };
 
+// Boards with a real circuit draw their copper from it.
+ARDUINO_UNO.nets = pcbNets(UNO_NETLIST);
+DHT11.nets = pcbNets(DHT11_NETLIST);
+
 // ---------------------------------------------------------------- where the pads are
 
 export interface PadSpot {
@@ -100,36 +105,33 @@ export interface PadSpot {
   part?: string;
 }
 
-/** Half the distance between a two-pad part's pad centres, by package. */
-function padHalf(p: Placed): number {
-  const size = (p.props?.size as string | undefined) ?? '0603';
-  const len = size === '0402' ? 1.0 : size === '0805' ? 2.0 : 1.6;
-  return p.kind === 'elec' ? 1.1 * ((p.props?.scale as number | undefined) ?? 0.8) * 2 : len * 0.4;
-}
-
-const rotate = (x: number, z: number, deg: number): [number, number] => {
-  const t = (deg * Math.PI) / 180;
-  return [x * Math.cos(t) + z * Math.sin(t), -x * Math.sin(t) + z * Math.cos(t)];
-};
-
-/** Every probe-able spot on a board: both pads of each electrical part, and every header pin. */
+/**
+ * Every probe-able spot on a board: both pads of each electrical part, and every header pin.
+ * Positions come from the PCB generator's footprints, so a probe lands on the copper drawn.
+ */
 export function padSpots(def: BoardDef, net: BoardNetlist): PadSpot[] {
   const out: PadSpot[] = [];
-  const byId = new Map(def.parts.map((p) => [p.id, p]));
+  const pads = new Map(boardPads(def).map((p) => [p.id, p]));
   for (const [id, e] of Object.entries(net.parts)) {
-    const p = byId.get(id);
-    if (!p || e.kind === 'regulator') continue;
-    const h = padHalf(p);
-    ([-1, 1] as const).forEach((k, i) => {
-      const [dx, dz] = rotate(k * h, 0, p.rot ?? 0);
-      out.push({ id: `${id}.${i + 1}`, net: e.nets[i]!, at: [p.at[0] + dx, p.at[1] + dz], label: `${id} pad ${i + 1}`, part: id });
+    if (e.kind === 'regulator') continue;
+    [0, 1].forEach((i) => {
+      const pad = pads.get(`${id}.${i + 1}`);
+      if (pad) out.push({ id: `${id}.${i + 1}`, net: e.nets[i]!, at: [pad.x, pad.z], label: `${id} pad ${i + 1}`, part: id });
     });
   }
   for (const pin of net.pins) {
-    const h = byId.get(pin.header);
-    if (!h || pin.net === 'NC') continue;
-    const [dx, dz] = rotate(pin.index * 2.54, 0, h.rot ?? 0);
-    out.push({ id: pin.id, net: pin.net, at: [h.at[0] + dx, h.at[1] + dz], label: `${pin.label} pin` });
+    const pad = pads.get(`${pin.header}.${pin.index + 1}`);
+    if (!pad || pin.net === 'NC') continue;
+    out.push({ id: pin.id, net: pin.net, at: [pad.x, pad.z], label: `${pin.label} pin` });
   }
   return out;
+}
+
+/** A netlist as PCB nets (pad ids by net name), so the copper drawn is the real circuit. */
+export function pcbNets(net: BoardNetlist): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  const add = (n: string, pad: string) => { if (n !== 'NC') (out[n] ??= []).push(pad); };
+  for (const [id, e] of Object.entries(net.parts)) if (e.kind !== 'regulator') e.nets.forEach((n, i) => add(n, `${id}.${i + 1}`));
+  for (const pin of net.pins) add(pin.net, `${pin.header}.${pin.index + 1}`);
+  return Object.fromEntries(Object.entries(out).filter(([, v]) => v.length >= 2));
 }

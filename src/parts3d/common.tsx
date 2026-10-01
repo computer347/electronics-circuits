@@ -88,8 +88,10 @@ export function HeaderRow({ n, at, female = false, rot = 0 }: { n: number; at: [
 }
 
 /** A PCB blank: board of w × d mm, with its colour, rounded corners and mounting holes. */
-export function Pcb({ w, d, color, holes = [], silk, children, thickness = 1.6 }: {
+export function Pcb({ w, d, color, holes = [], silk, art, children, thickness = 1.6 }: {
   w: number; d: number; color: string; holes?: [number, number][]; silk?: THREE.Texture; children?: ReactNode; thickness?: number;
+  /** The etched and printed top (pcbArt.ts): mask, copper, pads and silkscreen, with a bump map. */
+  art?: { map: THREE.Texture; bump: THREE.Texture };
 }) {
   const shape = useMemo(() => {
     const r = Math.min(2.5, w / 10, d / 10);
@@ -112,7 +114,13 @@ export function Pcb({ w, d, color, holes = [], silk, children, thickness = 1.6 }
       {holes.map(([hx, hz], i) => (
         <mesh key={i} position={[hx, thickness + 0.01, hz]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[1.6, 2.6, 24]} /><meshStandardMaterial {...TIN} /></mesh>
       ))}
-      {silk && (
+      {art && (
+        <mesh position={[0, thickness + 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+          <planeGeometry args={[w, d]} />
+          <meshStandardMaterial map={art.map} bumpMap={art.bump} bumpScale={0.6} roughness={0.42} metalness={0.05} transparent />
+        </mesh>
+      )}
+      {silk && !art && (
         <mesh position={[0, thickness + 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <planeGeometry args={[w, d]} />
           <meshBasicMaterial map={silk} transparent toneMapped={false} depthWrite={false} />

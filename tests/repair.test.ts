@@ -29,9 +29,9 @@ describe('Uno netlist', () => {
     expect(new Set(spots.map((s) => s.id)).size).toBe(spots.length);
   });
 
-  it('places R_ON’s pads either side of it, 1.3 mm apart like a real 0603', () => {
+  it('places R_ON’s pads either side of it, 1.6 mm apart like a real 0603 land pattern', () => {
     const [a, b] = [spots.find((s) => s.id === 'R_ON.1')!, spots.find((s) => s.id === 'R_ON.2')!];
-    expect(Math.hypot(a.at[0] - b.at[0], a.at[1] - b.at[1])).toBeCloseTo(1.28, 2);
+    expect(Math.hypot(a.at[0] - b.at[0], a.at[1] - b.at[1])).toBeCloseTo(1.6, 2);
   });
 
   it('reads like a real Uno on USB: 5 V, 3.3 V, RESET pulled high, ON LED at about 3 mA', () => {

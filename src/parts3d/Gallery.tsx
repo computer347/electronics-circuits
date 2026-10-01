@@ -6,12 +6,15 @@
  */
 import { Html, OrbitControls } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import '../desk/desk.css';
 import { formatSI } from '../lib/units';
 import { CATALOGUE, type CatalogueEntry, type Family } from '../parts/catalogue';
 import { BOARDS, Board, tooltip, type Placed } from './boards';
+import { generateBoard } from './pcbgen';
 import { MODELS } from './registry';
+// Boards with a real circuit (the Uno, the DHT11) draw their copper from it.
+import '../repair/netlists';
 import { StudioEnvironment } from './common';
 
 const FAMILIES: { id: Family; name: string }[] = [
@@ -91,6 +94,30 @@ export function Gallery() {
         </div>
       )}
       <p className="gallery-head">Parts gallery · {CATALOGUE.length} parts · drag to orbit, click a part</p>
+      <GeneratedBoard />
+    </div>
+  );
+}
+
+/** A procedurally generated PCB: a new believable board for every seed. */
+function GeneratedBoard() {
+  const [seed, setSeed] = useState(() => 1 + Math.floor(Math.random() * 9999));
+  const def = useMemo(() => generateBoard(seed), [seed]);
+  const [hover, setHover] = useState<Placed | null>(null);
+  return (
+    <div className="gallery-gen">
+      <p className="nb-kicker">Procedural PCB · seed {seed}</p>
+      <div className="gallery-board">
+        <Canvas camera={{ position: [0, 70, 50], fov: 40 }} dpr={[1, 2]}>
+          <color attach="background" args={['#6d747a']} />
+          <ambientLight intensity={0.6} /><directionalLight position={[30, 80, 40]} intensity={1.3} />
+          <StudioEnvironment />
+          <group scale={Math.min(1.4, 70 / def.w)}><Board def={def} onHover={setHover} /></group>
+          <OrbitControls makeDefault />
+        </Canvas>
+      </div>
+      <p className="gallery-tip">{hover ? tooltip(hover, (x, u) => formatSI(x, u)) : `${def.w} × ${def.d} mm · ${def.parts.length} parts`}</p>
+      <button className="desk-chip" onClick={() => setSeed(1 + Math.floor(Math.random() * 9999))}>New board</button>
     </div>
   );
 }

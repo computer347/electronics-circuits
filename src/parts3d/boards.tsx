@@ -11,6 +11,7 @@ import * as THREE from 'three';
 import { HeaderRow, Pcb, printTexture, SHIELD, silkTexture } from './common';
 import { ChipCap, ChipLed, ChipResistor, Crystal, DcJack, MicroUsb, QFP, SmdButton, SOIC8, SOT223, SOT23, UsbB, type ChipSize } from './smd';
 import { Electrolytic } from './tht';
+import { pcbArt } from './pcbArt';
 
 export type PlacedKind =
   | 'chipR' | 'chipC' | 'chipLed' | 'sot23' | 'sot223' | 'soic8' | 'qfp' | 'crystal' | 'usbB' | 'microUsb' | 'dcJack'
@@ -38,6 +39,10 @@ export interface BoardDef {
   holes?: [number, number][];
   silk?: (g: CanvasRenderingContext2D, px: number, w: number, d: number) => void;
   parts: Placed[];
+  /** Which pads are joined, by name: "GND": ["C1.2", "U1.5"…]. Left out, plausible nets are made (pcbgen.autoNets). */
+  nets?: Record<string, string[]>;
+  /** Pad plating: tinned (hasl, silver) or gold (enig). */
+  finish?: 'hasl' | 'enig';
 }
 
 function PlacedModel({ p, onHover }: { p: Placed; onHover?: (p: Placed | null) => void }) {
@@ -76,9 +81,11 @@ function PlacedModel({ p, onHover }: { p: Placed; onHover?: (p: Placed | null) =
 
 /** A board with its parts. `onHover` reports the placed part under the pointer (for tooltips). */
 export function Board({ def, onHover }: { def: BoardDef; onHover?: (p: Placed | null) => void }) {
-  const silk = def.silk ? silkTexture(def.id, def.w, def.d, (g, px) => def.silk!(g, px, def.w, def.d)) : undefined;
+  // The board's copper, pads and silkscreen, laid out from its parts (cached per board).
+  const art = typeof document === 'undefined' ? undefined : pcbArt(def, def.finish ?? 'hasl');
+  const silk = !art && def.silk ? silkTexture(def.id, def.w, def.d, (g, px) => def.silk!(g, px, def.w, def.d)) : undefined;
   return (
-    <Pcb w={def.w} d={def.d} color={def.color} holes={def.holes} silk={silk}>
+    <Pcb w={def.w} d={def.d} color={def.color} holes={def.holes} silk={silk} art={art}>
       {def.parts.map((p) => <PlacedModel key={p.id} p={p} onHover={onHover} />)}
     </Pcb>
   );
@@ -254,8 +261,8 @@ export const ESP01: BoardDef = {
     { id: 'Y1', kind: 'crystal', at: [-4.5, -4], name: 'Crystal 26 MHz', value: { amount: 26e6, unit: 'Hz' }, props: { mhz: '26.000' } },
     { id: 'LED_PWR', kind: 'chipLed', at: [-3.5, 3.5], name: 'Power LED', props: { color: '#ff3b30', lit: true } },
     { id: 'LED_TX', kind: 'chipLed', at: [-3.5, 5.3], name: 'TX LED', props: { color: '#3a8bff' } },
-    { id: 'H1', kind: 'header', at: [8.5, -3.8], rot: 90, name: 'Pins GND, IO2, IO0, RX', props: { n: 4 } },
-    { id: 'H2', kind: 'header', at: [11, -3.8], rot: 90, name: 'Pins TX, EN, RST, 3V3', props: { n: 4 } },
+    { id: 'H1', kind: 'header', at: [8.5, -3.8], rot: -90, name: 'Pins GND, IO2, IO0, RX', props: { n: 4 } },
+    { id: 'H2', kind: 'header', at: [11, -3.8], rot: -90, name: 'Pins TX, EN, RST, 3V3', props: { n: 4 } },
   ],
 };
 
