@@ -14,6 +14,7 @@ import forkInTheRoad from './world0/06-fork-in-the-road.json';
 import pushToLight from './world0/07-push-to-light.json';
 import stackThemUp from './world0/08-stack-them-up.json';
 import balanceTheBridge from './world0/09-balance-the-bridge.json';
+import switchIt from './world0/10-switch-it.json';
 
 export class LevelError extends Error {}
 
@@ -34,6 +35,7 @@ export function parseLevel(raw: unknown): LevelDef {
   for (const t of l.tools) if (!TOOLS.has(t)) fail(`unknown tool ${t}`);
   for (const c of l.spec) {
     if ((c.kind === 'led-current' || c.kind === 'switched-led') && !ids.has(c.part)) fail(`spec refers to missing part ${c.part}`);
+    if (c.kind === 'part-current' && !ids.has(c.part.split('.')[0]!)) fail(`spec refers to missing part ${c.part}`);
     if ((c.kind === 'led-current' || c.kind === 'switched-led') && !(c.min < c.max)) fail(`spec window for ${c.part} is empty`);
     if (c.kind === 'voltage' && (!HOLE_BY_ID.has(c.hole) || (c.ref && !HOLE_BY_ID.has(c.ref)))) fail('spec refers to a missing hole');
     if (c.kind === 'charge-time' && !l.board.parts.some((p) => p.id === c.part && p.kind === 'capacitor')) fail(`charge-time refers to ${c.part}, which isn't a capacitor`);
@@ -47,7 +49,7 @@ export function parseLevel(raw: unknown): LevelDef {
 /** World 0, in order. */
 export const WORLD0: LevelDef[] = [
   firstLight, wrongWayRound, sideBySide, splitTheDifference, slowBlink,
-  forkInTheRoad, pushToLight, stackThemUp, balanceTheBridge,
+  forkInTheRoad, pushToLight, stackThemUp, balanceTheBridge, switchIt,
 ].map(parseLevel);
 
 /** World 0's slots, so the level map can show what's coming. */
@@ -61,6 +63,7 @@ export const WORLD0_PLAN = [
   { number: 7, title: 'Push to light', topic: 'Switches' },
   { number: 8, title: 'Stack them up', topic: 'Batteries in series' },
   { number: 9, title: 'Balance the bridge', topic: 'Wheatstone bridge' },
+  { number: 10, title: 'Switch it', topic: 'Transistor switch' },
 ];
 
 export const levelById = (id: string) => WORLD0.find((l) => l.id === id);

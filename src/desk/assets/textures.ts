@@ -339,6 +339,32 @@ function drawPicture(g: CanvasRenderingContext2D, pic: TaskPicture) {
     g.fillStyle = INK.pink; g.font = `40px ${FONT_DISPLAY}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('0 V', (260 + right) / 2, 212); g.textAlign = 'left'; g.textBaseline = 'top';
     g.restore();
   }
+  if (pic === 'transistor') {
+    // The LED and its resistor hang off the collector; the button feeds the base through R_B.
+    const cx = 520;
+    battery(g, left, 190, '9 V');
+    line(g, [[left, 190], [left, top], [cx, top], [cx, 50]]);
+    resistor(g, cx, 50, true);
+    line(g, [[cx, 180], [cx, 196]]);
+    led(g, cx, 196);
+    line(g, [[cx, 260], [cx, 290], [470, 306]]);
+    // NPN symbol: base bar, collector and emitter, the arrow on the emitter pointing out
+    g.beginPath(); g.arc(486, 320, 50, 0, Math.PI * 2); g.stroke();
+    g.lineWidth = 9; line(g, [[466, 294], [466, 346]]); g.lineWidth = 7;
+    line(g, [[470, 334], [cx, 352], [cx, bot]]);
+    g.save(); g.fillStyle = INK.ink; g.beginPath(); g.moveTo(cx, 352); g.lineTo(497, 333); g.lineTo(492, 352); g.closePath(); g.fill(); g.restore();
+    // base path: from the + rail, through the button, then R_B
+    line(g, [[190, top], [190, 150]]);
+    g.save(); g.strokeStyle = INK.pink; line(g, [[166, 162], [214, 162]]); line(g, [[190, 162], [190, 140]]); g.restore();
+    line(g, [[190, 178], [190, 320], [230, 320]]);
+    resistor(g, 230, 320);
+    line(g, [[360, 320], [466, 320]]);
+    line(g, [[cx, bot], [left, bot], [left, 220]]);
+    g.save(); g.fillStyle = INK.pink; g.font = `bold 28px ${FONT_MONO}`;
+    g.fillText('I_B', 380, 286); g.fillText('I_C = 200 × I_B', cx - 300, 236);
+    g.fillStyle = INK.ink; g.font = `bold 26px ${FONT_MONO}`; g.fillText('Q1', 552, 300); g.fillText('R_B', 262, 362);
+    g.restore();
+  }
   if (pic === 'rc') {
     battery(g, left, 190, '9 V');
     line(g, [[left, 190], [left, top], [140, top]]);

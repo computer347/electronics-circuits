@@ -197,7 +197,7 @@ describe('every World 0 level on the desk', () => {
       expect(p.headline.length).toBeLessThan(60);
       expect(p.goal).toBe(l.brief.goal);
       expect(p.tip.length).toBeGreaterThan(20);
-      expect(['led', 'two-leds', 'divider', 'rc', 'fork', 'button', 'cells', 'bridge']).toContain(p.picture);
+      expect(['led', 'two-leds', 'divider', 'rc', 'fork', 'button', 'cells', 'bridge', 'transistor']).toContain(p.picture);
     }
   });
 

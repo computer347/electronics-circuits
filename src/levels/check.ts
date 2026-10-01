@@ -268,6 +268,17 @@ function checkOne(c: SpecCheck, board: BoardState, analysis: BoardAnalysis, fixe
                 : { part: c.part, message: `With the button held, ${c.part} takes ${mA(on)}, over its limit.` };
       return { line: { ok, label: `${c.part} lit only while the button is held`, measured: `${mA(on)} held · ${mA(off)} let go` }, why };
     }
+    case 'part-current': {
+      const held: BoardState = { ...board, parts: board.parts.map((p) => (p.kind === 'button' ? { ...p, pressed: true } : p)) };
+      const a = analyzeBoard(held);
+      const amps = a.result.ok ? Math.abs(a.result.currents[c.part] ?? 0) : 0;
+      const ok = a.result.ok && amps <= c.max;
+      const owner = c.part.split('.')[0];
+      return {
+        line: { ok, label: c.label ?? `${c.part} at most ${mA(c.max)}`, measured: mA(amps) },
+        why: ok ? undefined : { part: owner, message: `${c.part === `${owner}.base` ? `${owner}'s base` : c.part} takes ${mA(amps)} with the button held, over ${mA(c.max)}.` },
+      };
+    }
     case 'no-burnt': {
       const burnt = board.parts.filter((p) => p.burnt).map((p) => p.id);
       return {

@@ -12,7 +12,7 @@ import type { LevelDef } from '../levels/types';
 export type Section = 'task' | 'theory' | 'math';
 export const SECTIONS: Section[] = ['task', 'theory', 'math'];
 
-export type PartId = 'led' | 'resistor' | 'breadboard' | 'multimeter' | 'capacitor' | 'button' | 'battery';
+export type PartId = 'led' | 'resistor' | 'breadboard' | 'multimeter' | 'capacitor' | 'button' | 'battery' | 'transistor';
 
 export interface PartExplainer {
   id: PartId;
@@ -102,6 +102,15 @@ export const PARTS: Record<PartId, PartExplainer> = {
       { label: '1.5 V', text: 'each; in series, + to −, they add up' },
     ],
   },
+  transistor: {
+    id: 'transistor', name: 'NPN transistor', job: 'A current-controlled switch: a small current into the base lets a bigger one flow from collector to emitter.',
+    facts: [
+      { label: 'Flat face', text: 'with it towards you, a BC547’s legs are C, B, E (here it faces away: E, B, C)' },
+      { label: 'Base', text: 'the control leg: it turns on at about 0.7 V above the emitter' },
+      { label: 'Gain β', text: 'collector current up to about 200 × base current' },
+      { label: 'Base resistor', text: 'always: it sets the base current, or the base takes far too much' },
+    ],
+  },
 };
 
 export const FORMULAS: Record<string, Formula> = {
@@ -140,6 +149,11 @@ export const FORMULAS: Record<string, Formula> = {
     terms: [['R1, R2', 'the left divider (top, bottom)'], ['R3, R4', 'the right divider (top, bottom)']],
     when: 'When the ratios match, both taps sit at the same voltage and the meter between them reads zero.',
   },
+  npn: {
+    name: 'Transistor switch', expr: 'I_B = (V − 0.7) ÷ R_B · I_C ≤ β × I_B',
+    terms: [['I_B', 'base current, set by the base resistor R_B'], ['0.7 V', 'the base-emitter drop'], ['β', 'the gain, about 200 for a BC547'], ['I_C', 'collector current: what the load needs']],
+    when: 'Fully on (saturated) when β × I_B is comfortably more than the load needs; then the load sets I_C, not the transistor.',
+  },
   rc: {
     name: 'RC time constant', expr: 'τ = R × C',
     terms: [['τ', 'the time to reach 63 % of the final voltage (seconds)'], ['R', 'ohms'], ['C', 'farads (100 µF = 0.0001 F)'], ['V(t)', 'V × (1 − e^(−t/τ))']],
@@ -157,6 +171,7 @@ const LEVEL: Record<string, { parts: PartId[]; formulas: string[]; generators: s
   'w0-07-push-to-light': { parts: ['button', 'breadboard'], formulas: ['ohm', 'led'], generators: ['led-resistor'] },
   'w0-08-stack-them-up': { parts: ['battery', 'multimeter'], formulas: ['kvl', 'led'], generators: ['series-voltage'] },
   'w0-09-balance-the-bridge': { parts: ['resistor', 'multimeter'], formulas: ['bridge', 'divider'], generators: ['bridge', 'divider'] },
+  'w0-10-switch-it': { parts: ['transistor', 'resistor'], formulas: ['npn', 'ohm', 'led'], generators: ['ohm', 'led-resistor'] },
 };
 
 /** A stable seed per level so the worked example is the same each time you open it. */

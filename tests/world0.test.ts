@@ -11,9 +11,9 @@ const W = (id: string, h1: string, h2: string): BoardPart => ({ id, kind: 'wire'
 const check = (n: number, b: BoardState) => checkLevel(L(n), b, analyzeBoard(b));
 
 describe('World 0', () => {
-  it('has all nine levels, numbered in order', () => {
-    expect(WORLD0.map((l) => l.number)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-    expect(new Set(WORLD0.map((l) => l.id)).size).toBe(9);
+  it('has all ten levels, numbered in order', () => {
+    expect(WORLD0.map((l) => l.number)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    expect(new Set(WORLD0.map((l) => l.id)).size).toBe(10);
   });
 });
 
@@ -205,5 +205,32 @@ describe('level 9: Balance the bridge', () => {
   });
   it('fails with R4 missing: the right tap floats up to 9 V', () => {
     expect(check(9, b).pass).toBe(false);
+  });
+});
+
+describe('level 10: Switch it', () => {
+  const b = L(10).board;
+  const msg = (x: BoardState) => check(10, x).diagnosis?.message ?? '';
+  it('switches the LED with a 10 kΩ (or 4.7 kΩ, or 100 kΩ) base resistor', () => {
+    for (const ohms of [4700, 10000, 100000]) expect(check(10, add(b, R('R1', 'c7', 'c11', ohms))).pass, `${ohms} Ω`).toBe(true);
+    const a = analyzeBoard({ ...add(b, R('R1', 'c7', 'c11', 10000)), parts: add(b, R('R1', 'c7', 'c11', 10000)).parts.map((p) => (p.kind === 'button' ? { ...p, pressed: true } : p)) });
+    expect(a.result.currents['LED1']! * 1000).toBeCloseTo(14.5, 0);
+    expect(a.result.activeStates?.['Q1']).toBe('sat');
+  });
+  it('fails with 1 kΩ: too much base current for a pin', () => {
+    const x = add(b, R('R1', 'c7', 'c11', 1000));
+    expect(check(10, x).pass).toBe(false);
+    expect(msg(x)).toMatch(/Q1's base takes 8\.\d+ mA/);
+  });
+  it('fails with 1 MΩ: the LED is starved, and says why', () => {
+    const x = add(b, R('R1', 'c7', 'c11', 1000000));
+    expect(check(10, x).pass).toBe(false);
+    expect(msg(x)).toMatch(/200 × I_B/);
+  });
+  it('fails with a bare wire to the base: amps into the base', () => {
+    expect(check(10, add(b, W('W9', 'c7', 'c11'))).pass).toBe(false);
+  });
+  it('fails as it starts: nothing reaches the base', () => {
+    expect(check(10, b).pass).toBe(false);
   });
 });

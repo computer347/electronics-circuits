@@ -457,7 +457,47 @@ const c9: LearnClass = {
   ],
 };
 
-export const WORLD0_CLASSES: LearnClass[] = [c1, c2, c3, c4, c5, c6, c7, c8, c9];
+const c10: LearnClass = {
+  id: 'c0-10-transistor-switch',
+  world: 0, number: 10,
+  title: 'The transistor switch',
+  levelId: 'w0-10-switch-it',
+  minutes: 6,
+  goals: ['Set a base current with a resistor', 'Tell when a transistor is fully on', 'Explain why the base always needs a resistor'],
+  steps: [
+    {
+      title: 'A switch you turn on with current',
+      body: [
+        'An NPN transistor has three legs. A small current into the **base** lets a bigger one flow from **collector** to **emitter**: up to about β times as much. For a BC547, β is about 200.',
+        'The base sits about 0.7 V above the emitter when it conducts, so a base resistor R_B from 9 V lets in `I_B = (9 V − 0.7 V) / R_B`. With 10 kΩ: `8.3 V / 10 kΩ = 0.83 mA`.',
+      ],
+    },
+    {
+      title: 'Fully on: the load decides',
+      body: [
+        '0.83 mA × 200 = 166 mA is what Q1 *could* pass. The LED and its 470 Ω only ask for about `(9 V − 2.0 V − 0.2 V) / 470 Ω = 14.5 mA`, far less.',
+        'So the transistor is **saturated**: fully on, only about 0.2 V left across it, and the LED circuit sets the current. That\'s what you want from a switch.',
+      ],
+    },
+    {
+      title: 'Too little, too much',
+      body: [
+        'With 1 MΩ the base gets `8.3 V / 1 MΩ = 8.3 µA`, and 200 × that is only 1.7 mA: the transistor is half on, the LED dim. That\'s the active region: an amplifier, not a switch.',
+        'With no resistor at all, the base-emitter junction is a diode straight across the supply: amps flow, and the transistor dies. **Always** a base resistor.',
+      ],
+    },
+  ],
+  check: [
+    { kind: 'number', prompt: 'A 10 kΩ base resistor from a 5 V pin. What base current flows?', answer: 0.00043, unit: 'A', tolerancePct: 3,
+      explain: '(5 V − 0.7 V) / 10 kΩ = 0.43 mA.' },
+    { kind: 'number', prompt: 'β is 200 and 0.1 mA flows into the base. What is the most the collector can pass?', answer: 0.02, unit: 'A', tolerancePct: 1,
+      explain: '200 × 0.1 mA = 20 mA.' },
+    { kind: 'choice', prompt: 'Why does the base need a resistor?', options: ['To make the LED brighter', 'Without one, the base takes far too much current and burns out', 'Transistors only work with exactly 10 kΩ', 'It stops the collector current'], correct: 1,
+      explain: 'The base-emitter junction is a diode: across a supply with nothing to limit it, it takes amps.' },
+  ],
+};
+
+export const WORLD0_CLASSES: LearnClass[] = [c1, c2, c3, c4, c5, c6, c7, c8, c9, c10];
 
 export const classById = (id: string) => WORLD0_CLASSES.find((c) => c.id === id);
 export const classForLevel = (levelId: string) => WORLD0_CLASSES.find((c) => c.levelId === levelId);

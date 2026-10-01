@@ -1,0 +1,47 @@
+{
+  "id": "w0-10-switch-it",
+  "world": 0,
+  "number": 10,
+  "title": "Switch it",
+  "format": "build",
+  "skills": ["transistor.switch", "transistor.base-resistor", "ohm"],
+  "brief": {
+    "story": "The club's door sign needs its LED switched by a microcontroller pin, but a pin can only give a trickle of current. The button stands in for the pin here. Q1, a BC547, is in, with the LED and its resistor on its collector. Nothing joins the button to Q1's base yet.",
+    "goal": "Join the button to Q1's base through a resistor, so LED1 lights at 10–25 mA while the button is held, with no more than 2 mA going into the base.",
+    "datasheet": {
+      "title": "Q1 · BC547 (NPN)",
+      "rows": [
+        ["Legs (here)", "E · B · C, left to right"],
+        ["Base turns on at", "about 0.7 V"],
+        ["Gain β", "about 200 (I_C ≤ 200 × I_B)"],
+        ["Base current", "a few mA at most"]
+      ]
+    }
+  },
+  "hints": [
+    "The button's far leg is in column 7. Q1's base is its middle leg, in column 11. A resistor goes from one column to the other.",
+    "The base current is about (9 V − 0.7 V) ÷ R. Under 2 mA means R over about 4.2 kΩ.",
+    "Try 10 kΩ: 0.83 mA into the base, and up to 200 × that could flow in the collector: plenty to switch the LED fully on."
+  ],
+  "board": {
+    "supply": { "volts": 9, "on": true },
+    "parts": [
+      { "id": "Q1", "kind": "npn", "h1": "e10", "h2": "e11", "h3": "e12", "marking": "BC547" },
+      { "id": "W1", "kind": "wire", "h1": "a10", "h2": "T-:9", "wireColor": "#2f6fe0" },
+      { "id": "R2", "kind": "resistor", "h1": "T+:14", "h2": "a14", "ohms": 470 },
+      { "id": "LED1", "kind": "led", "h1": "b14", "h2": "b12", "color": "green" },
+      { "id": "W2", "kind": "wire", "h1": "T+:3", "h2": "a4", "wireColor": "#e8413c" },
+      { "id": "SW1", "kind": "button", "h1": "b4", "h2": "b7" }
+    ]
+  },
+  "locked": ["Q1", "W1", "R2", "LED1", "W2", "SW1"],
+  "tools": ["resistor", "wire", "probe"],
+  "resistorValues": [100, 1000, 4700, 10000, 100000, 1000000],
+  "spec": [
+    { "kind": "switched-led", "part": "LED1", "min": 0.01, "max": 0.025, "explain": "LED1's current comes through Q1, and Q1 only lets through what its base current allows: about 200 × I_B. Too big a base resistor starves it." },
+    { "kind": "part-current", "part": "Q1.base", "max": 0.002, "label": "Base current under 2 mA", "explain": "A pin can only give a few mA. The base resistor sets the base current: (9 V − 0.7 V) ÷ R." },
+    { "kind": "no-burnt" }
+  ],
+  "par": { "checks": 1, "partsAdded": 1, "measurements": 1 },
+  "debrief": "A trickle into the base switched fourteen times as much through the LED. That's what every Arduino project with a motor, relay or LED strip does: a pin drives a base (or a MOSFET's gate) through a resistor, and the transistor does the heavy lifting."
+}

@@ -5,7 +5,7 @@
  */
 import type { LevelDef } from '../levels/types';
 
-export type TaskPicture = 'led' | 'two-leds' | 'divider' | 'rc' | 'fork' | 'button' | 'cells' | 'bridge';
+export type TaskPicture = 'led' | 'two-leds' | 'divider' | 'rc' | 'fork' | 'button' | 'cells' | 'bridge' | 'transistor';
 
 export interface TaskPage {
   label: string;
@@ -87,6 +87,13 @@ const EXTRA: Record<string, { headline: string; tip: string; picture: TaskPictur
     picture: 'bridge',
     skill: 'Balance a bridge: matching ratios give zero volts across it.',
     realLife: 'Kitchen scales, pressure sensors and precise thermometers use a bridge, so a tiny change in one resistor shows up as a clear voltage.',
+  },
+  'w0-10-switch-it': {
+    headline: 'Let a trickle switch the LED.',
+    tip: 'Base current is (9 V − 0.7 V) ÷ R. Keep it under 2 mA, and remember Q1 lets through up to 200 times that.',
+    picture: 'transistor',
+    skill: 'Switch a big load from a small current with an NPN transistor and a base resistor.',
+    realLife: 'Every Arduino project with a relay, a motor or an LED strip has this: the pin drives a base through a resistor, and the transistor carries the load.',
   },
 };
 

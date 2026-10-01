@@ -42,6 +42,11 @@ export type SpecCheck = (
    * and dark (under 0.1 mA) with every button let go.
    */
   | { kind: 'switched-led'; part: string; min: number; max: number }
+  /**
+   * Current through a part (or a transistor's base, "Q1.base") with every button held, at
+   * most `max` amperes.
+   */
+  | { kind: 'part-current'; part: string; max: number; label?: string }
 ) & { explain?: string };
 
 export interface DatasheetCard {

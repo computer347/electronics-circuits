@@ -169,4 +169,15 @@ describe('World 0 classes 6–9: the numbers they teach agree with the solver', 
     const b = solveNet(`V1 vcc 0 9\nR1 vcc a 2000\nR2 a 0 6000\nR3 vcc b 5000\nR4 b 0 ${num(9, 1)}`);
     expect(Math.abs(b.nodeVoltages.a! - b.nodeVoltages.b!)).toBeLessThan(1e-6);
   });
+  it('0–10: 0.83 mA into the base, saturated at about 14.5 mA; 1 MΩ starves it', () => {
+    const on = solveNet('V1 vcc 0 9\nRB vcc b 10000\nQ1 c b 0 beta=200\nR2 vcc a 470\nLED1 a c green');
+    near(on.currents['Q1.base']!, 0.00083, 2);
+    near(on.currents.LED1!, 0.0145, 4);
+    expect(on.nodeVoltages.c!).toBeLessThan(0.25);
+    const dim = solveNet('V1 vcc 0 9\nRB vcc b 1000000\nQ1 c b 0 beta=200\nR2 vcc a 470\nLED1 a c green');
+    near(dim.currents.LED1!, 0.00166, 3);
+    const pin = solveNet('V1 p 0 5\nRB p b 10000\nQ1 c b 0 beta=200\nR2 p c 1000');
+    near(pin.currents['Q1.base']!, num(10, 0), 3);
+    near(200 * 0.0001, num(10, 1));
+  });
 });

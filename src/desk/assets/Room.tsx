@@ -35,6 +35,13 @@ export function Wall() {
   );
 }
 
+
+/** The corkboard holds the levels and the free bench card in two even rows. */
+const PER_ROW = Math.ceil((WORLD0_PLAN.length + 1) / 2);
+const PITCH = 0.6 / PER_ROW;
+const CARD_W = Math.min(0.1, PITCH * 0.9);
+const slot = (i: number): [number, number] => [-0.3 + PITCH / 2 + (i % PER_ROW) * PITCH, i < PER_ROW ? 0.062 : -0.062];
+
 /** The level map: a corkboard with one card per World 0 level, the current one ringed. */
 export function Corkboard({ current, passed, unlocked, onPick, onFreeBench }: {
   current: number; passed: Set<number>; unlocked: Set<number>;
@@ -54,8 +61,9 @@ export function Corkboard({ current, passed, unlocked, onPick, onFreeBench }: {
       </mesh>
       {WORLD0_PLAN.map((l, i) => {
         const state = l.number === current ? 'here' : passed.has(l.number) ? 'done' : unlocked.has(l.number) ? 'open' : 'later';
-        // Two rows of five: levels in order, the free bench last.
-        const x = -0.24 + (i % 5) * 0.12, y = (i < 5 ? 0.062 : -0.062) + (i % 2 ? -0.006 : 0.006);
+        // Two rows: levels in order, the free bench last.
+        const [x, y0] = slot(i);
+        const y = y0 + (i % 2 ? -0.006 : 0.006);
         const canPick = !!onPick && unlocked.has(l.number);
         return (
           <group key={l.number} position={[x, y, 0.012]} rotation={[0, 0, (i % 3 - 1) * 0.05]}
@@ -63,10 +71,10 @@ export function Corkboard({ current, passed, unlocked, onPick, onFreeBench }: {
             onPointerOver={canPick ? () => { document.body.style.cursor = 'pointer'; } : undefined}
             onPointerOut={canPick ? () => { document.body.style.cursor = ''; } : undefined}>
             <mesh castShadow>
-              <planeGeometry args={[0.1, 0.078]} />
+              <planeGeometry args={[CARD_W, CARD_W * 0.78]} />
               <meshStandardMaterial map={levelCardTexture(l.number, l.title, state)} roughness={0.9} />
             </mesh>
-            <mesh position={[0, 0.03, 0.006]}>
+            <mesh position={[0, CARD_W * 0.3, 0.006]}>
               <sphereGeometry args={[0.006, 12, 8]} />
               <meshStandardMaterial color={state === 'here' ? '#ff48b0' : '#0078bf'} roughness={0.3} />
             </mesh>
@@ -74,15 +82,15 @@ export function Corkboard({ current, passed, unlocked, onPick, onFreeBench }: {
         );
       })}
       {/* the free bench: a blue card at the end, always open */}
-      <group position={[-0.24 + (WORLD0_PLAN.length % 5) * 0.12, WORLD0_PLAN.length < 5 ? 0.062 : -0.062, 0.012]} rotation={[0, 0, 0.06]}
+      <group position={[...slot(WORLD0_PLAN.length), 0.012]} rotation={[0, 0, 0.06]}
         onClick={onFreeBench ? (e) => { e.stopPropagation(); onFreeBench(); } : undefined}
         onPointerOver={onFreeBench ? () => { document.body.style.cursor = 'pointer'; } : undefined}
         onPointerOut={onFreeBench ? () => { document.body.style.cursor = ''; } : undefined}>
         <mesh castShadow>
-          <planeGeometry args={[0.1, 0.078]} />
+          <planeGeometry args={[CARD_W, CARD_W * 0.78]} />
           <meshStandardMaterial map={freeBenchCardTexture()} roughness={0.9} />
         </mesh>
-        <mesh position={[0, 0.03, 0.006]}><sphereGeometry args={[0.006, 12, 8]} /><meshStandardMaterial color="#ffe800" roughness={0.3} /></mesh>
+        <mesh position={[0, CARD_W * 0.3, 0.006]}><sphereGeometry args={[0.006, 12, 8]} /><meshStandardMaterial color="#ffe800" roughness={0.3} /></mesh>
       </group>
     </group>
   );

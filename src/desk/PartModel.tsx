@@ -9,6 +9,7 @@ import { createContext, useContext, useMemo, useRef, type ReactNode, type RefObj
 import * as THREE from 'three';
 import { colorBands } from '../breadboard/colorCode';
 import { reducedMotion } from './anim';
+import { TO92 } from '../parts3d/tht';
 import { Multimeter } from './assets/Multimeter';
 import type { PartId } from './notebook';
 
@@ -135,6 +136,19 @@ function Battery({ labels }: { labels: string[] }) {
   );
 }
 
+/** The BC547 from the parts catalogue, at notebook scale, flat face towards you (legs C B E). */
+function Transistor({ labels }: { labels: string[] }) {
+  return (
+    <group position={[0, -1.2, 0]}>
+      <group scale={0.42} rotation={[0, Math.PI, 0]} position={[0, 0.9, 0]}><TO92 marking="BC547" /></group>
+      <Callout n={1} at={[-1.7, 2.6, 0]} label={labels[0]!} />
+      <Callout n={2} at={[0, -0.3, 0.2]} label={labels[1]!} />
+      <Callout n={3} at={[1.6, 2.9, 0]} label={labels[2]!} />
+      <Callout n={4} at={[-1.6, 0.9, 0]} label={labels[3]!} />
+    </group>
+  );
+}
+
 function Meter({ labels }: { labels: string[] }) {
   return (
     <group scale={16} rotation={[0.9, 0, 0]} position={[0, 0, 0]}>
@@ -163,7 +177,7 @@ export function PartModel({ part, labels }: { part: PartId; labels: string[] }) 
   const model = {
     led: <Led labels={labels} />, resistor: <Resistor labels={labels} />, breadboard: <BoardPatch labels={labels} />,
     capacitor: <Capacitor labels={labels} />, button: <Button labels={labels} />, multimeter: <Meter labels={labels} />,
-    battery: <Battery labels={labels} />,
+    battery: <Battery labels={labels} />, transistor: <Transistor labels={labels} />,
   }[part];
   const layer = useRef<HTMLDivElement>(null);
   return (
